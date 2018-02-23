@@ -19,7 +19,13 @@
 			<artifactId>kotlin-stdlib</artifactId>
 			<version>1.2.20</version>
 		</dependency>
-
+      <!-- Dependency for Glovereader --> 
+       <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native-platform</artifactId>
+            <version>0.9.1</version>
+        </dependency>
+       
 		<dependency>
 			<groupId>org.jetbrains.kotlinx</groupId>
 			<artifactId>kotlinx-coroutines-core</artifactId>
