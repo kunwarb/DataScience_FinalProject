@@ -36,6 +36,13 @@ public class FreqBigram_index {
 			// words.
 			ArrayList<String> unigram_list = analyzeByUnigram(para_body);
 			// Generate hashMap with term and term frequency.
+			if (bigram_list.isEmpty()) {
+				// System.out.println(para_body);
+				// Ignore the single word paragraph
+				return new HashMap<String, Float>();
+			} else {
+				// System.out.println(bigram_list);
+			}
 			HashMap<String, Integer> bigram_map = countFreq(bigram_list);
 			HashMap<String, Integer> unigram_map = countFreq(unigram_list);
 			// Calculate all bigram score.
