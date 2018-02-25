@@ -76,8 +76,8 @@ public class IndexData {
 		Document doc = new Document();
 
 		doc.add(new StringField("paraid", para.getParaId(), Field.Store.YES));
-		doc.add(new TextField("content", para.getTextOnly(), Field.Store.NO));
-		// call function create bigram index field
+		doc.add(new TextField("content", para.getTextOnly(), Field.Store.YES));
+		// Create bigram index field
 		HashMap<String, Float> bigram_score = FreqBigram_index.createBigramIndexFiled(para.getTextOnly());
 		doc.add(new TextField("bigram", bigram_score.toString(), Field.Store.NO));
 
