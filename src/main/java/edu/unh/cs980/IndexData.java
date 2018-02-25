@@ -3,6 +3,7 @@ package edu.unh.cs980;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -18,7 +19,10 @@ import org.apache.lucene.store.FSDirectory;
 import co.nstant.in.cbor.CborException;
 import edu.unh.cs.treccar_v2.Data;
 import edu.unh.cs.treccar_v2.read_data.DeserializeData;
+import edu.unh.cs980.utils.ProjectUtils;
+import edu.unh.cs980.utils.QueryBuilder;
 import edu.unh.cs980.variations.FreqBigram_index;
+import edu.unh.cs980.variations.FreqBigram_variation;
 
 public class IndexData {
 	// For testing
@@ -37,10 +41,20 @@ public class IndexData {
 		// String dataPath = args[1];
 
 		// Local testing
-		String queryPath = "DataSet/";
+		String queryPath = "DataSet/benchmarkY1-train/train.pages.cbor";
 		String dataPath = "DataSet/paragraphCorpus/dedup.articles-paragraphs.cbor";
 		try {
-			indexAllData(INDEX_DIRECTORY, dataPath);
+			// indexAllData(INDEX_DIRECTORY, dataPath);
+			QueryBuilder queryData = new QueryBuilder(queryPath);
+			ArrayList<String> pageList = queryData.getAllpageQueries();
+
+			System.out.println("Search Results for " + pageList.size() + " pages...");
+			ArrayList<String> pageResults = FreqBigram_variation.getSearchResult(pageList, 100, INDEX_DIRECTORY);
+			String pageRunFileName = "pages-bigram.run";
+			System.out.println("Got " + pageResults.size() + " results for pages. Write results to " + OUTPUT_DIR + "/"
+					+ pageRunFileName);
+			ProjectUtils.writeToFile(pageRunFileName, pageResults);
+			System.out.println("Done for pages.");
 		} catch (Throwable e) {
 			e.printStackTrace();
 			System.out.println(e.getMessage());
@@ -78,7 +92,7 @@ public class IndexData {
 		doc.add(new TextField("content", para.getTextOnly(), Field.Store.YES));
 		// Create bigram index field
 		HashMap<String, Float> bigram_score = FreqBigram_index.createBigramIndexFiled(para.getTextOnly());
-		doc.add(new TextField("bigram", bigram_score.toString(), Field.Store.NO));
+		doc.add(new TextField("bigram", bigram_score.toString(), Field.Store.YES));
 
 		return doc;
 	}

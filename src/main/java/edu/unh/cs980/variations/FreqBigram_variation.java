@@ -33,7 +33,8 @@ public class FreqBigram_variation {
 				DirectoryReader.open(FSDirectory.open((new File(index_dir).toPath()))));
 		searcher.setSimilarity(new BM25Similarity());
 
-		QueryParser parser = new QueryParser("bigram", new StandardAnalyzer());
+		QueryParser parser = new QueryParser("content", new StandardAnalyzer());
+		QueryParser parser2 = new QueryParser("bigram", new StandardAnalyzer());
 
 		for (String queryStr : queriesStr) {
 			// Get bigram list for query
@@ -44,13 +45,13 @@ public class FreqBigram_variation {
 			HashMap<String, Float> score_map = new HashMap<String, Float>();
 
 			if (bigram_list.isEmpty()) {
-				System.out.println("Can't generate Bigram list for Query: " + queryStr);
-				break;
+				System.out.println(queryStr + " ===>Single Word query found.");
+				bigram_list.add(queryStr);
 			}
 
 			// Query against bigram field with BM25
 			for (String term : bigram_list) {
-				Query q = parser.parse(QueryParser.escape(term));
+				Query q = parser2.parse(QueryParser.escape(term));
 				TopDocs tops = searcher.search(q, max_result);
 				ScoreDoc[] scoreDoc = tops.scoreDocs;
 				for (int i = 0; i < scoreDoc.length; i++) {
@@ -58,7 +59,6 @@ public class FreqBigram_variation {
 					Document doc = searcher.doc(score.doc);
 					String paraId = doc.getField("paraid").stringValue();
 					float rankScore = score.score;
-					int rank = i + 1;
 
 					if (score_map.keySet().contains(paraId)) {
 						score_map.put(paraId, score_map.get(paraId) + rankScore);
@@ -69,6 +69,7 @@ public class FreqBigram_variation {
 
 				}
 			}
+			int test = 0;
 
 			// Query against content field with BM25 and combine results with
 			// bigram query.
@@ -79,6 +80,10 @@ public class FreqBigram_variation {
 				ScoreDoc score = scoreDoc[i];
 				Document doc = searcher.doc(score.doc);
 				String paraId = doc.getField("paraid").stringValue();
+				// if (test == 0) {
+				// System.out.println(doc.getField("content").stringValue());
+				// System.out.println(doc.getField("bigram").stringValue());
+				// }
 				float rankScore = score.score;
 
 				if (score_map.keySet().contains(paraId)) {
