@@ -26,6 +26,11 @@ public class Main {
         indexParser.addArgument("corpus")
                 .required(true)
                 .help("Location to paragraph corpus file (.cbor)");
+        indexParser.addArgument("--spotlight_folder")
+                .setDefault("")
+                .help("Directory containing spotlight jar file and model." +
+                        "If the directory doesn't exist, the required files are downloaded automatically." +
+                        "If no folder is specified, entity annotation is skipped.");
         indexParser.addArgument("--out")
                 .setDefault("index")
                 .help("Directory name to create for Lucene index (default: index)");
@@ -51,11 +56,6 @@ public class Main {
         queryParser.addArgument("query_file")
                 .required(true)
                 .help("(required) Location of the query (.cbor) file.");
-        queryParser.addArgument("--spotlight_folder")
-                .setDefault("")
-                .help("Directory containing spotlight jar file and model." +
-                        "If the directory doesn't exist, the required files are downloaded automatically." +
-                        "If no folder is specified, entity annotation is skipped.");
 
         // This is an example of an optional argument
         queryParser.addArgument("--out") // -- means it's not positional
@@ -68,11 +68,12 @@ public class Main {
     }
 
     private static void runIndexer(Namespace params) {
-        String index = params.getString("index");
-        String query = params.getString("query_file");
+        String indexLocation = params.getString("--out");
+        String corpusFile = params.getString("corpus");
         String spotlight_location = params.getString("--spotlight_folder");
+
         try {
-            IndexData.indexAllData(index, query, spotlight_location);
+            IndexData.indexAllData(indexLocation, corpusFile, spotlight_location);
         } catch (CborException e) {
             e.printStackTrace();
         } catch (IOException e) {
