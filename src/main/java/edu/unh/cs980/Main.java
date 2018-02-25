@@ -1,9 +1,14 @@
 package edu.unh.cs980;
 import co.nstant.in.cbor.CborException;
+import edu.unh.cs980.ranklib.KotlinRanklibFormatter;
+import edu.unh.cs980.ranklib.NormType;
+import kotlin.Pair;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.*;
+import org.apache.lucene.search.TopDocs;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.function.Consumer;
 
 public class Main {
@@ -63,6 +68,9 @@ public class Main {
                 .help("The name of the query results file to write. (default: query_results.txt)");
 
         // You can add more subcommands below by calling subparsers.addparser and following the examples above
+        Subparser demoParser = subparsers.addParser("demo")
+                .setDefault("func", new Exec(Main::runDemo))                   // Pass method reference to Exec to
+                .help("Queries Lucene database.");                                 // run method when it is called.
 
         return parser;
     }
@@ -86,6 +94,17 @@ public class Main {
         String index = params.getString("index");
         String queryFile = params.getString("query_file");
         String out = params.getString("out");
+
+    }
+
+    private static void runDemo(Namespace params) {
+        String indexLocation = params.getString("index");
+        String queryLocation = params.getString("query");
+        String method = params.getString("method");
+
+        KotlinRanklibFormatter formatter = new KotlinRanklibFormatter(queryLocation, "", indexLocation);
+        formatter.addBM25(1.0, NormType.NONE);
+        formatter.writeQueriesToFile("test.run");
 
     }
 
