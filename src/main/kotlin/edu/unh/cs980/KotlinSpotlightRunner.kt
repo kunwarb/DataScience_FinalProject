@@ -1,13 +1,9 @@
 @file:JvmName("KotSpotlightRunner")
 package edu.unh.cs980
 
-import me.tongfei.progressbar.ProgressBar
-import me.tongfei.progressbar.ProgressBarStyle
 import org.apache.commons.io.FileUtils
-import org.apache.commons.io.IOUtils
 import org.codehaus.plexus.archiver.tar.TarGZipUnArchiver
 import org.codehaus.plexus.logging.console.ConsoleLoggerManager
-import java.io.BufferedInputStream
 import java.io.File
 import java.net.URL
 
