@@ -3,6 +3,7 @@ package edu.unh.cs980;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.HashMap;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -17,6 +18,7 @@ import org.apache.lucene.store.FSDirectory;
 import co.nstant.in.cbor.CborException;
 import edu.unh.cs.treccar_v2.Data;
 import edu.unh.cs.treccar_v2.read_data.DeserializeData;
+import edu.unh.cs980.variations.FreqBigram_index;
 
 public class IndexData {
 	// For testing
@@ -75,6 +77,9 @@ public class IndexData {
 
 		doc.add(new StringField("paraid", para.getParaId(), Field.Store.YES));
 		doc.add(new TextField("content", para.getTextOnly(), Field.Store.NO));
+		// call function create bigram index field
+		HashMap<String, Float> bigram_score = FreqBigram_index.createBigramIndexFiled(para.getTextOnly());
+		doc.add(new TextField("bigram", bigram_score.toString(), Field.Store.NO));
 
 		return doc;
 	}
