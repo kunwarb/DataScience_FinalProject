@@ -69,6 +69,7 @@ public class Main {
 
     private static void runIndexer(Namespace params) {
         String indexLocation = params.getString("--out");
+        System.out.println(indexLocation);
         String corpusFile = params.getString("corpus");
         String spotlight_location = params.getString("--spotlight_folder");
 
