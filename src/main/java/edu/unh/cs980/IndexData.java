@@ -75,6 +75,7 @@ public class IndexData {
 
 		doc.add(new StringField("paraid", para.getParaId(), Field.Store.YES));
 		doc.add(new TextField("content", para.getTextOnly(), Field.Store.NO));
+		// call function create bigram index field
 
 		return doc;
 	}
