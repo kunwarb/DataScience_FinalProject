@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.StreamSupport;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -67,12 +68,16 @@ public class IndexData {
         final FileInputStream fStream = new FileInputStream(new File(corpusLocation));
         Iterable<Data.Paragraph> ip = DeserializeData.iterableParagraphs(fStream);
         // Parallelized stream for adding documents to indexed database
+        AtomicInteger counter = new AtomicInteger(0);
         StreamSupport.stream(ip.spliterator(), true)
                 .parallel()
                 .map(IndexData::convertToLuceneDoc)
                 .forEach(doc -> {
                     try {
                         iw.addDocument(doc);
+                        if (counter.getAndIncrement() % 10000 == 0) {
+                            System.out.print(".");
+                        }
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
