@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.StreamSupport;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -24,6 +26,7 @@ public class IndexData {
 	// For testing
 	static final private String INDEX_DIRECTORY = "index";
 	static final private String OUTPUT_DIR = "output";
+	private static KotlinEntityLinker linker;
 
 	public static void main(String[] args) {
 		System.setProperty("file.encoding", "UTF-8");
@@ -40,24 +43,43 @@ public class IndexData {
 		String queryPath = "DataSet/";
 		String dataPath = "DataSet/paragraphCorpus/dedup.articles-paragraphs.cbor";
 		try {
-			indexAllData(INDEX_DIRECTORY, dataPath);
+			indexAllData(INDEX_DIRECTORY, dataPath, "");
 		} catch (Throwable e) {
 			e.printStackTrace();
 			System.out.println(e.getMessage());
 		}
+
 	}
 
-	public static void indexAllData(String INDEX_DIRECTORY, String file_path) throws CborException, IOException {
-		Directory indexdir = FSDirectory.open((new File(INDEX_DIRECTORY)).toPath());
+	public static void indexAllData(String indexDirectory, String corpusLocation, String serverLocation)
+			throws CborException, IOException {
+		Directory indexdir = FSDirectory.open((new File(indexDirectory)).toPath());
 		IndexWriterConfig conf = new IndexWriterConfig(new StandardAnalyzer());
 		conf.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
 		IndexWriter iw = new IndexWriter(indexdir, conf);
 
 		// Do iteration
+		if (!serverLocation.equals("")) {
+			linker = new KotlinEntityLinker(serverLocation);
+		}
 
 		System.out.println("Start indexing...");
+		final FileInputStream fStream = new FileInputStream(new File(corpusLocation));
+		Iterable<Data.Paragraph> ip = DeserializeData.iterableParagraphs(fStream);
+		// Parallelized stream for adding documents to indexed database
+		AtomicInteger counter = new AtomicInteger(0);
+		StreamSupport.stream(ip.spliterator(), true).parallel().map(IndexData::convertToLuceneDoc).forEach(doc -> {
+			try {
+				iw.addDocument(doc);
+				if (counter.getAndIncrement() % 10000 == 0) {
+					System.out.print(".");
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		});
 
-		for (Data.Paragraph p : DeserializeData.iterableParagraphs(new FileInputStream(new File(file_path)))) {
+		for (Data.Paragraph p : DeserializeData.iterableParagraphs(new FileInputStream(new File(corpusLocation)))) {
 			Document doc = convertToLuceneDoc(p);
 			iw.addDocument(doc);
 
@@ -78,6 +100,13 @@ public class IndexData {
 		// Create bigram index field
 		HashMap<String, Float> bigram_score = FreqBigram_index.createBigramIndexFiled(para.getTextOnly());
 		doc.add(new TextField("bigram", bigram_score.toString(), Field.Store.YES));
+		if (linker != null) {
+
+			// Add entities linked by using spotlight
+			for (String entity : linker.queryServer(para.getTextOnly())) {
+				doc.add(new StringField("spotlight", entity, Field.Store.YES));
+			}
+		}
 
 		return doc;
 	}
