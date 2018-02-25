@@ -27,20 +27,26 @@ public class FreqBigram_index {
 	// System.out.println(createBigramIndexFiled(testParaph));
 	// }
 
-	public static HashMap<String, Float> createBigramIndexFiled(String para_body) throws IOException {
+	public static HashMap<String, Float> createBigramIndexFiled(String para_body) {
 		// Get all bigram from paragraph text
-		ArrayList<String> bigram_list = analyzeByBigram(para_body);
+		try {
+			ArrayList<String> bigram_list = analyzeByBigram(para_body);
 
-		// Get all unigram/single term from paragraph text, remove all stop
-		// words.
-		ArrayList<String> unigram_list = analyzeByUnigram(para_body);
-		// Generate hashMap with term and term frequency.
-		HashMap<String, Integer> bigram_map = countFreq(bigram_list);
-		HashMap<String, Integer> unigram_map = countFreq(unigram_list);
-		// Calculate all bigram score.
-		HashMap<String, Float> results = getFreqBigramScore(bigram_map, bigram_list.size(), unigram_map,
-				unigram_list.size());
-		return ProjectUtils.getTopValuesInMap(results, top_k);
+			// Get all unigram/single term from paragraph text, remove all stop
+			// words.
+			ArrayList<String> unigram_list = analyzeByUnigram(para_body);
+			// Generate hashMap with term and term frequency.
+			HashMap<String, Integer> bigram_map = countFreq(bigram_list);
+			HashMap<String, Integer> unigram_map = countFreq(unigram_list);
+			// Calculate all bigram score.
+			HashMap<String, Float> results = getFreqBigramScore(bigram_map, bigram_list.size(), unigram_map,
+					unigram_list.size());
+			return ProjectUtils.getTopValuesInMap(results, top_k);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new HashMap<String, Float>();
+		}
+
 	}
 
 	private static HashMap<String, Float> getFreqBigramScore(HashMap<String, Integer> bigram_map,
