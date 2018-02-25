@@ -1,6 +1,9 @@
 package edu.unh.cs980;
+import co.nstant.in.cbor.CborException;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.*;
+
+import java.io.IOException;
 import java.util.function.Consumer;
 
 public class Main {
@@ -23,6 +26,11 @@ public class Main {
         indexParser.addArgument("corpus")
                 .required(true)
                 .help("Location to paragraph corpus file (.cbor)");
+        indexParser.addArgument("--spotlight_folder")
+                .setDefault("")
+                .help("Directory containing spotlight jar file and model." +
+                        "If the directory doesn't exist, the required files are downloaded automatically." +
+                        "If no folder is specified, entity annotation is skipped.");
         indexParser.addArgument("--out")
                 .setDefault("index")
                 .help("Directory name to create for Lucene index (default: index)");
@@ -60,17 +68,25 @@ public class Main {
     }
 
     private static void runIndexer(Namespace params) {
-        System.out.println("You just called the indexer!");
+        String indexLocation = params.getString("out");
+        String corpusFile = params.getString("corpus");
+        String spotlight_location = params.getString("spotlight_folder");
+
+        try {
+            IndexData.indexAllData(indexLocation, corpusFile, spotlight_location);
+        } catch (CborException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     // Example of a method that takes the parser's Namespace and runs something with it
     private static void runQuery(Namespace params) {
         String index = params.getString("index");
         String queryFile = params.getString("query_file");
-        String out = params.getString("--out");
+        String out = params.getString("out");
 
-        System.out.println("You chose the following params: "
-                + "index: " + index + " queryFile: " + queryFile + " out: " + out);
     }
 
     // Main class for project
