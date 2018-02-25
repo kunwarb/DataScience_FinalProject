@@ -68,10 +68,9 @@ public class Main {
     }
 
     private static void runIndexer(Namespace params) {
-        String indexLocation = params.getString("--out");
-        System.out.println(indexLocation);
+        String indexLocation = params.getString("out");
         String corpusFile = params.getString("corpus");
-        String spotlight_location = params.getString("--spotlight_folder");
+        String spotlight_location = params.getString("spotlight_folder");
 
         try {
             IndexData.indexAllData(indexLocation, corpusFile, spotlight_location);
@@ -86,7 +85,7 @@ public class Main {
     private static void runQuery(Namespace params) {
         String index = params.getString("index");
         String queryFile = params.getString("query_file");
-        String out = params.getString("--out");
+        String out = params.getString("out");
 
     }
 
