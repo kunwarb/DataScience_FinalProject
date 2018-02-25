@@ -22,32 +22,31 @@ import edu.unh.cs980.variations.FreqBigram_index;
 
 public class IndexData {
 	// For testing
-	// static final private String INDEX_DIRECTORY = "index";
-	// static final private String OUTPUT_DIR = "output";
+	static final private String INDEX_DIRECTORY = "index";
+	static final private String OUTPUT_DIR = "output";
 
-	// public static void main(String[] args) {
-	// System.setProperty("file.encoding", "UTF-8");
-	//
-	// // 1. index dataset
-	// // 2. Create Lucene search engine
-	// // 3. Get all queries and retrieve search result
-	// // 4. Create run file.
-	//
-	// // String queryPath = args[0];
-	// // String dataPath = args[1];
-	//
-	// // Local testing
-	// String queryPath = "DataSet/";
-	// String dataPath =
-	// "DataSet/paragraphCorpus/dedup.articles-paragraphs.cbor";
-	// try {
-	// indexAllData(INDEX_DIRECTORY, dataPath);
-	// } catch (Throwable e) {
-	// e.printStackTrace();
-	// System.out.println(e.getMessage());
-	// }
-	//
-	// }
+	public static void main(String[] args) {
+		System.setProperty("file.encoding", "UTF-8");
+
+		// 1. index dataset
+		// 2. Create Lucene search engine
+		// 3. Get all queries and retrieve search result
+		// 4. Create run file.
+
+		// String queryPath = args[0];
+		// String dataPath = args[1];
+
+		// Local testing
+		String queryPath = "DataSet/";
+		String dataPath = "DataSet/paragraphCorpus/dedup.articles-paragraphs.cbor";
+		try {
+			indexAllData(INDEX_DIRECTORY, dataPath);
+		} catch (Throwable e) {
+			e.printStackTrace();
+			System.out.println(e.getMessage());
+		}
+
+	}
 
 	public static void indexAllData(String INDEX_DIRECTORY, String file_path) throws CborException, IOException {
 		Directory indexdir = FSDirectory.open((new File(INDEX_DIRECTORY)).toPath());
