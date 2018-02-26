@@ -109,14 +109,25 @@ public class Main {
         String method = params.getString("method");
 
         KotlinRanklibFormatter formatter = new KotlinRanklibFormatter(queryLocation, "", indexLocation);
-//        formatter.addBM25(1.0, NormType.NONE);
-//        BiConsumer<String, TopDocs> myfun = Main::testFunction;
-        Function2<? super String, ? super TopDocs, ? extends List<Double>> ff = Main::testFunction;
-        formatter.addFeature(ff, 1.0, NormType.NONE);
-        formatter.writeQueriesToFile("test.run");
 
+        // Your function must be cast using the signature below
+        Function2<? super String, ? super TopDocs, ? extends List<Double>> ff = Main::testFunction;
+
+        // This adds BM25's scores as a feature
+        formatter.addBM25(1.0, NormType.NONE);
+
+        // And this adds your custom function/method that has the Function2 signature listed above (just cast it)
+        formatter.addFeature(ff, 1.0, NormType.NONE);
+
+        // This will rerank queries by doing the following: sum the added features together (multiplied by weights)
+        // And then using these new scores, sort the TopDocs from highest to loest
+        formatter.rerankQueries();
+
+        // This will write the reranked queries to a new trec_car compatible run file
+        formatter.writeQueriesToFile("test.run");
     }
 
+    // This is an example of a method that is compatible with KotlinRanklibFormatter's addFeature
     public static List<Double> testFunction(String queryString, TopDocs tops) {
         ArrayList<Double> scores = new ArrayList<>();
         for (ScoreDoc sc : tops.scoreDocs) {
