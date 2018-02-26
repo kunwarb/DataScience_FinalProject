@@ -218,6 +218,6 @@ class KotlinRanklibFormatter(queryLocation: String,
      * @param outName: Name of the file to write the results to.
      */
     fun writeQueriesToFile(outName: String) {
-        queryRetriever.writeQueriesToFile(queries)
+        queryRetriever.writeQueriesToFile(queries, outName)
     }
 }
