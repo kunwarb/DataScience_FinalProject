@@ -1,0 +1,9 @@
+## Coordinate Ascent
+## Restart = 5
+## MaxIteration = 25
+## StepBase = 0.05
+## StepScale = 2.0
+## Tolerance = 0.001
+## Regularized = false
+## Slack = 0.001
+1:0.3519104567612851 2:0.06746516534615844 3:0.33573945695746626 4:-0.1587287227436436 5:-0.08615619819144661
