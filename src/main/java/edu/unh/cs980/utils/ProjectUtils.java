@@ -1,6 +1,8 @@
 package edu.unh.cs980.utils;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -12,8 +14,41 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.analysis.CharArraySet;
+
 public class ProjectUtils {
 	// This class will contain some common utility methods for Project.
+
+	// Create custom stop words for lucene.
+	public static CharArraySet getCustomStopWordSet() {
+		String filePath = "stopword.txt";
+		ArrayList<String> list = new ArrayList<String>();
+		String line = "";
+		try {
+			/* FileReader reads text files in the default encoding */
+			FileReader fileReader = new FileReader(filePath);
+
+			/* always wrap the FileReader in BufferedReader */
+			BufferedReader bufferedReader = new BufferedReader(fileReader);
+
+			while ((line = bufferedReader.readLine()) != null) {
+				// System.out.println(line);
+				if (!line.isEmpty()) {
+					list.add(line.replace(" ", ""));
+				}
+			}
+
+			/* always close the file after use */
+			bufferedReader.close();
+			CharArraySet stopword = new CharArraySet(list, true);
+			// System.out.println(list);
+			return stopword;
+		} catch (IOException ex) {
+			System.out.println("Error reading file named '" + filePath + "'");
+			return null;
+		}
+
+	}
 
 	public static void writeToFile(String filePath, ArrayList<String> runfileStrings) {
 		String fullpath = filePath;

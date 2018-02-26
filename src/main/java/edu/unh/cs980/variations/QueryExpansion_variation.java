@@ -28,7 +28,7 @@ import org.apache.lucene.store.FSDirectory;
 import edu.unh.cs980.utils.ProjectUtils;
 
 public class QueryExpansion_variation {
-	private static int top_k_term = 10; // Include top k terms for QE
+	private static int top_k_term = 5; // Include top k terms for QE
 	private static int top_k_doc = 10; // Initial top k documents for QE
 	private static QueryParser parser = new QueryParser("content", new StandardAnalyzer());
 
@@ -115,9 +115,12 @@ public class QueryExpansion_variation {
 		if (!rm_list.isEmpty()) {
 			String rm_str = String.join(" ", rm_list);
 			Query q = parser.parse(QueryParser.escape(initialQ) + "^0.6" + QueryParser.escape(rm_str) + "^0.4");
+			System.out.println(initialQ + " =====> " + initialQ + " " + rm_str);
 			return q;
 		} else {
 			Query q = parser.parse(QueryParser.escape(initialQ));
+			System.out.println(initialQ + " =====> " + initialQ);
+
 			return q;
 		}
 	}
