@@ -1,13 +1,12 @@
 package edu.unh.cs980.ranklib
 
-import edu.unh.cs980.PID
-import edu.unh.cs980.QueryRetriever
-import edu.unh.cs980.getIndexSearcher
-import edu.unh.cs980.pmap
 import org.apache.lucene.search.IndexSearcher
 import org.apache.lucene.search.TopDocs
 import java.io.File
 import java.util.*
+import edu.unh.cs980.*
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.locks.ReentrantLock
 
 /**
  * Class: ParagraphContainer
@@ -156,12 +155,12 @@ class KotlinRanklibFormatter(queryLocation: String,
      * @param normType: NormType determines the type of normalization (if any) to apply to the new document scores.
      * @param weight: The final list of doubles is multiplies by this weight
      */
-    fun addFeature(f: (String, TopDocs) -> List<Double>, weight:Double = 1.0,
+    fun addFeature(f: (String, TopDocs, IndexSearcher) -> List<Double>, weight:Double = 1.0,
                    normType: NormType = NormType.NONE) {
 
         queryContainers
             .pmap { (query, tops, paragraphs) ->
-                    f(query, tops).run { normalizeResults(this, normType) }
+                    f(query, tops, indexSearcher).run { normalizeResults(this, normType) }
                                   .zip(paragraphs) }
             .forEach { results ->
                 results.forEach { (score, paragraph) ->
@@ -171,7 +170,7 @@ class KotlinRanklibFormatter(queryLocation: String,
     // Convenience function (turns NaN and infinite values into 0.0)
     private fun sanitizeDouble(d: Double): Double { return if (d.isInfinite() || d.isNaN()) 0.0 else d }
 
-    private fun bm25(query: String, tops:TopDocs): List<Double> {
+    private fun bm25(query: String, tops:TopDocs, indexSearcher: IndexSearcher): List<Double> {
         return tops.scoreDocs.map { it.score.toDouble() }
     }
 
@@ -218,6 +217,6 @@ class KotlinRanklibFormatter(queryLocation: String,
      * @param outName: Name of the file to write the results to.
      */
     fun writeQueriesToFile(outName: String) {
-        queryRetriever.writeQueriesToFile(queries, outName)
+        queryRetriever.writeQueriesToFile(queries)
     }
 }

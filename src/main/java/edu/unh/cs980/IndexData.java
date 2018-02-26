@@ -102,11 +102,11 @@ public class IndexData {
 		doc.add(new TextField("bigram", bigram_score.toString(), Field.Store.YES));
 		if (linker != null) {
 
-			// Add entities linked by using spotlight
-			for (String entity : linker.queryServer(para.getTextOnly())) {
-				doc.add(new StringField("spotlight", entity, Field.Store.YES));
-			}
-		}
+            // Add entities linked by using spotlight
+            for (String entity : linker.queryServer(para.getTextOnly())) {
+                doc.add(new StringField("spotlight", entity, Field.Store.YES));
+            }
+        }
 
 		return doc;
 	}
