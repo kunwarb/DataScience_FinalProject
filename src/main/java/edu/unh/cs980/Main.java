@@ -3,12 +3,16 @@ import co.nstant.in.cbor.CborException;
 import edu.unh.cs980.ranklib.KotlinRanklibFormatter;
 import edu.unh.cs980.ranklib.NormType;
 import kotlin.Pair;
+import kotlin.jvm.functions.Function2;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.*;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class Main {
@@ -105,9 +109,20 @@ public class Main {
         String method = params.getString("method");
 
         KotlinRanklibFormatter formatter = new KotlinRanklibFormatter(queryLocation, "", indexLocation);
-        formatter.addBM25(1.0, NormType.NONE);
+//        formatter.addBM25(1.0, NormType.NONE);
+//        BiConsumer<String, TopDocs> myfun = Main::testFunction;
+        Function2<? super String, ? super TopDocs, ? extends List<Double>> ff = Main::testFunction;
+        formatter.addFeature(ff, 1.0, NormType.NONE);
         formatter.writeQueriesToFile("test.run");
 
+    }
+
+    public static List<Double> testFunction(String queryString, TopDocs tops) {
+        ArrayList<Double> scores = new ArrayList<>();
+        for (ScoreDoc sc : tops.scoreDocs) {
+            scores.add((double)sc.score);
+        }
+        return scores;
     }
 
     // Main class for project
