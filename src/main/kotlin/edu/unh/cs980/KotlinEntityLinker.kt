@@ -2,6 +2,7 @@
 package edu.unh.cs980
 
 import org.jsoup.Jsoup
+import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.util.*
@@ -55,7 +56,8 @@ class KotlinEntityLinker(serverLocation: String) {
         for (i in (0..3)) {
               try { entities = retrieveEntities(content); break
             } catch (e: SocketTimeoutException) { Thread.sleep(ThreadLocalRandom.current().nextLong(500))
-            } catch (e: ConnectException) { Thread.sleep(ThreadLocalRandom.current().nextLong(500))}
+            } catch (e: ConnectException) { Thread.sleep(ThreadLocalRandom.current().nextLong(500))
+            } catch (e: IOException) { Thread.sleep(ThreadLocalRandom.current().nextLong(500))}
         }
         return entities
     }
