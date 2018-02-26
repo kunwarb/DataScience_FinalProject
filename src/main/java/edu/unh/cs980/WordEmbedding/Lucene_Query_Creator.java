@@ -37,7 +37,7 @@ import java.util.function.Supplier;
  * This class contains all the heading weights option and Wordembedding call option
  * 
  * */
-class Lucene_Query_Creator {
+public class Lucene_Query_Creator {
 	
 	// Constant declaration
 	
@@ -61,7 +61,7 @@ class Lucene_Query_Creator {
      */
     
  
-	Lucene_Query_Creator(String qType, String queryType2, Analyzer ana, Similarity sim, String indexPath)
+	public Lucene_Query_Creator(String qType, String queryType2, Analyzer ana, Similarity sim, String indexPath)
 			throws IOException {
 		analyzer = ana;
 		queryType = queryType2;
@@ -151,7 +151,7 @@ class Lucene_Query_Creator {
      * @Call:Call different heading variants. 
      */
 
-	void writeRankings(String queryLocation, String rankingsOutput) throws IOException {
+	public void writeRankings(String queryLocation, String rankingsOutput) throws IOException {
 		final BufferedWriter out = new BufferedWriter(new FileWriter(rankingsOutput));
 		final FileInputStream inputStream = new FileInputStream(new File(queryLocation));
 
