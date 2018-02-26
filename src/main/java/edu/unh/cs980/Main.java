@@ -71,6 +71,8 @@ public class Main {
         Subparser demoParser = subparsers.addParser("demo")
                 .setDefault("func", new Exec(Main::runDemo))                   // Pass method reference to Exec to
                 .help("Queries Lucene database.");                                 // run method when it is called.
+        demoParser.addArgument("index").help("Location of Lucene index directory.");
+        demoParser.addArgument("query").help("Location of query file (.cbor)");
 
         return parser;
     }
