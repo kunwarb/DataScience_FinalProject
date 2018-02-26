@@ -44,7 +44,7 @@ public class Lucene_Query_Creator {
 	private static final String PAGE = "PAGE";
 	private static final String SECTION = "SECTION";
 	private static final String BM25QUERYJUSTTHEPAGENAME = "just_the_page";
-	private static final String BM25QUERYJUSTTHELOWESTHEADING = "just_the_lowest";
+	private static final String BM25QUERYJUSTTHELOWESTHEADING = "just_the_lowest_heading";
 	private static final String BM25QUERYOFINTERIORHEADING = "interior_heading";
 	private static final String WORDEMBEDDING = "word_embedding";
 
