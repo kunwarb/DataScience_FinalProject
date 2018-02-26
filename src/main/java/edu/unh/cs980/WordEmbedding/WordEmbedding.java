@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 
+import info.debatty.java.stringsimilarity.Cosine;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -47,13 +48,13 @@ class WordEmbedding {
 	 * @param pagelist
 	 *            the list of pages to rank
 	 */
-	WordEmbedding(ArrayList<Data.Page> pagelist, int numResults) throws IOException {
+	WordEmbedding(ArrayList<Data.Page> pagelist, int numResults, IndexSearcher indexSearcher) throws IOException {
 		runFileParameter = new ArrayList<>();
 		results = new HashMap<>();
 		maxResults = numResults;
 		Cosine c=new Cosine();
 		qp = new QueryParser("text", new StandardAnalyzer());
-		is = new IndexSearcher(DirectoryReader.open((FSDirectory.open(new File(MainClass.INDEX_DIRECTORY).toPath()))));
+		is = indexSearcher;
 		ir = is.getIndexReader();
 		float sumTotalTermFreq = ir.getSumTotalTermFreq("text");
 

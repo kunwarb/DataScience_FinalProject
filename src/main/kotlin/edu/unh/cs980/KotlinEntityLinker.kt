@@ -56,7 +56,7 @@ class KotlinEntityLinker(serverLocation: String) {
         for (i in (0..3)) {
               try { entities = retrieveEntities(content); break
             } catch (e: SocketTimeoutException) { Thread.sleep(ThreadLocalRandom.current().nextLong(500))
-            } catch (e: ConnectException) { Thread.sleep(ThreadLocalRandom.current().nextLong(500))
+            } catch (e: ConnectException) { Thread.sleep(ThreadLocalRandom.current().nextLong(500)) } catch (e: ConnectException) { Thread.sleep(ThreadLocalRandom.current().nextLong(500))
             } catch (e: IOException) { Thread.sleep(ThreadLocalRandom.current().nextLong(500))}
         }
         return entities

@@ -1,5 +1,6 @@
 package edu.unh.cs980;
 import co.nstant.in.cbor.CborException;
+import edu.unh.cs980.WordEmbedding.Lucene_Query_Creator;
 import edu.unh.cs980.ranklib.KotlinRanklibFormatter;
 import edu.unh.cs980.ranklib.NormType;
 import kotlin.Pair;
@@ -7,9 +8,11 @@ import kotlin.jvm.functions.Function2;
 import kotlin.jvm.functions.Function3;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.*;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.similarities.BM25Similarity;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,39 +49,27 @@ public class Main {
                 .setDefault("index")
                 .help("Directory name to create for Lucene index (default: index)");
 
-        // Example of adding a second subcommand (query)
-        Subparser queryParser = subparsers.addParser("query")
-                .setDefault("func", new Exec(Main::runQuery))                   // Pass method reference to Exec to
-                .help("Queries Lucene database.");                                 // run method when it is called.
-
-        // This is an example of adding a position argument (query_type) that has multiple choices
-        queryParser.addArgument("query_type")
-                .choices("bm25", "wordvec", "entity_graph", "query_expansion") // Each string is a choice for this param
-                .help("The type of query method to use." +
-                        "\nbm25: Standard query using BM25 algorithm." +
-                        "\nwordvec: Reranks using to similarity to query." +
-                        "\nentity_graph: reranks using entity graph model." +
-                        "\nquery_expansion: uses query expansion method.");
-
-        // Another positional argument
-        queryParser.addArgument("index")
-                .required(true)
-                .help("Location of the Lucene index directory.");  // This gets printed when -h or --help is called
-        queryParser.addArgument("query_file")
-                .required(true)
-                .help("(required) Location of the query (.cbor) file.");
-
-        // This is an example of an optional argument
-        queryParser.addArgument("--out") // -- means it's not positional
-                .setDefault("query_results.txt") // If no --out is supplied, defaults to query_results.txt
-                .help("The name of the query results file to write. (default: query_results.txt)");
 
         // You can add more subcommands below by calling subparsers.addparser and following the examples above
-        Subparser demoParser = subparsers.addParser("demo")
-                .setDefault("func", new Exec(Main::runDemo))                   // Pass method reference to Exec to
-                .help("Queries Lucene database.");                                 // run method when it is called.
-        demoParser.addArgument("index").help("Location of Lucene index directory.");
-        demoParser.addArgument("query").help("Location of query file (.cbor)");
+        Subparser queryHeadingParser  = subparsers.addParser("query_heading")
+                .setDefault("func", new Exec(Main::runQueryHeadingWeights))
+                .help("Queries Lucene database.");
+        queryHeadingParser.addArgument("query_type")
+                .choices("page", "section", "just_the_page", "just_the_lowest_heading",
+                        "interior_heading", "word_embedding")
+                .help("\tpage: Page of paragraph corpus\n" +
+                        "\tsection: Section of paragraph corpus\n" +
+                        "\tjust_the_page: Page name query.\n" +
+                        "\tlowest_heading: Lowest heading of query\n" +
+                        "\tinterior_heading: Interior heading of query.\n" +
+                        "\tword_embedding: Word embedding on the query headers.");
+        queryHeadingParser.addArgument("index").help("Location of Lucene index directory.");
+        queryHeadingParser.addArgument("query_file").help("Location of the query file (.cbor)");
+        queryHeadingParser.addArgument("--out") // -- means it's not positional
+                .setDefault("query_results.run") // If no --out is supplied, defaults to query_results.txt
+                .help("The name of the trec_eval compatible run file to write. (default: query_results.run)");
+
+        //
 
         return parser;
     }
@@ -97,11 +88,24 @@ public class Main {
         }
     }
 
-    // Example of a method that takes the parser's Namespace and runs something with it
-    private static void runQuery(Namespace params) {
+
+    // Runs Bindu's Query Heading Weights Variation
+    private static void runQueryHeadingWeights(Namespace params) {
         String index = params.getString("index");
         String queryFile = params.getString("query_file");
+        String queryType = params.getString("query_type");
         String out = params.getString("out");
+        StandardAnalyzer standardAnalyzer = new StandardAnalyzer();
+        BM25Similarity sim = new BM25Similarity();
+
+        try {
+            Lucene_Query_Creator qCreator =
+                    new Lucene_Query_Creator("", queryType, standardAnalyzer, sim, index);
+
+            qCreator.writeRankings(queryFile, out);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 
