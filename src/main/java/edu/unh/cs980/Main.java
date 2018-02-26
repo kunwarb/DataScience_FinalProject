@@ -4,8 +4,10 @@ import edu.unh.cs980.ranklib.KotlinRanklibFormatter;
 import edu.unh.cs980.ranklib.NormType;
 import kotlin.Pair;
 import kotlin.jvm.functions.Function2;
+import kotlin.jvm.functions.Function3;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.*;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 
@@ -111,16 +113,17 @@ public class Main {
         KotlinRanklibFormatter formatter = new KotlinRanklibFormatter(queryLocation, "", indexLocation);
 
         // Your function must be cast using the signature below
-        Function2<? super String, ? super TopDocs, ? extends List<Double>> ff = Main::testFunction;
+        Function3<? super String, ? super TopDocs, ? super IndexSearcher, ? extends List<Double>> exampleFunction
+                = Main::testFunction;
 
         // This adds BM25's scores as a feature
         formatter.addBM25(1.0, NormType.NONE);
 
-        // And this adds your custom function/method that has the Function2 signature listed above (just cast it)
-        formatter.addFeature(ff, 1.0, NormType.NONE);
+        // And this adds your custom function/method that has the Function3 signature listed above (just cast it)
+        formatter.addFeature(exampleFunction, 1.0, NormType.NONE);
 
         // This will rerank queries by doing the following: sum the added features together (multiplied by weights)
-        // And then using these new scores, sort the TopDocs from highest to loest
+        // And then using these new scores, sort the TopDocs from highest to lowest
         formatter.rerankQueries();
 
         // This will write the reranked queries to a new trec_car compatible run file
@@ -128,7 +131,10 @@ public class Main {
     }
 
     // This is an example of a method that is compatible with KotlinRanklibFormatter's addFeature
-    public static List<Double> testFunction(String queryString, TopDocs tops) {
+    // queryString: Name of the sectionpath query
+    // tops: Top 100 documents returned after querying using BM25
+    // indexSearcher: IndexSearcher that has access to the Lucene database (use this if you need to)
+    public static List<Double> testFunction(String queryString, TopDocs tops, IndexSearcher indexSearcher) {
         ArrayList<Double> scores = new ArrayList<>();
         for (ScoreDoc sc : tops.scoreDocs) {
             scores.add((double)sc.score);
