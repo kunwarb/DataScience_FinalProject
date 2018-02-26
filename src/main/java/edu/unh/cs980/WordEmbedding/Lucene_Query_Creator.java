@@ -214,7 +214,7 @@ public class Lucene_Query_Creator {
 			pageIDList.add(page);
 
 		}
-		WordEmbedding UL_ranking = new WordEmbedding(pageIDList, 100);
+		WordEmbedding UL_ranking = new WordEmbedding(pageIDList, 100, indexSearcher);
 		writeRunfile(RankingsOutput, UL_ranking.getResults());
 		RemoveDuplicatesFromFile(RankingsOutput);
 	
