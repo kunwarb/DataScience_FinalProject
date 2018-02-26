@@ -34,12 +34,14 @@ public class QueryExpansion_variation {
 
 	public static ArrayList<String> getSearchResult(ArrayList<String> queriesStr, int max_result, String index_dir)
 			throws IOException, ParseException {
+		System.out.println("QueryExpansion ====> Retrieving results for " + queriesStr.size() + " queries...");
 		ArrayList<String> runFileStr = new ArrayList<String>();
 
 		IndexSearcher searcher = new IndexSearcher(
 				DirectoryReader.open(FSDirectory.open((new File(index_dir).toPath()))));
 		searcher.setSimilarity(new BM25Similarity());
 
+		int duplicate = 0;
 		for (String queryStr : queriesStr) {
 			Query q0 = parser.parse(QueryParser.escape(queryStr));
 
@@ -62,9 +64,17 @@ public class QueryExpansion_variation {
 
 				String runStr = "enwiki:" + queryStr.replace(" ", "%20") + " Q0 " + paraId + " " + rank + " "
 						+ rankScore + " QueryExpansion";
-				runFileStr.add(runStr);
+				if (runFileStr.contains(runStr)) {
+					duplicate++;
+					// System.out.println("Found duplicate: " + runStr);
+				} else {
+					runFileStr.add(runStr);
+				}
 			}
 		}
+
+		System.out.println(
+				"QueryExpansion ====> Got " + runFileStr.size() + " results. Found " + duplicate + " duplicates.");
 
 		return runFileStr;
 	}
@@ -80,7 +90,6 @@ public class QueryExpansion_variation {
 			String paraId = doc.getField("paraid").stringValue();
 			String paraBody = doc.getField("content").stringValue();
 			float rankScore = score.score;
-			// Relevance Feedback to create new query?
 			// Get single term list without stopwords
 			ArrayList<String> unigram_list = analyzeByUnigram(paraBody);
 			if (unigram_list.isEmpty()) {
@@ -115,11 +124,12 @@ public class QueryExpansion_variation {
 		if (!rm_list.isEmpty()) {
 			String rm_str = String.join(" ", rm_list);
 			Query q = parser.parse(QueryParser.escape(initialQ) + "^0.6" + QueryParser.escape(rm_str) + "^0.4");
-			System.out.println(initialQ + " =====> " + initialQ + " " + rm_str);
+			// System.out.println(initialQ + " =====> " + initialQ + " " +
+			// rm_str);
 			return q;
 		} else {
 			Query q = parser.parse(QueryParser.escape(initialQ));
-			System.out.println(initialQ + " =====> " + initialQ);
+			// System.out.println(initialQ + " =====> " + initialQ);
 
 			return q;
 		}

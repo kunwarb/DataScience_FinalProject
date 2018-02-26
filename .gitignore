@@ -42,3 +42,8 @@ DataSet/
 target/
 index/
 .idea
+
+
+# Test class #
+######################
+TestPlayGround.java

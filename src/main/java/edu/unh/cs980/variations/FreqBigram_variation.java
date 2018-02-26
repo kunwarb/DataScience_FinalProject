@@ -27,6 +27,7 @@ public class FreqBigram_variation {
 
 	public static ArrayList<String> getSearchResult(ArrayList<String> queriesStr, int max_result, String index_dir)
 			throws IOException, ParseException {
+		System.out.println("Frequent Bigram ====> Retrieving results for " + queriesStr.size() + " queries...");
 		ArrayList<String> runFileStr = new ArrayList<String>();
 
 		IndexSearcher searcher = new IndexSearcher(
@@ -35,7 +36,7 @@ public class FreqBigram_variation {
 
 		QueryParser parser = new QueryParser("content", new StandardAnalyzer());
 		QueryParser parser2 = new QueryParser("bigram", new StandardAnalyzer());
-
+		int duplicate = 0;
 		for (String queryStr : queriesStr) {
 			// Get bigram list for query
 			ArrayList<String> bigram_list = analyzeByBigram(queryStr);
@@ -100,11 +101,17 @@ public class FreqBigram_variation {
 				String runStr = "enwiki:" + queryStr.replace(" ", "%20") + " Q0 " + entry.getKey() + " " + rank + " "
 						+ entry.getValue() + " FreqBigram";
 				rank++;
-				runFileStr.add(runStr);
+				if (runFileStr.contains(runStr)) {
+					duplicate++;
+					// System.out.println("Found duplicate: " + runStr);
+				} else {
+					runFileStr.add(runStr);
+				}
 			}
 
 		}
 
+		System.out.println("Frequent Bigram ====> Got " + runFileStr.size() + " results.");
 		return runFileStr;
 	}
 
