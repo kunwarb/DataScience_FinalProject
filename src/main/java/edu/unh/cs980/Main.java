@@ -3,12 +3,16 @@ import co.nstant.in.cbor.CborException;
 import edu.unh.cs980.ranklib.KotlinRanklibFormatter;
 import edu.unh.cs980.ranklib.NormType;
 import kotlin.Pair;
+import kotlin.jvm.functions.Function2;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.*;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class Main {
@@ -71,6 +75,8 @@ public class Main {
         Subparser demoParser = subparsers.addParser("demo")
                 .setDefault("func", new Exec(Main::runDemo))                   // Pass method reference to Exec to
                 .help("Queries Lucene database.");                                 // run method when it is called.
+        demoParser.addArgument("index").help("Location of Lucene index directory.");
+        demoParser.addArgument("query").help("Location of query file (.cbor)");
 
         return parser;
     }
@@ -103,9 +109,31 @@ public class Main {
         String method = params.getString("method");
 
         KotlinRanklibFormatter formatter = new KotlinRanklibFormatter(queryLocation, "", indexLocation);
-        formatter.addBM25(1.0, NormType.NONE);
-        formatter.writeQueriesToFile("test.run");
 
+        // Your function must be cast using the signature below
+        Function2<? super String, ? super TopDocs, ? extends List<Double>> ff = Main::testFunction;
+
+        // This adds BM25's scores as a feature
+        formatter.addBM25(1.0, NormType.NONE);
+
+        // And this adds your custom function/method that has the Function2 signature listed above (just cast it)
+        formatter.addFeature(ff, 1.0, NormType.NONE);
+
+        // This will rerank queries by doing the following: sum the added features together (multiplied by weights)
+        // And then using these new scores, sort the TopDocs from highest to loest
+        formatter.rerankQueries();
+
+        // This will write the reranked queries to a new trec_car compatible run file
+        formatter.writeQueriesToFile("test.run");
+    }
+
+    // This is an example of a method that is compatible with KotlinRanklibFormatter's addFeature
+    public static List<Double> testFunction(String queryString, TopDocs tops) {
+        ArrayList<Double> scores = new ArrayList<>();
+        for (ScoreDoc sc : tops.scoreDocs) {
+            scores.add((double)sc.score);
+        }
+        return scores;
     }
 
     // Main class for project

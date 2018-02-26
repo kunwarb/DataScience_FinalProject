@@ -68,7 +68,7 @@ class KotlinRanklibFormatter(queryLocation: String,
 
 
     val queryRetriever = QueryRetriever(indexSearcher)
-    val queries = queryRetriever.getPageQueries(queryLocation)
+    val queries = queryRetriever.getSectionQueries(queryLocation)
 
     // If a qrel filepath was given, reads file and creates a set of query/paragraph pairs for relevancies
     private val relevancies =
@@ -218,6 +218,6 @@ class KotlinRanklibFormatter(queryLocation: String,
      * @param outName: Name of the file to write the results to.
      */
     fun writeQueriesToFile(outName: String) {
-        queryRetriever.writeQueriesToFile(queries)
+        queryRetriever.writeQueriesToFile(queries, outName)
     }
 }
