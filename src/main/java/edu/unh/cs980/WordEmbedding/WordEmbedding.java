@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 
+import info.debatty.java.stringsimilarity.Cosine;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
