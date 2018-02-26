@@ -43,10 +43,10 @@ public class Lucene_Query_Creator {
 	
 	private static final String PAGE = "PAGE";
 	private static final String SECTION = "SECTION";
-	private static final String BM25QUERYJUSTTHEPAGENAME = "BM25QUERYJUSTTHEPAGENAME";
-	private static final String BM25QUERYJUSTTHELOWESTHEADING = "BM25QUERYJUSTTHELOWESTHEADING";
-	private static final String BM25QUERYOFINTERIORHEADING = "BM25QUERYOFINTERIORHEADING";
-	private static final String WORDEMBEDDING = "WORDEMBEDDING";
+	private static final String BM25QUERYJUSTTHEPAGENAME = "just_the_page";
+	private static final String BM25QUERYJUSTTHELOWESTHEADING = "just_thelowest";
+	private static final String BM25QUERYOFINTERIORHEADING = "interior_heading";
+	private static final String WORDEMBEDDING = "word_embedding";
 
 	final MyQueryBuilder queryBuilder = new MyQueryBuilder(new StandardAnalyzer());
 	private IndexSearcher indexSearcher;
