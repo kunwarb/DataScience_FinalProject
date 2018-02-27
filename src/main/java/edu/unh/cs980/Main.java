@@ -112,7 +112,8 @@ public class Main {
 		// Graph Builder
 		Subparser graphBuilderParser = subparsers.addParser("graph_builder")
 				.setDefault("func", new Exec(Main::runGraphBuilder))
-				.help("(linker command must be run first) Creates bipartite graph between entities and paragraphs");
+				.help("Creates bipartite graph between entities and paragraphs, stored in a MapDB file:" +
+						"graph_database.db");
 
 		graphBuilderParser.addArgument("index")
 				.help("Location of the Lucene index directory");
@@ -120,9 +121,10 @@ public class Main {
 		// Ranklib Query
 		Subparser ranklibQueryParser = subparsers.addParser("ranklib_query")
 				.setDefault("func", new Exec(Main::runRanklibQuery))
-				.help("Runs queries using ranklib trained methods.");
+				.help("Runs queries using weighted combinations of features trained by RankLib.");
 
 		ranklibQueryParser.addArgument("method")
+				.help("The type of method to use when querying (see readme).")
 				.choices("entity_similarity", "average_query", "split_sections", "mixtures", "combined",
 						"lm_mercer", "lm_dirichlet");
 
@@ -138,10 +140,10 @@ public class Main {
 		// Ranklib Trainer
 		Subparser ranklibTrainerParser = subparsers.addParser("ranklib_trainer")
 				.setDefault("func", new Exec(Main::runRanklibTrainer))
-				.help("(linker and graph_builder must be run first) " +
-						"Trains according to ranklib");
+				.help("Scores using methods and writes features to a RankLib compatible file for use with training.");
 
 		ranklibTrainerParser.addArgument("method")
+				.help("The type of method to use when training (see readme).")
 				.choices("entity_similarity", "average_query", "split_sections", "mixtures", "combined",
 						"lm_mercer", "lm_dirichlet");
 		ranklibTrainerParser.addArgument("index").help("Location of the Lucene index directory");
