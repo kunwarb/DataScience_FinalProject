@@ -26,10 +26,9 @@ public class Default_BM25_variation {
 		searcher.setSimilarity(new BM25Similarity());
 
 		QueryParser parser = new QueryParser("content", new StandardAnalyzer());
-
+		int duplicate = 0;
 		for (String queryStr : queriesStr) {
 			Query q = parser.parse(QueryParser.escape(queryStr));
-			// Query q = parser.parse(queryStr);
 
 			TopDocs tops = searcher.search(q, max_result);
 			ScoreDoc[] scoreDoc = tops.scoreDocs;
@@ -42,7 +41,12 @@ public class Default_BM25_variation {
 
 				String runStr = "enwiki:" + queryStr.replace(" ", "%20") + " Q0 " + paraId + " " + rank + " "
 						+ rankScore + " BM25";
-				runFileStr.add(runStr);
+				if (runFileStr.contains(runStr)) {
+					duplicate++;
+					// System.out.println("Found duplicate: " + runStr);
+				} else {
+					runFileStr.add(runStr);
+				}
 			}
 		}
 

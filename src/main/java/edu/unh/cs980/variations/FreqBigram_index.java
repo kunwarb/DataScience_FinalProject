@@ -15,18 +15,6 @@ public class FreqBigram_index {
 	// Indexing function for Bigram.
 	private static int top_k = 10;
 
-	// // For local test
-	// public static void main(String[] args) throws IOException {
-	// String testParaph = "Information retrieval (IR) is the activity of
-	// obtaining information resources relevant to an information need from a
-	// collection of information resources. Searches can be based on full-text
-	// or other content-based indexing. Information retrieval is the science of
-	// searching for information in a document, searching for documents
-	// themselves, and also searching for metadata that describe data, and for
-	// databases of texts, images or sounds.";
-	// System.out.println(createBigramIndexFiled(testParaph));
-	// }
-
 	public static HashMap<String, Float> createBigramIndexFiled(String para_body) {
 		try {
 			// Get all bigram from paragraph text
@@ -71,7 +59,7 @@ public class FreqBigram_index {
 						* ((float) unigram_map.get(keys[1]) / size_of_unigramlist);
 				score = (float) p_bigram / p_unigram;
 			} catch (Exception e) {
-				// contain stop words, skip this term
+				e.printStackTrace();
 			}
 			bigram_score.put(entry.getKey(), score);
 		}

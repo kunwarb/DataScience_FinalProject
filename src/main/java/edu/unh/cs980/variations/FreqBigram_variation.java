@@ -24,9 +24,11 @@ import org.apache.lucene.store.FSDirectory;
 import edu.unh.cs980.utils.ProjectUtils;
 
 public class FreqBigram_variation {
+	private static int max_results = 100;
 
-	public static ArrayList<String> getSearchResult(ArrayList<String> queriesStr, int max_result, String index_dir)
+	public static ArrayList<String> getSearchResult(ArrayList<String> queriesStr, String index_dir)
 			throws IOException, ParseException {
+		System.out.println("Frequent Bigram ====> Retrieving results for " + queriesStr.size() + " queries...");
 		ArrayList<String> runFileStr = new ArrayList<String>();
 
 		IndexSearcher searcher = new IndexSearcher(
@@ -35,7 +37,7 @@ public class FreqBigram_variation {
 
 		QueryParser parser = new QueryParser("content", new StandardAnalyzer());
 		QueryParser parser2 = new QueryParser("bigram", new StandardAnalyzer());
-
+		int duplicate = 0;
 		for (String queryStr : queriesStr) {
 			// Get bigram list for query
 			ArrayList<String> bigram_list = analyzeByBigram(queryStr);
@@ -52,7 +54,7 @@ public class FreqBigram_variation {
 			// Query against bigram field with BM25
 			for (String term : bigram_list) {
 				Query q = parser2.parse(QueryParser.escape(term));
-				TopDocs tops = searcher.search(q, max_result);
+				TopDocs tops = searcher.search(q, max_results);
 				ScoreDoc[] scoreDoc = tops.scoreDocs;
 				for (int i = 0; i < scoreDoc.length; i++) {
 					ScoreDoc score = scoreDoc[i];
@@ -74,7 +76,7 @@ public class FreqBigram_variation {
 			// Query against content field with BM25 and combine results with
 			// bigram query.
 			Query q = parser.parse(QueryParser.escape(queryStr));
-			TopDocs tops = searcher.search(q, max_result);
+			TopDocs tops = searcher.search(q, max_results);
 			ScoreDoc[] scoreDoc = tops.scoreDocs;
 			for (int i = 0; i < scoreDoc.length; i++) {
 				ScoreDoc score = scoreDoc[i];
@@ -96,15 +98,21 @@ public class FreqBigram_variation {
 			}
 
 			int rank = 1;
-			for (Map.Entry<String, Float> entry : ProjectUtils.getTopValuesInMap(score_map, max_result).entrySet()) {
+			for (Map.Entry<String, Float> entry : ProjectUtils.getTopValuesInMap(score_map, max_results).entrySet()) {
 				String runStr = "enwiki:" + queryStr.replace(" ", "%20") + " Q0 " + entry.getKey() + " " + rank + " "
 						+ entry.getValue() + " FreqBigram";
 				rank++;
-				runFileStr.add(runStr);
+				if (runFileStr.contains(runStr)) {
+					duplicate++;
+					// System.out.println("Found duplicate: " + runStr);
+				} else {
+					runFileStr.add(runStr);
+				}
 			}
 
 		}
 
+		System.out.println("Frequent Bigram ====> Got " + runFileStr.size() + " results.");
 		return runFileStr;
 	}
 

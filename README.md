@@ -14,8 +14,8 @@ The program is divided into the following subcommands:
 
 ___
 #### Indexer (index)
-Creates a bipartite graph between entities and paragraphs based on entities linked by Spotlight.
-The graph is stored in the MapDB database: graph_database.db
+Creates a bipartite graph between entities and paragraphs based on entities linked by Spotlight.  
+The graph is stored in the MapDB database: graph_database.db  
 
 ```bash
 program.jar index corpus [--spotlight_folder ""] [--out "index"]
@@ -30,8 +30,8 @@ Where:
 
 ___
 #### Graph Builder (graph_builder)
-Creates a bipartite graph between entities and paragraphs based on entities linked by Spotlight.
-The graph is stored in the MapDB database: graph_database.db. **This command may be skipped if you are using the pre-existing graph_database.db on the server.**
+Creates a bipartite graph between entities and paragraphs based on entities linked by Spotlight.  
+The graph is stored in the MapDB database: graph_database.db. **This command may be skipped if you are using the pre-existing graph_database.db on the server.**  
 
 
 ```bash
@@ -41,10 +41,10 @@ program.jar graph_builder index
 Where **index** is the directory of the Lucene index.
 ___
 #### Heading Weights Variation:  There are mainly 3 type of heading weight variation.
-BM25 Query of just the page name.
-BM25 Query of just the lowest heading.
+BM25 Query of just the page name.  
+BM25 Query of just the lowest heading.  
 BM25 Query of the interior headings.   
-Contains methods for querying based on headings.
+Contains methods for querying based on headings.  
 
 ```bash
 program.jar query_heading query_type index query_file [--out query_results.run]
@@ -63,6 +63,46 @@ Where:
     * Define document vector as average of word vectors of all document terms
     * Ranking by cosine similarity of of query and document vector.
   
+ 
+ **index**: Is the location of the Lucene index directory.
+ 
+ **query_file**: Is the query (.cbor) file to be used in querying the Lucene index.
+ 
+ **--out**: Is the name of the trec_car compatible run file to create. Default: query_results.run
+ ___
+#### Query Expansion Variation:
+BM25 Query of the page name with expanded query.  
+BM25 Query of the sections path with expanded query.  
+
+```bash
+program.jar query_expansion query_type index query_file [--out query_results.run]
+```
+
+Where:
+
+**query_type** is one of:
+ - **page**: Page query using BM25
+ - **section**: Section path query using BM25
+ 
+ **index**: Is the location of the Lucene index directory.
+ 
+ **query_file**: Is the query (.cbor) file to be used in querying the Lucene index.
+ 
+ **--out**: Is the name of the trec_car compatible run file to create. Default: query_results.run
+ ___
+#### Frequent Bigram Variation:
+Combine BM25 page name query against content field and the Bigram query against bigram field.  
+Combine BM25 section path query against content field and the Bigram query against bigram field.  
+
+```bash
+program.jar frequent_bigram query_type index query_file [--out query_results.run]
+```
+
+Where:
+
+**query_type** is one of:
+ - **page**: Page query using BM25
+ - **section**: Section path query using BM25
  
  **index**: Is the location of the Lucene index directory.
  

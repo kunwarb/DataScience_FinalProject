@@ -1,8 +1,11 @@
 package edu.unh.cs980.utils;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -12,16 +15,50 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.analysis.CharArraySet;
+
 public class ProjectUtils {
 	// This class will contain some common utility methods for Project.
 
+	// Create custom stop words for lucene.
+	public static CharArraySet getCustomStopWordSet() {
+		String stopword_dir = "stop_word.cfg";
+		ArrayList<String> list = new ArrayList<String>();
+		String line = "";
+		try {
+			/* FileReader reads text files in the default encoding */
+			InputStream fis = Thread.currentThread().getContextClassLoader().getResourceAsStream(stopword_dir);
+
+			/* always wrap the FileReader in BufferedReader */
+			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(fis));
+
+			while ((line = bufferedReader.readLine()) != null) {
+				// System.out.println(line);
+				if (!line.isEmpty()) {
+					list.add(line.replace(" ", ""));
+				}
+			}
+
+			/* always close the file after use */
+			bufferedReader.close();
+			CharArraySet stopword = new CharArraySet(list, true);
+			// System.out.println(list);
+			return stopword;
+		} catch (IOException ex) {
+			System.out.println("Error reading file named '" + stopword_dir + "'");
+			return null;
+		}
+
+	}
+
 	public static void writeToFile(String filePath, ArrayList<String> runfileStrings) {
 		String fullpath = filePath;
+		System.out.println("Writting run file: " + filePath);
 		try (FileWriter runfile = new FileWriter(new File(fullpath))) {
 			for (String line : runfileStrings) {
 				runfile.write(line + "\n");
 			}
-
+			System.out.println("Done.");
 			runfile.close();
 		} catch (IOException e) {
 			System.out.println("Could not open " + fullpath);
