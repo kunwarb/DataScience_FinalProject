@@ -95,7 +95,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 
     /**
      * Function: useLucSim
-     * Description: Generalized function for testing similarity function from query to paragraph text.
+     * Description: Takes a Lucene similarity function and uses it to rescore documents.
      */
     fun useLucSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher, sim: Similarity): List<Double> {
         val entityQuery = retrieveSequence(query)
@@ -113,7 +113,10 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     }
 
 
-
+    /**
+     * Function: sectionSplit
+     * Description: Splits query up and only uses a particular section for scoring.
+     */
     fun sectionSplit(query: String, tops: TopDocs, indexSearcher: IndexSearcher, secIndex: Int): List<Double> {
         val termQueries = retrieveSequence(query)
             .map { token -> TermQuery(Term(CONTENT, token))}
@@ -124,7 +127,6 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             return (0 until tops.scoreDocs.size).map { 0.0 }
         }
 
-//        val termQuery = TermQuery(Term(CONTENT, termQueries[secIndex]!!))
         val boolQuery = termQueries[secIndex]!!
 
         return tops.scoreDocs
@@ -134,7 +136,10 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     }
 
 
-    val scount = AtomicInteger(0)
+    /**
+     * Function: addScoreMixtureSims
+     * Description: Uses Random Walk model over bipartite graph of entities and paragraphs to rescore paragraphs.
+     */
     fun addScoreMixtureSims(query: String, tops:TopDocs, indexSearcher: IndexSearcher): List<Double> {
         val sinks = HashMap<String, Double>()
         val mixtures = graphAnalyzer!!.getMixtures(tops)
@@ -148,19 +153,18 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         val total = sinks.values.sum()
         sinks.replaceAll { k, v -> v / total }
 
-        println(scount.incrementAndGet())
-
+        // The score of each paragraph depends on the total value of all scored paragraphs with respect to their
+        // distributions over entities.
         return mixtures
             .map { pm -> pm.mixture.entries.sumByDouble { (k, v) -> sinks[k]!! * v } }
-//            .map {pm -> pm.score}
-//            .map { pm -> pm.score }
             .toList()
     }
 
-    fun queryStandard() {
 
-    }
-
+    /**
+     * Function: querySimilarity
+     * Description: Score with weighted combination of BM25 and string similarity functions (trained using RankLib).
+     */
     fun querySimilarity() {
         formatter.addBM25(weight = 0.884669653, normType = NormType.ZSCORE)
         formatter.addFeature({ query, tops, _ ->
@@ -169,11 +173,21 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             addStringDistanceFunction(query, tops, Jaccard() )}, weight = 0.11427, normType = NormType.ZSCORE)
     }
 
+
+    /**
+     * Function: querySimilarity
+     * Description: Score with weighted combination of BM25 and average_query (trained using RankLib).
+     */
     private fun queryAverage() {
         formatter.addBM25(weight = 0.5, normType = NormType.ZSCORE)
         formatter.addFeature(this::addAverageQueryScore, weight = 0.5, normType = NormType.ZSCORE)
     }
 
+
+    /**
+     * Function: querySplit
+     * Description: Score with weighted combination of BM25 and separate section scores (trained using RankLib).
+     */
     private fun querySplit() {
         formatter.addBM25(weight = 0.4824247, normType = NormType.ZSCORE)
         formatter.addFeature({ query, tops, indexSearcher ->
@@ -186,6 +200,11 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             sectionSplit(query, tops, indexSearcher, 3) }, weight = 0.0134, normType = NormType.ZSCORE)
     }
 
+
+    /**
+     * Function: queryMixtures
+     * Description: Score with weighted combination of BM25 and mixtures method (trained using RankLib).
+     */
     private fun queryMixtures() {
         if (graphAnalyzer == null) {
             println("You must supply a --graph_database location for this method!")
@@ -195,6 +214,11 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         formatter.addFeature(this::addScoreMixtureSims, weight = 0.029686174, normType = NormType.ZSCORE)
     }
 
+
+    /**
+     * Function: queryDirichlet
+     * Description: Score with weighted combination of BM25 and LM_Dirichlet method (trained using RankLib)
+     */
     private fun queryDirichlet() {
         formatter.addBM25(weight = 0.80067, normType = NormType.ZSCORE)
         formatter.addFeature({query, tops, indexSearcher ->
@@ -202,6 +226,11 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
                 normType = NormType.ZSCORE)
     }
 
+
+    /**
+     * Function: queryMercer
+     * Description: Score with weighted combination of BM25 and LM_Dirichlet method (trained using RankLib)
+     */
     private fun queryMercer() {
         formatter.addBM25(weight = 0.82, normType = NormType.ZSCORE)
 
@@ -210,11 +239,15 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
                     0.5f))}, weight = 0.1798988, normType = NormType.ZSCORE)
     }
 
+
+    /**
+     * Function: queryMercer
+     * Description: Score with weighted combination of BM25, Jaccard string similarity, LM_Dirichlet, and second/third
+     *              section headers (trained using RankLib).
+     */
     private fun queryCombined() {
         val weights = listOf(0.3106317698753524,-0.025891305471130843,
                 0.34751201103557083, -0.2358113441529167, -0.08015356975284649)
-//        val weights = listOf(0.40138524776868684, 0.2560172622244137, -0.23199890320801206, -0.11059858679888734)
-//        val weights = listOf(0.6351872044086408, 0.2425613502855492, -0.0506568027797861424, 0.0715946425079486)
 
         formatter.addBM25(weight = weights[0], normType = NormType.ZSCORE)
 
@@ -232,9 +265,10 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             sectionSplit(query, tops, indexSearcher, 2) }, weight = weights[4], normType = NormType.ZSCORE)
     }
 
+
+    // Runs associated query method
     fun runRanklibQuery(method: String, out: String) {
         when (method) {
-            "bm25" -> queryStandard()
             "entity_similarity" -> querySimilarity()
             "average_query" -> queryAverage()
             "split_sections" -> querySplit()
@@ -244,10 +278,18 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "combined" -> queryCombined()
             else -> println("Unknown method!")
         }
+
+        // After scoring according to method, rerank the queries and write them to a run file
         formatter.rerankQueries()
         formatter.queryRetriever.writeQueriesToFile(formatter.queries, out)
     }
 
+
+    /**
+     * Function: trainSimilarity
+     * Description: training for string_similarity method.
+     * @see querySimilarity
+     */
     private fun trainSimilarity() {
         formatter.addBM25(normType = NormType.ZSCORE)
         formatter.addFeature({ query, tops, _ ->
@@ -256,6 +298,12 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             addStringDistanceFunction(query, tops, Jaccard() )}, normType = NormType.ZSCORE)
     }
 
+
+    /**
+     * Function: trainSplit
+     * Description: training for section_split method.
+     * @see sectionSplit
+     */
     private fun trainSplit() {
         formatter.addBM25(normType = NormType.ZSCORE)
         formatter.addFeature({ query, tops, indexSearcher ->
@@ -268,27 +316,46 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             sectionSplit(query, tops, indexSearcher, 3) }, normType = NormType.ZSCORE)
     }
 
+
+    /**
+     * Function: trainMixtures
+     * Description: training for mixtures method.
+     * @see queryMixtures
+     */
     private fun trainMixtures() {
         formatter.addBM25(normType = NormType.ZSCORE)
         formatter.addFeature(this::addScoreMixtureSims, normType = NormType.ZSCORE)
     }
 
+
+    /**
+     * Function: trainAverageQuery
+     * Description: training for average_query method.
+     * @see queryAverage
+     */
     private fun trainAverageQuery() {
         formatter.addBM25(normType = NormType.ZSCORE)
         formatter.addFeature(this::addAverageQueryScore, normType = NormType.ZSCORE)
     }
 
-    private fun trainEntityQuery() {
-        formatter.addBM25(normType = NormType.ZSCORE)
-        formatter.addFeature(this::addEntityQueries, normType = NormType.ZSCORE)
-    }
 
+    /**
+     * Function: trainDirichSim
+     * Description: training for lm_dirichlet method.
+     * @see queryDirichlet
+     */
     private fun trainDirichSim() {
         formatter.addBM25(normType = NormType.ZSCORE)
         formatter.addFeature({query, tops, indexSearcher ->
             useLucSim(query, tops, indexSearcher, LMDirichletSimilarity())}, normType = NormType.ZSCORE)
     }
 
+
+    /**
+     * Function: trainJelinekMercerSimilarity
+     * Description: training for lm_mercer method.
+     * @see queryMercer
+     */
     private fun trainJelinekMercerSimilarity() {
         formatter.addBM25(normType = NormType.ZSCORE)
         formatter.addFeature({query, tops, indexSearcher ->
@@ -296,6 +363,12 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
                     0.5f))}, normType = NormType.ZSCORE)
     }
 
+
+    /**
+     * Function: trainCombined
+     * Description: training for combined method.
+     * @see queryCombined
+     */
     private fun trainCombined() {
         formatter.addBM25(weight = 1.0, normType = NormType.ZSCORE)
         formatter.addFeature({ query, tops, _ ->
@@ -308,6 +381,11 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             sectionSplit(query, tops, indexSearcher, 2) }, normType = NormType.ZSCORE)
     }
 
+    /**
+     * Function: train
+     * Description: Add features associated with training method and then writes scored features to a RankLib compatible
+     *              file for later use in training weights.
+     */
     fun train(method: String, out: String) {
         when (method) {
             "entity_similarity" -> trainSimilarity()
@@ -315,13 +393,10 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "split_sections" -> trainSplit()
             "mixtures" -> trainMixtures()
             "combined" -> trainCombined()
-            "entity_query" -> trainEntityQuery()
             "lm_dirichlet" -> trainDirichSim()
             "lm_mercer" -> trainJelinekMercerSimilarity()
             else -> println("Unknown method!")
         }
         formatter.writeToRankLibFile(out)
     }
-
-
 }

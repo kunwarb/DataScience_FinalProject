@@ -123,7 +123,7 @@ public class Main {
 				.help("Runs queries using ranklib trained methods.");
 
 		ranklibQueryParser.addArgument("method")
-				.choices("bm25", "entity_similarity", "average_query", "split_sections", "mixtures", "combined",
+				.choices("entity_similarity", "average_query", "split_sections", "mixtures", "combined",
 						"lm_mercer", "lm_dirichlet");
 
 		ranklibQueryParser.addArgument("index").help("Location of Lucene index directory.");
@@ -143,7 +143,7 @@ public class Main {
 
 		ranklibTrainerParser.addArgument("method")
 				.choices("entity_similarity", "average_query", "split_sections", "mixtures", "combined",
-						"entity_query", "lm_mercer", "lm_dirichlet");
+						"lm_mercer", "lm_dirichlet");
 		ranklibTrainerParser.addArgument("index").help("Location of the Lucene index directory");
 		ranklibTrainerParser.addArgument("query").help("Location of query file (.cbor)");
 		ranklibTrainerParser.addArgument("qrel").help("Locations of matching qrel file.");
