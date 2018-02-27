@@ -10,6 +10,8 @@ All project results and reports can be found in the reports/ directory.
 **results/Bindu/**: Trec eval stats and run files for Bindu's methods.
  
  **results/benchmark_kY1_public_query.run.gz**: Compressed run file (using Jordan's combined method) for public test data.
+ 
+ **results/Allgraph.xlsx**: Graphs of trec_car results for all methods.
 ___
 ## Installation Instructions
 A precompiled jar file can be found in bin/program.jar
