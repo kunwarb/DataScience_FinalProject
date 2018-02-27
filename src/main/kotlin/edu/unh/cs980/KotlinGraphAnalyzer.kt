@@ -51,6 +51,66 @@ class KotlinGraphAnalyzer(var indexSearcher: IndexSearcher, val db: KotlinDataba
 
 
     /**
+     * Function: doWalkModel
+     * Description: Do random walks originating from a particular paragraph
+     * @param pid: The paragraph that the random walks originate from.
+     * @return: Distribution over entities with respect to paragraph
+     */
+    fun doWalkModel(pid: String): HashMap<String, Double> {
+        val counts = HashMap<String, Double>()
+        val nWalks = 200
+        val nSteps = 3
+        val entitiesFromOrigin = db.parMap[pid]!!.split(" ")
+
+        // Restart random walk multiple times from the origin
+        (0 until nWalks).forEach { _ ->
+            var score = 1.0
+            var curPar = pid            // Start at origin at beginning of each walk
+            var first = 0
+
+            // Walk a number of steps for stopping
+            (0 until nSteps).forEach { _ ->
+
+                // Retrieve a random entity linked to paragraph (too many paragraphs to memoize)
+                val entities = if (curPar == pid) entitiesFromOrigin else db.parMap[curPar]!!.split(" ")
+                val entity = entities[ThreadLocalRandom.current().nextInt(entities.size)]
+
+                // Retrieve a random paragraph linked to entity (memoize result)
+                val paragraphs = storedParagraphs.computeIfAbsent(entity,
+                        { key -> db.entityMap[key]!!.split(" ") })
+                curPar = paragraphs[ThreadLocalRandom.current().nextInt(paragraphs.size)]
+
+                // Yeah, this part is hacky... I need to find a better way.
+                if (first != 0) {
+                    first = 1
+                } else {
+                    // Penalize score based on outgoing links (also, score decays over the duration of the walk)
+                    score *= 1/(ln(entities.size.toDouble()) + ln(paragraphs.size.toDouble()))
+                }
+
+                // Updates how often we have seen the entity edge we traversed (with diminishing returns)
+                counts.merge(entity, score, ::sum)
+            }
+        }
+
+        // Only consider the top 20 entities (because this is an incredibly long-tailed distribution)
+        val topEntries = counts.entries
+            .sortedByDescending{ it.value }
+            .take(20)
+            .map { it.key }
+            .toHashSet()
+
+        counts.removeAll { key, value -> key !in topEntries }
+
+        // Normalize distribution of top 20 entities
+        counts.values.sum().let { total ->
+            counts.replaceAll({k,v -> v/total})
+        }
+
+        return counts
+    }
+
+    /**
      * Function: doWalkModelEntity
      * Description: Alternate version of WalkModel where we consider a distribution over entities by starting at a
      *              particular entity.
@@ -61,7 +121,7 @@ class KotlinGraphAnalyzer(var indexSearcher: IndexSearcher, val db: KotlinDataba
         val nSteps = 4
 
         (0 until nWalks).forEach { _ ->
-            var volume = 1.0
+            var score = 1.0
             var curEntity = entity
             var first = 0
 
@@ -77,86 +137,21 @@ class KotlinGraphAnalyzer(var indexSearcher: IndexSearcher, val db: KotlinDataba
                 if (first != 0) {
                     first = 1
                 } else {
-                    volume *= 1/(ln(entities.size.toDouble()) + ln(paragraphs.size.toDouble()))
+                    score *= 1/(ln(entities.size.toDouble()) + ln(paragraphs.size.toDouble()))
                 }
 
-                counts.merge(curEntity, volume, ::sum)
+                counts.merge(curEntity, score, ::sum)
 
 
             }
         }
 
         val topEntries = counts.entries.sortedByDescending{ it.value }
-                .take(20)
-                .map { it.key }
-                .toHashSet()
-
-        counts.removeAll { key, value -> key !in topEntries }
-        counts.values.sum().let { total ->
-            counts.replaceAll({k,v -> v/total})
-        }
-
-        return counts
-    }
-
-
-    /**
-     * Function: doWalkModel
-     * Description: Do random walks originating from a particular paragraph
-     * @param pid: The paragraph that the random walks originate from.
-     * @return: Distribution over entities with respect to paragraph
-     */
-    fun doWalkModel(pid: String): HashMap<String, Double> {
-        val counts = HashMap<String, Double>()
-        val nWalks = 200
-        val nSteps = 3
-        val pars = db.parMap[pid]!!.split(" ")
-
-        // Restart random walk multiple times from the origin
-        (0 until nWalks).forEach { _ ->
-            var volume = 1.0
-            var curPar = pid            // Origin
-            var first = 0
-
-            // Walk a number of steps for stopping
-            (0 until nSteps).forEach { _ ->
-
-                // Retrieve a random entity linked to paragraph (memoize result)
-//                val entities = storedEntities.computeIfAbsent(curPar,
-//                        { key -> db.parMap[key]!!.split(" ") })
-//                val entities = if (curPar == pid) pars else db.parMap[curPar]!!.split(" ")
-                val entities = if (curPar == pid) pars else db.parMap[curPar]!!.split(" ")
-                val entity = entities[ThreadLocalRandom.current().nextInt(entities.size)]
-
-                // Retrieve a random paragrath linked to entity (memoize result)
-                val paragraphs = storedParagraphs.computeIfAbsent(entity,
-                        { key -> db.entityMap[key]!!.split(" ") })
-//                val paragraphs = if (curPar == pid) pars else db.entityMap[entity]!!.split(" ")
-                curPar = paragraphs[ThreadLocalRandom.current().nextInt(paragraphs.size)]
-//                volume = 0.1 + 1/(ln(entities.size.toDouble()))
-
-                if (first != 0) {
-                    first = 1
-                } else {
-                    volume *= 1/(ln(entities.size.toDouble()) + ln(paragraphs.size.toDouble()))
-                }
-
-                counts.merge(entity, volume, ::sum)
-
-
-            }
-        }
-
-        // Only consider the top 20 entities (because this is an incredibly long-tailed distribution)
-        val topEntries = counts.entries
-            .sortedByDescending{ it.value }
             .take(20)
             .map { it.key }
             .toHashSet()
 
         counts.removeAll { key, value -> key !in topEntries }
-
-        // Normalize distribution of top 20 entities
         counts.values.sum().let { total ->
             counts.replaceAll({k,v -> v/total})
         }
