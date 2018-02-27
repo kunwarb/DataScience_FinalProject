@@ -7,7 +7,7 @@ All project results and reports can be found in the reports/ directory.
 
 **results/kevin/**: Trec eval stats and run files for Kevin's methods.
 
-**results/bindu/**: Trec eval stats and run files for Bindu's methods.
+**results/Bindu/**: Trec eval stats and run files for Bindu's methods.
  
  **results/benchmark_kY1_public_query.run.gz**: Compressed run file (using Jordan's combined method) for public test data.
 ___
