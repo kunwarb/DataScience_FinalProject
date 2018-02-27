@@ -71,19 +71,15 @@ public class IndexData {
 		StreamSupport.stream(ip.spliterator(), true).parallel().map(IndexData::convertToLuceneDoc).forEach(doc -> {
 			try {
 				iw.addDocument(doc);
-				if (counter.getAndIncrement() % 10000 == 0) {
-					System.out.print(".");
+				Integer cur = counter.getAndIncrement();
+				if (cur % 100000 == 0) {
+					System.out.println(cur);
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		});
 
-		for (Data.Paragraph p : DeserializeData.iterableParagraphs(new FileInputStream(new File(corpusLocation)))) {
-			Document doc = convertToLuceneDoc(p);
-			iw.addDocument(doc);
-
-		}
 		System.out.println("#########################");
 		System.out.println("Done indexing.");
 		System.out.println("#########################");
