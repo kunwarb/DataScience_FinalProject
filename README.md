@@ -70,6 +70,48 @@ Where:
  
  **--out**: Is the name of the trec_car compatible run file to create. Default: query_results.run
  ___
+#### Query Expansion Variation:
+BM25 Query of the page name with expanded query.
+BM25 Query of the sections path with expanded query. 
+Contains methods for querying based on headings.
+
+```bash
+program.jar query_expansion query_type index query_file [--out query_results.run]
+```
+
+Where:
+
+**query_type** is one of:
+ - **page**: Page query using BM25
+ - **section**: Section path query using BM25
+ 
+ **index**: Is the location of the Lucene index directory.
+ 
+ **query_file**: Is the query (.cbor) file to be used in querying the Lucene index.
+ 
+ **--out**: Is the name of the trec_car compatible run file to create. Default: query_results.run
+ ___
+#### Frequent Bigram Variation:
+Combine BM25 page name query against content field and the Bigram query against bigram field.
+Combine BM25 section path query against content field and the Bigram query against bigram field.
+Contains methods for querying based on headings.
+
+```bash
+program.jar frequent_bigram query_type index query_file [--out query_results.run]
+```
+
+Where:
+
+**query_type** is one of:
+ - **page**: Page query using BM25
+ - **section**: Section path query using BM25
+ 
+ **index**: Is the location of the Lucene index directory.
+ 
+ **query_file**: Is the query (.cbor) file to be used in querying the Lucene index.
+ 
+ **--out**: Is the name of the trec_car compatible run file to create. Default: query_results.run
+ ___
  ##### Ranklib Query (ranklib_quer)
 
 This command runs a query using linear combinations of features obtained by methods described in the methodology section further down.
