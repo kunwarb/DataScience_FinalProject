@@ -40,8 +40,11 @@ program.jar graph_builder index
 
 Where **index** is the directory of the Lucene index.
 ___
-#### Query Heading (query_heading)
-Contains methods for querying based on headings and word embedding.
+#### Heading Weights Variation:  There are mainly 3 type of heading weight variation.
+BM25 Query of just the page name.
+BM25 Query of just the lowest heading.
+BM25 Query of the interior headings.   
+Contains methods for querying based on headings.
 
 ```bash
 program.jar query_heading query_type index query_file [--out query_results.run]
@@ -52,10 +55,14 @@ Where:
 **query_type** is one of:
  - **page**: Page query using BM25
  - **section**: Section path query using BM25
- - **just_the_page**: Section path query using only page name
- - **lowest_heading**: Section path query using only the lowest heading of the query.
- - **interior_heading**: Section path query using only the interior heading of the query.
- - **word_embedding**: Word embedding of the query headers.
+ - **just_the_page**: using only page name as query id.
+ - **lowest_heading** : using only the lowest heading of the query.
+ - **interior_heading**: using only the interior heading of the query just like  interior section path.
+ - **word_embedding**: Using baseline index and BM25 section path query to retrieve a candidate set (top 100) and then reranking the      candidate set as follows.
+    * Defined query vector as the average of word vectors of all query terms
+    * Define document vector as average of word vectors of all document terms
+    * Ranking by cosine similarity of of query and document vector.
+  
  
  **index**: Is the location of the Lucene index directory.
  
@@ -119,7 +126,7 @@ program.jar ranklib_trainer method index query qrel [--out "query_results.run"] 
  Each of these methods score the Top 100 documents obtained by running BM25 on the concatenated section path against the index.
  For all methods, the score from BM25 is added as an additional feature (in addition to those created by the methods) and the weights are trained using RankLib. **The features (including BM25) were normalized by Z-score.**
 
-#### entity_similary
+#### entity_similarity
 The query string is first tokenized, and then the score of each paragraph is expressed as the average similiarity score of each query token to each entity in the paragraph. Two similarity metrics are considered in this method: Jaccard and JaroWinkler. The metrics were obtained from the Java library: https://github.com/tdebatty/java-string-similarity
 
 #### average_query
