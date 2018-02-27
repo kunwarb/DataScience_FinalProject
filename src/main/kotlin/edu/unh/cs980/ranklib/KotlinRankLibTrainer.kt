@@ -18,9 +18,9 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: String, graphPath: String) {
 
-    val db = KotlinDatabase(graphPath)
+    val db = if (graphPath == "") null else KotlinDatabase(graphPath)
     val formatter = KotlinRanklibFormatter(queryPath, qrelPath, indexPath)
-    val graphAnalyzer = if (graphPath == "") null else KotlinGraphAnalyzer(formatter.indexSearcher, db)
+    val graphAnalyzer = if (graphPath == "") null else KotlinGraphAnalyzer(formatter.indexSearcher, db!!)
 
 
     /**

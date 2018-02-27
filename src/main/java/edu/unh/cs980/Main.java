@@ -330,16 +330,6 @@ public class Main {
 		System.setProperty("file.encoding", "UTF-8");
 		ArgumentParser parser = createArgParser();
 
-		// Example of running the query program
-		// args = new String[4]; args[0] = "query"; args[1] = "bm25"; args[2] =
-		// "myindex"; args[3] = "queries.cbor";
-
-		// Example of calling help for the indexer program
-		// args = new String[2]; args[0] = "index"; args[1] = "-h";
-
-		// Example of calling help for the query program
-		// args = new String[2]; args[0] = "query"; args[1] = "-h";
-
 		try {
 			// This parses the arguments (based on createArgParser) and returns
 			// the results
