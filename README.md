@@ -71,9 +71,8 @@ Where:
  **--out**: Is the name of the trec_car compatible run file to create. Default: query_results.run
  ___
 #### Query Expansion Variation:
-BM25 Query of the page name with expanded query.
-BM25 Query of the sections path with expanded query. 
-Contains methods for querying based on headings.
+BM25 Query of the page name with expanded query.  
+BM25 Query of the sections path with expanded query.  
 
 ```bash
 program.jar query_expansion query_type index query_file [--out query_results.run]
@@ -92,9 +91,8 @@ Where:
  **--out**: Is the name of the trec_car compatible run file to create. Default: query_results.run
  ___
 #### Frequent Bigram Variation:
-Combine BM25 page name query against content field and the Bigram query against bigram field.
-Combine BM25 section path query against content field and the Bigram query against bigram field.
-Contains methods for querying based on headings.
+Combine BM25 page name query against content field and the Bigram query against bigram field.  
+Combine BM25 section path query against content field and the Bigram query against bigram field.  
 
 ```bash
 program.jar frequent_bigram query_type index query_file [--out query_results.run]
