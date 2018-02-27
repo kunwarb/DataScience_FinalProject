@@ -14,7 +14,7 @@ ___
 ## Installation Instructions
 A precompiled jar file can be found in bin/program.jar
 
-You may also compile the source code by entering the following command while in the project directory:
+You may also compile the source code by entering the following command or by running ./compile.sh while in the project directory:
 
 ```bash
 mvn clean compile assembly:single
