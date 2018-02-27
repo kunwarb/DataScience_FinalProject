@@ -61,7 +61,8 @@ public class FreqBigram_index {
 						* ((float) unigram_map.get(keys[1]) / size_of_unigramlist);
 				score = (float) p_bigram / p_unigram;
 			} catch (Exception e) {
-				e.printStackTrace();
+				// e.printStackTrace();
+				// Found a stop word in bigram term, skip it.
 			}
 			bigram_score.put(entry.getKey(), score);
 		}
