@@ -36,10 +36,10 @@ class KotlinEntityLinker(serverLocation: String) {
 
         // Parse urls, returning only the last word of the url (after the last /)
         val links = jsoupDoc.select("a[href]")
-        return links.map { element ->
-            val title = element.attr("title")
-            title.substring(title.lastIndexOf("/") + 1)
-        }.toList()
+        return links.map {  element ->
+                            val title = element.attr("title")
+                        title.substring(title.lastIndexOf("/") + 1)}
+                    .toList()
     }
 
 

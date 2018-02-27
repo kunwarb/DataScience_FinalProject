@@ -23,6 +23,7 @@ class QueryRetriever(val indexSearcher: IndexSearcher) {
 
     val analyzer = StandardAnalyzer()
 
+
     /**
      * Function: createQueryString
      * Description: Returns string to be used in querying.
@@ -30,6 +31,7 @@ class QueryRetriever(val indexSearcher: IndexSearcher) {
      */
     fun createQueryString(page: Data.Page, sectionPath: List<Data.Section>): String =
             page.pageName + sectionPath.joinToString { section -> " " + section.heading  }
+
 
     /**
      * Class: createTokenSequence
@@ -70,8 +72,8 @@ class QueryRetriever(val indexSearcher: IndexSearcher) {
                 .map { page ->
                     val queryId = page.pageId
                     val queryStr = createQueryString(page, emptyList())
-                    queryId to indexSearcher.search(createQuery(queryStr), 100)
-                }.toList()
+                    queryId to indexSearcher.search(createQuery(queryStr), 100) }
+                .toList()
 
 
     /**
@@ -81,15 +83,19 @@ class QueryRetriever(val indexSearcher: IndexSearcher) {
      */
     fun getSectionQueries(queryLocation: String): List<Pair<String, TopDocs>> {
         val seen = ConcurrentHashMap<String, String>()
+        val replaceNumbers = """(\d+|enwiki:)""".toRegex()
 
         return DeserializeData.iterableAnnotations(File(queryLocation).inputStream())
             .flatMap { page ->
-                page.flatSectionPaths().pmap { sectionPath ->
-                    val queryId = Data.sectionPathId(page.pageId, sectionPath)
-                    val queryStr = createQueryString(page, sectionPath)
-                    val result = queryId to indexSearcher.search(createQuery(queryStr), 100)
-                    result.takeUnless {seen.put(queryId, "") != null}
-                }
+                page.flatSectionPaths()
+                    .pmap { sectionPath ->
+                        val queryId = Data.sectionPathId(page.pageId, sectionPath)
+                        var queryStr = createQueryString(page, sectionPath)
+                        queryStr = queryStr.replace(replaceNumbers, queryStr)      // remove numbers/enwiki:
+
+                        val result = queryId to indexSearcher.search(createQuery(queryStr), 100)
+                        result.takeUnless {seen.put(queryId, "") != null}   // remove duplicates
+                    }
             }.filterNotNull()
     }
 
