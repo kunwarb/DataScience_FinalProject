@@ -1,0 +1,66 @@
+./trec_eval -c ~/train.pages.cbor-article.qrels ~/pages-QE.run
+num_q           all     117
+num_ret         all     11600
+num_rel         all     4840
+num_rel_ret     all     863
+map             all     0.0734
+gm_ap           all     0.0121
+R-prec          all     0.1279
+bpref           all     0.2300
+recip_rank      all     0.3333
+ircl_prn.0.00   all     0.3689
+ircl_prn.0.10   all     0.1944
+ircl_prn.0.20   all     0.1358
+ircl_prn.0.30   all     0.0987
+ircl_prn.0.40   all     0.0726
+ircl_prn.0.50   all     0.0556
+ircl_prn.0.60   all     0.0414
+ircl_prn.0.70   all     0.0185
+ircl_prn.0.80   all     0.0040
+ircl_prn.0.90   all     0.0039
+ircl_prn.1.00   all     0.0000
+P5              all     0.1795
+P10             all     0.1521
+P15             all     0.1436
+P20             all     0.1359
+P30             all     0.1174
+P100            all     0.0738
+P200            all     0.0369
+P500            all     0.0148
+P1000           all     0.0074
+
+ ./trec_eval -c ~/train.pages.cbor-hierarchical.qrels ~/sections-QE.run
+num_q           all     1937
+num_ret         all     157000
+num_rel         all     3954
+num_rel_ret     all     1240
+map             all     0.0822
+gm_ap           all     0.0004
+R-prec          all     0.0612
+bpref           all     0.2951
+recip_rank      all     0.1175
+ircl_prn.0.00   all     0.1195
+ircl_prn.0.10   all     0.1192
+ircl_prn.0.20   all     0.1143
+ircl_prn.0.30   all     0.1021
+ircl_prn.0.40   all     0.0864
+ircl_prn.0.50   all     0.0838
+ircl_prn.0.60   all     0.0671
+ircl_prn.0.70   all     0.0609
+ircl_prn.0.80   all     0.0598
+ircl_prn.0.90   all     0.0589
+ircl_prn.1.00   all     0.0589
+P5              all     0.0366
+P10             all     0.0257
+P15             all     0.0210
+P20             all     0.0176
+P30             all     0.0139
+P100            all     0.0064
+P200            all     0.0032
+P500            all     0.0013
+P1000           all     0.0006
+
+
+
+
+

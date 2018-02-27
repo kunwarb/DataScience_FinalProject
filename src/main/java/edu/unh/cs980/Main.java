@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import edu.unh.cs980.ranklib.KotlinRankLibTrainer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
@@ -107,6 +108,53 @@ public class Main {
 				// query_results.txt
 				.help("The name of the trec_eval compatible run file to write. (default: query_results.run)");
 
+
+		// Graph Builder
+		Subparser graphBuilderParser = subparsers.addParser("graph_builder")
+				.setDefault("func", new Exec(Main::runGraphBuilder))
+				.help("(linker command must be run first) Creates bipartite graph between entities and paragraphs");
+
+		graphBuilderParser.addArgument("index")
+				.help("Location of the Lucene index directory");
+
+		// Ranklib Query
+		Subparser ranklibQueryParser = subparsers.addParser("ranklib_query")
+				.setDefault("func", new Exec(Main::runRanklibQuery))
+				.help("Runs queries using ranklib trained methods.");
+
+		ranklibQueryParser.addArgument("method")
+				.choices("bm25", "entity_similarity", "average_query", "split_sections", "mixtures", "combined",
+						"lm_mercer", "lm_dirichlet");
+
+		ranklibQueryParser.addArgument("index").help("Location of Lucene index directory.");
+		ranklibQueryParser.addArgument("query").help("Location of query file (.cbor)");
+		ranklibQueryParser.addArgument("--out")
+				.setDefault("query_results.run")
+				.help("Specifies the output name of the run file.");
+		ranklibQueryParser.addArgument("--graph_database")
+				.setDefault("")
+				.help("(only used for mixtures method): Location of graph_database.db file.");
+
+		// Ranklib Trainer
+		Subparser ranklibTrainerParser = subparsers.addParser("ranklib_trainer")
+				.setDefault("func", new Exec(Main::runRanklibTrainer))
+				.help("(linker and graph_builder must be run first) " +
+						"Trains according to ranklib");
+
+		ranklibTrainerParser.addArgument("method")
+				.choices("entity_similarity", "average_query", "split_sections", "mixtures", "combined",
+						"entity_query", "lm_mercer", "lm_dirichlet");
+		ranklibTrainerParser.addArgument("index").help("Location of the Lucene index directory");
+		ranklibTrainerParser.addArgument("query").help("Location of query file (.cbor)");
+		ranklibTrainerParser.addArgument("qrel").help("Locations of matching qrel file.");
+		ranklibTrainerParser.addArgument("--out")
+				.setDefault("ranklib_features.txt")
+				.help("Output name for the RankLib compatible feature file.");
+		ranklibTrainerParser.addArgument("--graph_database")
+				.setDefault("")
+				.help("(only used for mixtures method): Location of graph_database.db file.");
+
+
 		return parser;
 	}
 
@@ -199,6 +247,40 @@ public class Main {
 		} catch (Throwable e) {
 			e.printStackTrace();
 		}
+	}
+
+	// Runs Jordan's Graph Builder
+	private static void runGraphBuilder(Namespace namespace) {
+		String indexLocation = namespace.getString("index");
+		KotlinGraphBuilder graphBuilder = new KotlinGraphBuilder(indexLocation);
+		graphBuilder.run();
+	}
+
+
+	// Runs Jordan's Ranklib Trainer
+	private static void runRanklibTrainer(Namespace namespace) {
+		String indexLocation = namespace.getString("index");
+		String qrelLocation = namespace.getString("qrel");
+		String queryLocation = namespace.getString("query");
+		String graphLocation = namespace.getString("graph_database");
+		String out = namespace.getString("out");
+		String method = namespace.getString("method");
+		KotlinRankLibTrainer kotTrainer =
+				new KotlinRankLibTrainer(indexLocation, queryLocation, qrelLocation, graphLocation);
+		kotTrainer.train(method, out);
+	}
+
+
+	// Runs Jordan's Ranklib Query
+	private static void runRanklibQuery(Namespace namespace) {
+		String indexLocation = namespace.getString("index");
+		String queryLocation = namespace.getString("query");
+		String graphLocation = namespace.getString("graph_database");
+		String method = namespace.getString("method");
+		String out = namespace.getString("out");
+		KotlinRankLibTrainer kotTrainer =
+				new KotlinRankLibTrainer(indexLocation, queryLocation, "", graphLocation);
+		kotTrainer.runRanklibQuery(method, out);
 	}
 
 	private static void runDemo(Namespace params) {

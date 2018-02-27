@@ -32,6 +32,9 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Supplier;
 
+import static edu.unh.cs980.KotUtils.CONTENT;
+import static edu.unh.cs980.KotUtils.PID;
+
 /*
  * 
  * This class contains all the heading weights option and Wordembedding call option
@@ -108,7 +111,7 @@ public class Lucene_Query_Creator {
 
 		public BooleanQuery toQuery(String queryStr) throws IOException {
 
-			TokenStream tokenStream = analyzer.tokenStream("text", new StringReader(queryStr));
+			TokenStream tokenStream = analyzer.tokenStream(CONTENT, new StringReader(queryStr));
 			tokenStream.reset();
 			tokens.clear();
 
@@ -120,7 +123,7 @@ public class Lucene_Query_Creator {
 			tokenStream.close();
 			BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
 			for (String token : tokens) {
-				booleanQuery.add(new TermQuery(new Term("text", token)), BooleanClause.Occur.SHOULD);
+				booleanQuery.add(new TermQuery(new Term(CONTENT, token)), BooleanClause.Occur.SHOULD);
 			}
 			return booleanQuery.build();
 		}
@@ -452,7 +455,7 @@ private void writeBm25QueryJustTheLowestHeading(FileInputStream inputStream, Buf
 		for (int i = 0; i < scoreDoc.length; i++) {
 			ScoreDoc score = scoreDoc[i];
 			final Document doc = indexSearcher.doc(score.doc);
-			final String paragraphid = doc.getField("paragraphid").stringValue();
+			final String paragraphid = doc.getField(PID).stringValue();
 
 			final float searchScore = score.score;
 			final int searchRank = i + 1;

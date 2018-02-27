@@ -16,6 +16,9 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.store.FSDirectory;
 
+import static edu.unh.cs980.KotUtils.CONTENT;
+import static edu.unh.cs980.KotUtils.PID;
+
 public class Default_BM25_variation {
 	public static ArrayList<String> getSearchResult(ArrayList<String> queriesStr, int max_result, String index_dir)
 			throws IOException, ParseException {
@@ -25,7 +28,7 @@ public class Default_BM25_variation {
 				DirectoryReader.open(FSDirectory.open((new File(index_dir).toPath()))));
 		searcher.setSimilarity(new BM25Similarity());
 
-		QueryParser parser = new QueryParser("content", new StandardAnalyzer());
+		QueryParser parser = new QueryParser(CONTENT, new StandardAnalyzer());
 		int duplicate = 0;
 		for (String queryStr : queriesStr) {
 			Query q = parser.parse(QueryParser.escape(queryStr));
@@ -35,7 +38,7 @@ public class Default_BM25_variation {
 			for (int i = 0; i < scoreDoc.length; i++) {
 				ScoreDoc score = scoreDoc[i];
 				Document doc = searcher.doc(score.doc);
-				String paraId = doc.getField("paraid").stringValue();
+				String paraId = doc.getField(PID).stringValue();
 				float rankScore = score.score;
 				int rank = i + 1;
 

@@ -11,6 +11,8 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 import edu.unh.cs980.utils.ProjectUtils;
 
+import static edu.unh.cs980.KotUtils.CONTENT;
+
 public class FreqBigram_index {
 	// Indexing function for Bigram.
 	private static int top_k = 10;
@@ -88,7 +90,7 @@ public class FreqBigram_index {
 	private static ArrayList<String> analyzeByBigram(String inputStr) throws IOException {
 		ArrayList<String> strList = new ArrayList<String>();
 		Analyzer analyzer = new BigramAnalyzer();
-		TokenStream tokenizer = analyzer.tokenStream("content", inputStr);
+		TokenStream tokenizer = analyzer.tokenStream(CONTENT, inputStr);
 		CharTermAttribute charTermAttribute = tokenizer.addAttribute(CharTermAttribute.class);
 		tokenizer.reset();
 		while (tokenizer.incrementToken()) {
@@ -106,7 +108,7 @@ public class FreqBigram_index {
 	private static ArrayList<String> analyzeByUnigram(String inputStr) throws IOException {
 		ArrayList<String> strList = new ArrayList<String>();
 		Analyzer analyzer = new UnigramAnalyzer();
-		TokenStream tokenizer = analyzer.tokenStream("content", inputStr);
+		TokenStream tokenizer = analyzer.tokenStream(CONTENT, inputStr);
 
 		CharTermAttribute charTermAttribute = tokenizer.addAttribute(CharTermAttribute.class);
 		tokenizer.reset();

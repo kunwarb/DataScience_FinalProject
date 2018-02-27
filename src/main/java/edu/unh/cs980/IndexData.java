@@ -22,6 +22,9 @@ import edu.unh.cs.treccar_v2.Data;
 import edu.unh.cs.treccar_v2.read_data.DeserializeData;
 import edu.unh.cs980.variations.FreqBigram_index;
 
+import static edu.unh.cs980.KotUtils.CONTENT;
+import static edu.unh.cs980.KotUtils.PID;
+
 public class IndexData {
 	// For testing
 	static final private String INDEX_DIRECTORY = "index";
@@ -71,32 +74,28 @@ public class IndexData {
 		StreamSupport.stream(ip.spliterator(), true).parallel().map(IndexData::convertToLuceneDoc).forEach(doc -> {
 			try {
 				iw.addDocument(doc);
-				if (counter.getAndIncrement() % 10000 == 0) {
-					System.out.print(".");
+				Integer cur = counter.getAndIncrement();
+				if (cur % 100000 == 0) {
+					System.out.println(cur);
+					iw.commit();
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		});
 
-		for (Data.Paragraph p : DeserializeData.iterableParagraphs(new FileInputStream(new File(corpusLocation)))) {
-			Document doc = convertToLuceneDoc(p);
-			iw.addDocument(doc);
-
-		}
 		System.out.println("#########################");
 		System.out.println("Done indexing.");
 		System.out.println("#########################");
 
-		iw.commit();
 		iw.close();
 	}
 
 	private static Document convertToLuceneDoc(Data.Paragraph para) {
 		Document doc = new Document();
 
-		doc.add(new StringField("paraid", para.getParaId(), Field.Store.YES));
-		doc.add(new TextField("content", para.getTextOnly(), Field.Store.YES));
+		doc.add(new StringField(PID, para.getParaId(), Field.Store.YES));
+		doc.add(new TextField(CONTENT, para.getTextOnly(), Field.Store.YES));
 		// Create bigram index field
 		HashMap<String, Float> bigram_score = FreqBigram_index.createBigramIndexFiled(para.getTextOnly());
 		doc.add(new TextField("bigram", bigram_score.toString(), Field.Store.YES));

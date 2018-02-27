@@ -27,11 +27,14 @@ import org.apache.lucene.store.FSDirectory;
 
 import edu.unh.cs980.utils.ProjectUtils;
 
+import static edu.unh.cs980.KotUtils.CONTENT;
+import static edu.unh.cs980.KotUtils.PID;
+
 public class QueryExpansion_variation {
 	private static int top_k_term = 5; // Include top k terms for QE
 	private static int top_k_doc = 10; // Initial top k documents for QE
 	private static int max_result = 100; // Max number for Lucene docs
-	private static QueryParser parser = new QueryParser("content", new StandardAnalyzer());
+	private static QueryParser parser = new QueryParser(CONTENT, new StandardAnalyzer());
 
 	public static ArrayList<String> getSearchResult(ArrayList<String> queriesStr, String index_dir)
 			throws IOException, ParseException {
@@ -59,7 +62,7 @@ public class QueryExpansion_variation {
 			for (int i = 0; i < scoreDoc.length; i++) {
 				ScoreDoc score = scoreDoc[i];
 				Document doc = searcher.doc(score.doc);
-				String paraId = doc.getField("paraid").stringValue();
+				String paraId = doc.getField(PID).stringValue();
 				float rankScore = score.score;
 				int rank = i + 1;
 
@@ -88,8 +91,8 @@ public class QueryExpansion_variation {
 		for (int i = 0; i < scoreDoc.length; i++) {
 			ScoreDoc score = scoreDoc[i];
 			Document doc = searcher.doc(score.doc);
-			String paraId = doc.getField("paraid").stringValue();
-			String paraBody = doc.getField("content").stringValue();
+			String paraId = doc.getField(PID).stringValue();
+			String paraBody = doc.getField(CONTENT).stringValue();
 			float rankScore = score.score;
 			// Get single term list without stopwords
 			ArrayList<String> unigram_list = analyzeByUnigram(paraBody);
@@ -156,7 +159,7 @@ public class QueryExpansion_variation {
 		// System.out.println("Input text: " + inputStr);
 		ArrayList<String> strList = new ArrayList<String>();
 		Analyzer analyzer = new UnigramAnalyzer();
-		TokenStream tokenizer = analyzer.tokenStream("content", inputStr);
+		TokenStream tokenizer = analyzer.tokenStream(CONTENT, inputStr);
 
 		CharTermAttribute charTermAttribute = tokenizer.addAttribute(CharTermAttribute.class);
 		tokenizer.reset();
