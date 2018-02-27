@@ -77,6 +77,7 @@ public class IndexData {
 				Integer cur = counter.getAndIncrement();
 				if (cur % 100000 == 0) {
 					System.out.println(cur);
+					iw.commit();
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -87,7 +88,6 @@ public class IndexData {
 		System.out.println("Done indexing.");
 		System.out.println("#########################");
 
-		iw.commit();
 		iw.close();
 	}
 
