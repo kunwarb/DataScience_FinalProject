@@ -1,3 +1,16 @@
+## Results and Report
+All project results and reports can be found in the reports/ directory. 
+
+**results/report.pdf**: The group report for the current prototype.
+
+**results/jordan/ranklib_tests/**: Results (trec_eval stats, run files, model information) for each of Jordan's methods.
+
+**results/kevin/**: Trec eval stats and run files for Kevin's methods.
+
+**results/bindu/**: Trec eval stats and run files for Bindu's methods.
+ 
+ **results/benchmark_kY1_public_query.run.gz**: Compressed run file (using Jordan's combined method) for public test data.
+___
 ## Installation Instructions
 A precompiled jar file can be found in bin/program.jar
 
@@ -8,11 +21,11 @@ mvn clean compile assembly:single
 ```
 
 This will create an executable jar file in the target/ directory.
-
+___
 ## Program Commands
 The program is divided into the following subcommands:
 
-___
+
 #### Indexer (index)
 Creates a bipartite graph between entities and paragraphs based on entities linked by Spotlight.  
 The graph is stored in the MapDB database: graph_database.db  
@@ -186,3 +199,5 @@ This uses Lucene's LMDirichletSimilarity metric in place of the BM25 similarity 
 
 #### combined
 This method combines the following previous methods as separate features: BM25, LMDirichletSimilarity (mu 2000), entity_similarity (only using Jaccard string similarity), and first and second heading scores (i.e. pagename/header1/header2)/
+
+
