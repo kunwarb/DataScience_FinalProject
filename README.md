@@ -170,7 +170,7 @@ program.jar ranklib_trainer method index query qrel [--out "query_results.run"] 
  
  **qrel**: Is the relevancy file (.qrel) used to determine whether or not documents are revant.
  
- **--out**: Is the name of the runfile to create after querying. Default: query_results.run
+ **--out**: Is the name of the runfile to create after querying. Default: ranklib_features.txt
  
  **--graph_database**: This option is only used for the mixtures method. It specifies the location of the graph_database.db database.
  ___
