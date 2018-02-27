@@ -14,8 +14,8 @@ The program is divided into the following subcommands:
 
 ___
 #### Indexer (index)
-Creates a bipartite graph between entities and paragraphs based on entities linked by Spotlight.
-The graph is stored in the MapDB database: graph_database.db
+Creates a bipartite graph between entities and paragraphs based on entities linked by Spotlight.  
+The graph is stored in the MapDB database: graph_database.db  
 
 ```bash
 program.jar index corpus [--spotlight_folder ""] [--out "index"]
@@ -30,8 +30,8 @@ Where:
 
 ___
 #### Graph Builder (graph_builder)
-Creates a bipartite graph between entities and paragraphs based on entities linked by Spotlight.
-The graph is stored in the MapDB database: graph_database.db. **This command may be skipped if you are using the pre-existing graph_database.db on the server.**
+Creates a bipartite graph between entities and paragraphs based on entities linked by Spotlight.  
+The graph is stored in the MapDB database: graph_database.db. **This command may be skipped if you are using the pre-existing graph_database.db on the server.**  
 
 
 ```bash
@@ -41,10 +41,10 @@ program.jar graph_builder index
 Where **index** is the directory of the Lucene index.
 ___
 #### Heading Weights Variation:  There are mainly 3 type of heading weight variation.
-BM25 Query of just the page name.
-BM25 Query of just the lowest heading.
+BM25 Query of just the page name.  
+BM25 Query of just the lowest heading.  
 BM25 Query of the interior headings.   
-Contains methods for querying based on headings.
+Contains methods for querying based on headings.  
 
 ```bash
 program.jar query_heading query_type index query_file [--out query_results.run]
