@@ -33,6 +33,9 @@ import org.apache.lucene.search.similarities.SimilarityBase;
 import org.apache.lucene.store.FSDirectory;
 import edu.unh.cs.treccar_v2.Data;
 
+import static edu.unh.cs980.KotUtils.CONTENT;
+import static edu.unh.cs980.KotUtils.PID;
+
 class WordEmbedding {
 	QueryParser qp;
 	IndexSearcher is;
@@ -80,7 +83,7 @@ class WordEmbedding {
 				results.put(queryId, new HashMap<String, Float>());
 			}
 			for (String term : page.getPageName().split(" ")) {
-				Term t = new Term("text", term);
+				Term t = new Term(CONTENT, term);
 				TermQuery tQuery = new TermQuery(t);
 
 				TopDocs topDocs = is.search(tQuery, maxResults);
@@ -89,8 +92,8 @@ class WordEmbedding {
 				for (int i = 0; i < topDocs.scoreDocs.length; i++) {
 
 					Document doc = is.doc(scores[i].doc);
-					String paraId = doc.get("paragraphid");
-					String docBody = doc.get("text");
+					String paraId = doc.get(PID);
+					String docBody = doc.get(CONTENT);
 					ArrayList<String> wordembedding_list = analyzeByWordEmbedding(docBody);
 					int size_of_voc = getSizeOfVocabulary(wordembedding_list);
 					int size_of_doc = wordembedding_list.size();
@@ -162,7 +165,7 @@ class WordEmbedding {
 
 		ArrayList<String> strList = new ArrayList<String>();
 		Analyzer analyzer = new WordEmbeddingAnalyzer();
-		TokenStream tokenizer = analyzer.tokenStream("content", inputStr);
+		TokenStream tokenizer = analyzer.tokenStream(CONTENT, inputStr);
 
 		CharTermAttribute charTermAttribute = tokenizer.addAttribute(CharTermAttribute.class);
 		tokenizer.reset();

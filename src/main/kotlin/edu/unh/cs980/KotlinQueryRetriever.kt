@@ -55,7 +55,7 @@ class QueryRetriever(val indexSearcher: IndexSearcher) {
      */
     fun createQuery(query: String): BooleanQuery =
             createTokenSequence(query)
-                .map { token -> TermQuery(Term("text", token)) }
+                .map { token -> TermQuery(Term(CONTENT, token)) }
                 .fold(BooleanQuery.Builder(), { acc, termQuery ->
                     acc.add(termQuery, BooleanClause.Occur.SHOULD) })
                 .build()

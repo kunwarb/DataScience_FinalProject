@@ -23,6 +23,9 @@ import org.apache.lucene.store.FSDirectory;
 
 import edu.unh.cs980.utils.ProjectUtils;
 
+import static edu.unh.cs980.KotUtils.CONTENT;
+import static edu.unh.cs980.KotUtils.PID;
+
 public class FreqBigram_variation {
 	private static int max_results = 100;
 
@@ -35,7 +38,7 @@ public class FreqBigram_variation {
 				DirectoryReader.open(FSDirectory.open((new File(index_dir).toPath()))));
 		searcher.setSimilarity(new BM25Similarity());
 
-		QueryParser parser = new QueryParser("content", new StandardAnalyzer());
+		QueryParser parser = new QueryParser(CONTENT, new StandardAnalyzer());
 		QueryParser parser2 = new QueryParser("bigram", new StandardAnalyzer());
 		int duplicate = 0;
 		for (String queryStr : queriesStr) {
@@ -59,7 +62,7 @@ public class FreqBigram_variation {
 				for (int i = 0; i < scoreDoc.length; i++) {
 					ScoreDoc score = scoreDoc[i];
 					Document doc = searcher.doc(score.doc);
-					String paraId = doc.getField("paraid").stringValue();
+					String paraId = doc.getField(PID).stringValue();
 					float rankScore = score.score;
 
 					if (score_map.keySet().contains(paraId)) {
@@ -81,7 +84,7 @@ public class FreqBigram_variation {
 			for (int i = 0; i < scoreDoc.length; i++) {
 				ScoreDoc score = scoreDoc[i];
 				Document doc = searcher.doc(score.doc);
-				String paraId = doc.getField("paraid").stringValue();
+				String paraId = doc.getField(PID).stringValue();
 				// if (test == 0) {
 				// System.out.println(doc.getField("content").stringValue());
 				// System.out.println(doc.getField("bigram").stringValue());
@@ -119,7 +122,7 @@ public class FreqBigram_variation {
 	private static ArrayList<String> analyzeByBigram(String inputStr) throws IOException {
 		ArrayList<String> strList = new ArrayList<String>();
 		Analyzer analyzer = new BigramAnalyzer();
-		TokenStream tokenizer = analyzer.tokenStream("content", inputStr);
+		TokenStream tokenizer = analyzer.tokenStream(CONTENT, inputStr);
 		CharTermAttribute charTermAttribute = tokenizer.addAttribute(CharTermAttribute.class);
 		tokenizer.reset();
 		while (tokenizer.incrementToken()) {

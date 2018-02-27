@@ -22,6 +22,9 @@ import edu.unh.cs.treccar_v2.Data;
 import edu.unh.cs.treccar_v2.read_data.DeserializeData;
 import edu.unh.cs980.variations.FreqBigram_index;
 
+import static edu.unh.cs980.KotUtils.CONTENT;
+import static edu.unh.cs980.KotUtils.PID;
+
 public class IndexData {
 	// For testing
 	static final private String INDEX_DIRECTORY = "index";
@@ -91,8 +94,8 @@ public class IndexData {
 	private static Document convertToLuceneDoc(Data.Paragraph para) {
 		Document doc = new Document();
 
-		doc.add(new StringField("paraid", para.getParaId(), Field.Store.YES));
-		doc.add(new TextField("content", para.getTextOnly(), Field.Store.YES));
+		doc.add(new StringField(PID, para.getParaId(), Field.Store.YES));
+		doc.add(new TextField(CONTENT, para.getTextOnly(), Field.Store.YES));
 		// Create bigram index field
 		HashMap<String, Float> bigram_score = FreqBigram_index.createBigramIndexFiled(para.getTextOnly());
 		doc.add(new TextField("bigram", bigram_score.toString(), Field.Store.YES));

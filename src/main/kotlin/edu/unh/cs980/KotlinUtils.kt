@@ -1,3 +1,4 @@
+@file:JvmName("KotUtils")
 package edu.unh.cs980
 
 import kotlinx.coroutines.experimental.CommonPool
@@ -61,5 +62,5 @@ fun getIndexSearcher(indexLocation: String): IndexSearcher {
 }
 
 // Constants referring to Lucene fields
-const val PID: String = "paraid"
-const val CONTENT = "content"
+public const val PID: String = "paragraphid"
+public const val CONTENT = "text"
