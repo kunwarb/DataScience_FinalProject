@@ -30,9 +30,10 @@ import edu.unh.cs980.utils.ProjectUtils;
 public class QueryExpansion_variation {
 	private static int top_k_term = 5; // Include top k terms for QE
 	private static int top_k_doc = 10; // Initial top k documents for QE
+	private static int max_result = 100; // Max number for Lucene docs
 	private static QueryParser parser = new QueryParser("content", new StandardAnalyzer());
 
-	public static ArrayList<String> getSearchResult(ArrayList<String> queriesStr, int max_result, String index_dir)
+	public static ArrayList<String> getSearchResult(ArrayList<String> queriesStr, String index_dir)
 			throws IOException, ParseException {
 		System.out.println("QueryExpansion ====> Retrieving results for " + queriesStr.size() + " queries...");
 		ArrayList<String> runFileStr = new ArrayList<String>();
