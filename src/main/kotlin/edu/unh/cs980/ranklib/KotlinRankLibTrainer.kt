@@ -9,6 +9,8 @@ import java.util.*
 import info.debatty.java.stringsimilarity.*
 import info.debatty.java.stringsimilarity.interfaces.StringDistance
 import org.apache.lucene.search.similarities.*
+import java.lang.Double.max
+import java.lang.Float.max
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -164,30 +166,39 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     fun expandSearch(query: String, tops: TopDocs, indexSearcher: IndexSearcher): List <Double> {
         val sinks = HashMap<String, Double>()
 
-        tops.scoreDocs.forEach { scoreDoc ->
-            val boolQuery = retrieveSequence(query)
-                .map { token -> TermQuery(Term(CONTENT, token))}
-                .fold(BooleanQuery.Builder()) { builder, termQuery ->
-                    builder.add(termQuery, BooleanClause.Occur.SHOULD) }
-                .build()
-
-            val neighbors = indexSearcher.search(boolQuery, 10)
-            val scoreSum = neighbors.scoreDocs.sumByDouble { neighDoc -> neighDoc.score.toDouble() }
-
-            neighbors.scoreDocs.forEach { neighDoc ->
-                val id = indexSearcher.doc(neighDoc.doc).get(PID)
-                val ratio = neighDoc.score.toDouble() / scoreSum
-                val adjustedScore = ratio * scoreDoc.score
-
-                sinks.merge(id, adjustedScore, ::sum)
-            }
-        }
-        println(sinks)
+//        tops.scoreDocs.forEach { scoreDoc ->
+//            val boolQuery = retrieveSequence(query)
+//                .map { token -> TermQuery(Term(CONTENT, token))}
+//                .fold(BooleanQuery.Builder()) { builder, termQuery ->
+//                    builder.add(termQuery, BooleanClause.Occur.SHOULD) }
+//                .build()
+//
+//            val neighbors = indexSearcher.search(boolQuery, 100)
+//            val scoreSum = neighbors.scoreDocs.sumByDouble { neighDoc -> neighDoc.score.toDouble() }
+//
+//            neighbors.scoreDocs.forEach { neighDoc ->
+//                val id = indexSearcher.doc(neighDoc.doc).get(PID)
+//                val ratio = neighDoc.score.toDouble() / scoreSum
+//                val adjustedScore = ratio * scoreDoc.score
+//
+//                sinks.merge(id, adjustedScore, ::sum)
+//            }
+//        }
 
         return tops.scoreDocs
+//            .map { scoreDoc ->
+//                    val id = indexSearcher.doc(scoreDoc.doc).get(PID)
+//                    sinks[id] ?: 0.0 }
             .map { scoreDoc ->
-                    val id = indexSearcher.doc(scoreDoc.doc).get(PID)
-                    sinks[id] ?: 0.0 }
+                val boolQuery = retrieveSequence(query)
+                    .map { token -> TermQuery(Term(CONTENT, token))}
+                    .fold(BooleanQuery.Builder()) { builder, termQuery ->
+                        builder.add(termQuery, BooleanClause.Occur.SHOULD) }
+                    .build()
+                val neighbors = indexSearcher.search(boolQuery, 1)
+                val best = neighbors.scoreDocs[0]!!
+                (scoreDoc.score / max(scoreDoc.score, best.score)).toDouble()
+            }
     }
 
 
