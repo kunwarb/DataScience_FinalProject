@@ -197,7 +197,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
                     .build()
                 val neighbors = indexSearcher.search(boolQuery, 10)
                 val neighborSum = neighbors.scoreDocs.sumByDouble { neighborDoc -> neighborDoc.score.toDouble() }
-                scoreDoc.score.toDouble() / neighborSum
+                (neighborSum - scoreDoc.score.toDouble()) / (neighborSum - scoreDoc.score.toDouble())
             }
     }
 
