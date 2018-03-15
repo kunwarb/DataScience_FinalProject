@@ -190,14 +190,17 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 //                    val id = indexSearcher.doc(scoreDoc.doc).get(PID)
 //                    sinks[id] ?: 0.0 }
             .map { scoreDoc ->
-                val boolQuery = retrieveSequence(query)
+                val doc = indexSearcher.doc(scoreDoc.doc)
+                val content = doc.get(CONTENT)
+
+                val boolQuery = retrieveSequence(content)
                     .map { token -> TermQuery(Term(CONTENT, token))}
                     .fold(BooleanQuery.Builder()) { builder, termQuery ->
                         builder.add(termQuery, BooleanClause.Occur.SHOULD) }
                     .build()
                 val neighbors = indexSearcher.search(boolQuery, 10)
                 val neighborSum = neighbors.scoreDocs.sumByDouble { neighborDoc -> neighborDoc.score.toDouble() }
-                (neighborSum - scoreDoc.score.toDouble()) / neighborSum
+                scoreDoc.score.toDouble() / neighborSum
             }
     }
 
