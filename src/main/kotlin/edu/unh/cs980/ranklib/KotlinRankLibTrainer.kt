@@ -192,17 +192,20 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             .map { scoreDoc ->
                 val doc = indexSearcher.doc(scoreDoc.doc)
                 val content = doc.get(CONTENT)
+                val tv = indexSearcher.indexReader.getTermVector(scoreDoc.doc, CONTENT)
+                println(tv)
 
-                val boolQuery = retrieveSequence(content)
-                    .map { token -> TermQuery(Term(CONTENT, token))}
-                    .fold(BooleanQuery.Builder()) { builder, termQuery ->
-                        builder.add(termQuery, BooleanClause.Occur.SHOULD) }
-                    .build()
-
-                val neighborSum = tops.scoreDocs.sumByDouble { neighbor ->
-                    indexSearcher.explain(boolQuery, neighbor.doc).value.toDouble()
-                }
-                scoreDoc.score.toDouble() / neighborSum
+//                val boolQuery = retrieveSequence(content)
+//                    .map { token -> TermQuery(Term(CONTENT, token))}
+//                    .fold(BooleanQuery.Builder()) { builder, termQuery ->
+//                        builder.add(termQuery, BooleanClause.Occur.SHOULD) }
+//                    .build()
+//
+//                val neighborSum = tops.scoreDocs.sumByDouble { neighbor ->
+//                    indexSearcher.explain(boolQuery, neighbor.doc).value.toDouble()
+//                }
+//                scoreDoc.score.toDouble() / neighborSum
+                1.0
 
 //                val neighbors = indexSearcher.search(boolQuery, 10)
 //                val neighborSum = neighbors.scoreDocs.sumByDouble { neighborDoc -> neighborDoc.score.toDouble() }
