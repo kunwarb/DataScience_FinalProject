@@ -182,6 +182,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
                 sinks.merge(id, adjustedScore, ::sum)
             }
         }
+        println(sinks)
 
         return tops.scoreDocs
             .map { scoreDoc ->
