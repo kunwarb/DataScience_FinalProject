@@ -161,6 +161,36 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     }
 
 
+    fun expandSearch(query: String, tops: TopDocs, indexSearcher: IndexSearcher): List <Double> {
+        val sinks = HashMap<String, Double>()
+
+        tops.scoreDocs.forEach { scoreDoc ->
+            val boolQuery = retrieveSequence(query)
+                .map { token -> TermQuery(Term(CONTENT, token))}
+                .fold(BooleanQuery.Builder()) { builder, termQuery ->
+                    builder.add(termQuery, BooleanClause.Occur.SHOULD) }
+                .build()
+
+            val neighbors = indexSearcher.search(boolQuery, 10)
+            val scoreSum = neighbors.scoreDocs.sumByDouble { neighDoc -> neighDoc.score.toDouble() }
+
+            neighbors.scoreDocs.forEach { neighDoc ->
+                val id = indexSearcher.doc(neighDoc.doc).get(PID)
+                val ratio = neighDoc.score.toDouble() / scoreSum
+                val adjustedScore = ratio * scoreDoc.score
+
+                sinks.merge(id, adjustedScore, ::sum)
+            }
+        }
+
+        return tops.scoreDocs
+            .map { scoreDoc ->
+                    val id = indexSearcher.doc(scoreDoc.doc).get(PID)
+                    sinks[id]!! }
+    }
+
+
+
     /**
      * Function: querySimilarity
      * Description: Score with weighted combination of BM25 and string similarity functions (trained using RankLib).
@@ -381,6 +411,13 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             sectionSplit(query, tops, indexSearcher, 2) }, normType = NormType.ZSCORE)
     }
 
+
+
+    private fun trainExpandSearch() {
+        formatter.addBM25(normType = NormType.ZSCORE)
+        formatter.addFeature(::expandSearch, normType = NormType.ZSCORE)
+    }
+
     /**
      * Function: train
      * Description: Add features associated with training method and then writes scored features to a RankLib compatible
@@ -391,7 +428,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "entity_similarity" -> trainSimilarity()
             "average_query" -> trainAverageQuery()
             "split_sections" -> trainSplit()
-            "mixtures" -> trainMixtures()
+            "expand_search" -> trainExpandSearch()
             "combined" -> trainCombined()
             "lm_dirichlet" -> trainDirichSim()
             "lm_mercer" -> trainJelinekMercerSimilarity()

@@ -144,7 +144,7 @@ public class Main {
 
 		ranklibTrainerParser.addArgument("method")
 				.help("The type of method to use when training (see readme).")
-				.choices("entity_similarity", "average_query", "split_sections", "mixtures", "combined",
+				.choices("entity_similarity", "average_query", "split_sections", "expand_search", "combined",
 						"lm_mercer", "lm_dirichlet");
 		ranklibTrainerParser.addArgument("index").help("Location of the Lucene index directory");
 		ranklibTrainerParser.addArgument("query").help("Location of query file (.cbor)");
