@@ -5,8 +5,11 @@ import org.apache.lucene.search.TopDocs
 import java.io.File
 import java.util.*
 import edu.unh.cs980.*
+import me.tongfei.progressbar.ProgressBar
+import me.tongfei.progressbar.ProgressBarStyle
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 /**
  * Class: ParagraphContainer
@@ -158,13 +161,20 @@ class KotlinRanklibFormatter(queryLocation: String,
     fun addFeature(f: (String, TopDocs, IndexSearcher) -> List<Double>, weight:Double = 1.0,
                    normType: NormType = NormType.NONE) {
 
+        val bar = ProgressBar("Feature Progress", queryContainers.size.toLong(),
+                ProgressBarStyle.ASCII)
+        val lock = ReentrantLock()
+
         queryContainers
             .pmap { (query, tops, paragraphs) ->
-                    f(query, tops, indexSearcher).run { normalizeResults(this, normType) }
-                                  .zip(paragraphs) }
+                    val featureResult = f(query, tops, indexSearcher).run { normalizeResults(this, normType) }
+                                  .zip(paragraphs)
+                    lock.withLock { bar.step() }
+                    featureResult }
             .forEach { results ->
                 results.forEach { (score, paragraph) ->
                                    paragraph.features += score * weight }}
+        bar.stop()
     }
 
     // Convenience function (turns NaN and infinite values into 0.0)

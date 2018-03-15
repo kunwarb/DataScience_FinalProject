@@ -195,9 +195,9 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
                     .fold(BooleanQuery.Builder()) { builder, termQuery ->
                         builder.add(termQuery, BooleanClause.Occur.SHOULD) }
                     .build()
-                val neighbors = indexSearcher.search(boolQuery, 1)
-                val best = neighbors.scoreDocs[0]!!
-                (scoreDoc.score / max(scoreDoc.score, best.score)).toDouble()
+                val neighbors = indexSearcher.search(boolQuery, 10)
+                val neighborSum = neighbors.scoreDocs.sumByDouble { neighborDoc -> neighborDoc.score.toDouble() }
+                scoreDoc.score.toDouble() / neighborSum
             }
     }
 
@@ -427,7 +427,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 
     private fun trainExpandSearch() {
         formatter.addBM25(normType = NormType.ZSCORE)
-        formatter.addFeature(::expandSearch, normType = NormType.ZSCORE)
+        formatter.addFeature(this::expandSearch, normType = NormType.ZSCORE)
     }
 
     /**
