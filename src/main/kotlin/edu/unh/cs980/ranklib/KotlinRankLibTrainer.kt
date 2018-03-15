@@ -187,7 +187,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         return tops.scoreDocs
             .map { scoreDoc ->
                     val id = indexSearcher.doc(scoreDoc.doc).get(PID)
-                    sinks[id]!! }
+                    sinks[id] ?: 0.0 }
     }
 
 
