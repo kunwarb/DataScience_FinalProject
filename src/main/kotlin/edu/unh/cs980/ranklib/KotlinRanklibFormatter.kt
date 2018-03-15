@@ -163,6 +163,7 @@ class KotlinRanklibFormatter(queryLocation: String,
 
         val bar = ProgressBar("Feature Progress", queryContainers.size.toLong(),
                 ProgressBarStyle.ASCII)
+        bar.start()
         val lock = ReentrantLock()
 
         queryContainers
