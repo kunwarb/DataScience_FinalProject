@@ -184,8 +184,6 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 //                sinks.merge(id, adjustedScore, ::sum)
 //            }
 //        }
-        val curSim = indexSearcher.getSimilarity(true)
-        indexSearcher.setSimilarity(ClassicSimilarity())
 
         return tops.scoreDocs
 //            .map { scoreDoc ->
@@ -200,10 +198,16 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
                     .fold(BooleanQuery.Builder()) { builder, termQuery ->
                         builder.add(termQuery, BooleanClause.Occur.SHOULD) }
                     .build()
-                val neighbors = indexSearcher.search(boolQuery, 10)
-                val neighborSum = neighbors.scoreDocs.sumByDouble { neighborDoc -> neighborDoc.score.toDouble() }
+
+                val neighborSum = tops.scoreDocs.sumByDouble { neighbor ->
+                    indexSearcher.explain(boolQuery, neighbor.doc).value.toDouble()
+                }
                 scoreDoc.score.toDouble() / neighborSum
-            }.apply { indexSearcher.setSimilarity(curSim) }
+
+//                val neighbors = indexSearcher.search(boolQuery, 10)
+//                val neighborSum = neighbors.scoreDocs.sumByDouble { neighborDoc -> neighborDoc.score.toDouble() }
+//                scoreDoc.score.toDouble() / neighborSum
+            }
     }
 
 
