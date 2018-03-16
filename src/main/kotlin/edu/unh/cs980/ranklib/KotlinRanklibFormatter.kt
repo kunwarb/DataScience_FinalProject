@@ -21,9 +21,14 @@ import kotlin.concurrent.withLock
  * @param docId: Document id that this paragraph belongs to
  * @param score: Used when rescoring and reweighting the features
  */
-data class ParagraphContainer(val pid: String, val qid: Int,
-                     val isRelevant: Boolean, val features: ArrayList<Double>,
-                              val docId: Int, var score:Double = 0.0) {
+data class ParagraphContainer(  val pid: String, val qid: Int,
+                                val isRelevant: Boolean, val features: ArrayList<Feature>,
+                                val docId: Int, var score:Double = 0.0) {
+
+    // Adjust the paragraph's score so that it is equal to the weighted sum of its features.
+    fun rescoreParagraph() {
+        score = features.sumByDouble(Feature::getAdjustedScore)
+    }
 
     // Convenience override: prints RankLib compatible lines
     override fun toString(): String =
@@ -33,12 +38,25 @@ data class ParagraphContainer(val pid: String, val qid: Int,
 
 }
 
+
 /**
  * Class: QueryContainer
  * Description: One is created for each of the query strings in the query .cbor file.
  *              Stores corresponding query string and TopDocs (obtained from BM25)
  */
 data class QueryContainer(val query: String, val tops: TopDocs, val paragraphs: List<ParagraphContainer>)
+
+
+/**
+ * Desc: Represents a paragraph that has been scored by a feature.
+ * @weight: The amount to adjust the feature's score (used when re-ranking)
+ */
+data class Feature(val score: Double, val weight: Double) {
+    fun getAdjustedScore(): Double = sanitizeDouble(score * weight)
+}
+
+// Convenience function (turns NaN and infinite values into 0.0)
+private fun sanitizeDouble(d: Double): Double { return if (d.isInfinite() || d.isNaN()) 0.0 else d }
 
 /**
  * Enum: NormType
@@ -174,12 +192,10 @@ class KotlinRanklibFormatter(queryLocation: String,
                     featureResult }
             .forEach { results ->
                 results.forEach { (score, paragraph) ->
-                                   paragraph.features += score * weight }}
+                                   paragraph.features += Feature(score, weight) }}
         bar.stop()
     }
 
-    // Convenience function (turns NaN and infinite values into 0.0)
-    private fun sanitizeDouble(d: Double): Double { return if (d.isInfinite() || d.isNaN()) 0.0 else d }
 
     private fun bm25(query: String, tops:TopDocs, indexSearcher: IndexSearcher): List<Double> {
         return tops.scoreDocs.map { it.score.toDouble() }
@@ -201,11 +217,12 @@ class KotlinRanklibFormatter(queryLocation: String,
      */
     fun rerankQueries() =
         queryContainers.forEach { queryContainer ->
-            queryContainer.paragraphs.map { it.score = it.features.sumByDouble(this::sanitizeDouble); it }
-                .sortedByDescending { it.score }
-                .forEachIndexed { index, par ->
-                    queryContainer.tops.scoreDocs[index].doc = par.docId
-                    queryContainer.tops.scoreDocs[index].score = par.score.toFloat()
+            queryContainer.paragraphs
+                .onEach(ParagraphContainer::rescoreParagraph)
+                .sortedByDescending(ParagraphContainer::score)
+                .forEachIndexed { index, paragraph ->
+                    queryContainer.tops.scoreDocs[index].doc = paragraph.docId
+                    queryContainer.tops.scoreDocs[index].score = paragraph.score.toFloat()
                 }
         }
 
