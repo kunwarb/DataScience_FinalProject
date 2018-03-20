@@ -8,6 +8,7 @@ import org.apache.lucene.index.Term
 import org.apache.lucene.queryparser.xml.builders.BooleanQueryBuilder
 import org.apache.lucene.search.BooleanClause
 import org.apache.lucene.search.BooleanQuery
+import org.apache.lucene.search.FuzzyQuery
 import org.apache.lucene.search.TermQuery
 import java.io.StringReader
 import kotlin.coroutines.experimental.buildSequence
@@ -35,7 +36,7 @@ class KotlinAbstractAnalyzer(abstractLocation: String) {
         val cleanName = entity.toLowerCase().replace(" ", "_")
         val query = BooleanQuery
             .Builder()
-            .apply { add(TermQuery(Term("name", cleanName)), BooleanClause.Occur.SHOULD) }
+            .apply { add(FuzzyQuery(Term("name", cleanName)), BooleanClause.Occur.SHOULD) }
             .build()
 
         val topDocs = indexSearcher.search(query, 1)
