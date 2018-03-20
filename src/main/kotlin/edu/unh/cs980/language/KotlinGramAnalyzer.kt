@@ -127,6 +127,17 @@ class KotlinGramAnalyzer(gramLoc: String) {
         }
     }
 
+    fun runTest() {
+        val testString = "This will be a test string to see if I can get gram statistics"
+        val unigrams = getStats(testString, GramStatType.TYPE_UNIGRAM)
+        val bigrams = getStats(testString, GramStatType.TYPE_BIGRAM)
+        val bigram_windows = getStats(testString, GramStatType.TYPE_BIGRAM_WINDOW)
+
+        println("Unigrams\n${unigrams.docTermFreqs}\n${unigrams.corpusTermFreqs}\n\n")
+        println("Bigams\n${bigrams.docTermFreqs}\n${bigrams.corpusTermFreqs}\n\n")
+        println("Bigam Windows\n${bigram_windows.docTermFreqs}\n${bigram_windows.corpusTermFreqs}\n\n")
+    }
+
 
 
 }

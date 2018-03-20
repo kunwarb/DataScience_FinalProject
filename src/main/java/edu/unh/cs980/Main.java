@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 import edu.unh.cs980.language.KotlinAbstractAnalyzer;
 import edu.unh.cs980.language.KotlinAbstractExtractor;
 import edu.unh.cs980.language.KotlinGram;
+import edu.unh.cs980.language.KotlinGramAnalyzer;
 import edu.unh.cs980.ranklib.KotlinRankLibTrainer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.search.IndexSearcher;
@@ -175,7 +176,6 @@ public class Main {
         Subparser abstractParser = subparsers.addParser("abstract")
                 .setDefault("func", new Exec(Main::runAbstract))
                 .help("");
-
         abstractParser.addArgument("corpus")
                 .help("Location of paragraph corpus to index.");
 
@@ -183,8 +183,14 @@ public class Main {
 		Subparser abstractAnalyzerParser = subparsers.addParser("abstract_analyzer")
 				.setDefault("func", new Exec(Main::runAbstractAnalyzer))
 				.help("");
-
 		abstractAnalyzerParser.addArgument("index")
+				.help("Location of abstract index.");
+
+		// Gram Analyzer
+		Subparser gramAnalyzerParser = subparsers.addParser("gram_analyzer")
+				.setDefault("func", new Exec(Main::runGramAnalyzer))
+				.help("");
+		gramAnalyzerParser.addArgument("index")
 				.help("Location of abstract index.");
 
 
@@ -208,11 +214,15 @@ public class Main {
 	private static void runGram(Namespace params) {
 		String indexLocation = params.getString("database");
 		String corpusFile = params.getString("corpus");
-
 		KotlinGram kotlinGram = new KotlinGram(indexLocation);
 		kotlinGram.indexGrams(corpusFile);
-
 	}
+
+    private static void runGramAnalyzer(Namespace params) {
+        String indexLocation = params.getString("index");
+		KotlinGramAnalyzer gramAnalyzer = new KotlinGramAnalyzer(indexLocation);
+		gramAnalyzer.runTest();
+    }
 
 	private static void runAbstract(Namespace params) {
 		String corpusFile = params.getString("corpus");
