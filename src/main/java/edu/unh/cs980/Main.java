@@ -206,7 +206,7 @@ public class Main {
 	private static void runAbstract(Namespace params) {
 		String corpusFile = params.getString("corpus");
 
-		KotlinAbstractExtractor extractor = new KotlinAbstractExtractor();
+		KotlinAbstractExtractor extractor = new KotlinAbstractExtractor("abstract");
 		extractor.getAbstracts(corpusFile);
 
 	}
