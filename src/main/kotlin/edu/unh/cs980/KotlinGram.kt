@@ -110,7 +110,7 @@ class KotlinGram(filename: String) {
                 bigrams.add(tokens[i] + tokens[i + 1])
             }
 
-            ( i + 1 until min(i + 5, tokens.size)).forEach { j ->
+            ( i + 1 until min(i + 9, tokens.size)).forEach { j ->
                 bigramWindows.add(tokens[i] + tokens[j])
             }
         }
