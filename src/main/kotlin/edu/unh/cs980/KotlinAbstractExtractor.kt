@@ -37,6 +37,7 @@ class KotlinAbstractExtractor(filename: String) {
                 val doc = Document()
                 doc.add(TextField("name", name, Field.Store.YES))
                 doc.add(TextField("text", content, Field.Store.YES))
+                indexWriter.addDocument(doc)
             }
 
         indexWriter.close()
