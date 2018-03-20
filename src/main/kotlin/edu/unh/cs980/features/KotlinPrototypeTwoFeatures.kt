@@ -49,14 +49,12 @@ fun featAverageAbstractScore(query: String, tops: TopDocs, indexSearcher: IndexS
             val searchResult = abstractSearcher.search(nameQuery, 1)
             if (searchResult.scoreDocs.isEmpty()) null else searchResult.scoreDocs[0].doc
         }.toList()
-        println(entityDocs.size)
 
         val totalScore = entityDocs.sumByDouble { docId ->
             val score = abstractSearcher.explain(booleanQuery, docId).value
             if (score.isFinite()) score.toDouble() else 0.0
         }
 
-        println(totalScore)
 
         totalScore / entities.size.toDouble()
     }.toList()
