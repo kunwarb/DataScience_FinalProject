@@ -98,7 +98,6 @@ class KotlinGram(dbPath: String) {
         val counter = AtomicInteger()
 
         DeserializeData.iterableParagraphs(f)
-            .filter {rand.nextDouble() <= 0.1}
             .forEachParallel { par ->
 
                 // This is just to keep track of how many pages we've parsed
@@ -109,7 +108,9 @@ class KotlinGram(dbPath: String) {
                 }
 
                 // Extract all of the anchors/entities and add them to database
-                doIndex(par.textOnly)
+                if (rand.nextDouble() <= 0.1) {
+                    doIndex(par.textOnly)
+                }
             }
 
     }
