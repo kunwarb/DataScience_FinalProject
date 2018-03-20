@@ -1,8 +1,9 @@
 @file:JvmName("KotAbstractExtractor")
-package edu.unh.cs980
+package edu.unh.cs980.language
 
-import edu.unh.cs.treccar_v2.Data
 import edu.unh.cs.treccar_v2.read_data.DeserializeData
+import edu.unh.cs980.forEachParallel
+import edu.unh.cs980.getIndexWriter
 import org.apache.lucene.document.Document
 import org.apache.lucene.document.Field
 import org.apache.lucene.document.TextField

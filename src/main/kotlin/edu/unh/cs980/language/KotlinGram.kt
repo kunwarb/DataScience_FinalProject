@@ -1,22 +1,16 @@
 @file:JvmName("KotGram")
-package edu.unh.cs980
+package edu.unh.cs980.language
 
 import edu.unh.cs.treccar_v2.read_data.DeserializeData
+import edu.unh.cs980.forEachParallel
+import edu.unh.cs980.getIndexWriter
 import org.apache.lucene.analysis.en.EnglishAnalyzer
-import org.apache.lucene.analysis.query.QueryAutoStopWordAnalyzer
-import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.document.Document
 import org.apache.lucene.document.Field
 import org.apache.lucene.document.TextField
-import org.apache.lucene.index.Term
-import org.mapdb.BTreeMap
-import org.mapdb.DBMaker
-import org.mapdb.Serializer
-import org.mapdb.serializer.SerializerArrayTuple
 import java.io.File
 import java.io.StringReader
-import java.lang.Math.max
 import java.lang.Math.min
 import java.util.*
 import java.util.concurrent.ThreadLocalRandom

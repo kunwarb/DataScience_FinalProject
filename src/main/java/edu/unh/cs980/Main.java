@@ -5,6 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import edu.unh.cs980.language.KotlinAbstractAnalyzer;
+import edu.unh.cs980.language.KotlinAbstractExtractor;
+import edu.unh.cs980.language.KotlinGram;
 import edu.unh.cs980.ranklib.KotlinRankLibTrainer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.search.IndexSearcher;
