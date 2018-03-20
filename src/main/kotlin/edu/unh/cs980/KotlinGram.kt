@@ -122,8 +122,6 @@ class KotlinGram(filename: String) {
     }
 
     fun indexGrams(filename: String) {
-        val indexSearcher = getIndexSearcher(filename)
-        println(indexSearcher.indexReader.totalTermFreq(Term(CONTENT, "hello")))
         val f = File(filename).inputStream().buffered(16 * 1024)
         val counter = AtomicInteger()
 
