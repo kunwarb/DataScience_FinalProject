@@ -76,14 +76,17 @@ class KotlinGram(dbPath: String) {
         val tokens = getFilteredTokens(parText).toList()
         (0 until tokens.size).forEach { i ->
             addUnigram(tokens[i])
-
-            ( i + 1 until min(i + 9, tokens.size)).forEach { j ->
-                if (j - i == 1) {
-                    addBigram(tokens[i], tokens[j])
-                } else {
-                    addBigramWindow(tokens[i], tokens[j])
-                }
+            if (i < tokens.size - 1) {
+                addBigram(tokens[i], tokens[i + 1])
             }
+
+//            ( i + 1 until min(i + 9, tokens.size)).forEach { j ->
+//                if (j - i == 1) {
+//                    addBigram(tokens[i], tokens[j])
+//                } else {
+//                    addBigramWindow(tokens[i], tokens[j])
+//                }
+//            }
         }
     }
 
