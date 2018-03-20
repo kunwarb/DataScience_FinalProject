@@ -23,10 +23,11 @@ import kotlin.coroutines.experimental.buildSequence
 class KotlinGram(dbPath: String) {
     val db = DBMaker
         .fileDB(dbPath)
-//        .fileMmapEnable()
+        .fileMmapEnable()
         .closeOnJvmShutdown()
         .concurrencyScale(60)
         .make()
+
 
     // Key: (anchor text, linked entity)
     // value: Number of times we have seen anchor text refer to linked entity
@@ -104,6 +105,7 @@ class KotlinGram(dbPath: String) {
                 counter.incrementAndGet().let {
                     if (it % 100000 == 0) {
                         println(it)
+                        db.commit()
                     }
                 }
 
