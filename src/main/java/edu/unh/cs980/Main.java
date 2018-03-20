@@ -156,6 +156,17 @@ public class Main {
 				.setDefault("")
 				.help("(only used for mixtures method): Location of graph_database.db file.");
 
+		// Gram
+		Subparser gramParser = subparsers.addParser("gram")
+				.setDefault("func", new Exec(Main::runGram))
+				.help("");
+
+		gramParser.addArgument("corpus")
+				.help("Location of paragraph corpus to index.");
+
+		gramParser.addArgument("--database")
+				.setDefault("gram.db")
+				.help("");
 
 		return parser;
 	}
@@ -172,6 +183,15 @@ public class Main {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	private static void runGram(Namespace params) {
+		String indexLocation = params.getString("database");
+		String corpusFile = params.getString("corpus");
+
+		KotlinGram kotlinGram = new KotlinGram(indexLocation);
+		kotlinGram.indexGrams(corpusFile);
+
 	}
 
 	// Runs Bindu's Query Heading Weights Variation

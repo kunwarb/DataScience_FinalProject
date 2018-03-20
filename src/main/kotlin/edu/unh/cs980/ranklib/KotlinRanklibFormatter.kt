@@ -44,7 +44,8 @@ data class ParagraphContainer(  val pid: String, val qid: Int,
  * Description: One is created for each of the query strings in the query .cbor file.
  *              Stores corresponding query string and TopDocs (obtained from BM25)
  */
-data class QueryContainer(val query: String, val tops: TopDocs, val paragraphs: List<ParagraphContainer>)
+data class QueryContainer(val query: String, val tops: TopDocs, val paragraphs: List<ParagraphContainer>) {
+}
 
 
 /**
@@ -179,17 +180,18 @@ class KotlinRanklibFormatter(queryLocation: String,
     fun addFeature(f: (String, TopDocs, IndexSearcher) -> List<Double>, weight:Double = 1.0,
                    normType: NormType = NormType.NONE) {
 
-        val bar = ProgressBar("Feature Progress", queryContainers.size.toLong(),
-                ProgressBarStyle.ASCII)
+        val bar = ProgressBar("Feature Progress", queryContainers.size.toLong(), ProgressBarStyle.ASCII)
         bar.start()
         val lock = ReentrantLock()
 
         queryContainers
             .pmap { (query, tops, paragraphs) ->
-                    val featureResult = f(query, tops, indexSearcher).run { normalizeResults(this, normType) }
-                                  .zip(paragraphs)
+                    // Using scoring function, score each of the paragraphs in our query result
+                    val featureResult: List<Double> =
+                            f(query, tops, indexSearcher).run { normalizeResults(this, normType) }
+
                     lock.withLock { bar.step() }
-                    featureResult }
+                    featureResult.zip(paragraphs) } // associate the scores with their corresponding paragraphs
             .forEach { results ->
                 results.forEach { (score, paragraph) ->
                                    paragraph.features += Feature(score, weight) }}
