@@ -105,7 +105,7 @@ class KotlinGram(dbPath: String) {
                 }
 
                 // Extract all of the anchors/entities and add them to database
-                doIndex(par.textOnly)
+//                doIndex(par.textOnly)
             }
 
     }
