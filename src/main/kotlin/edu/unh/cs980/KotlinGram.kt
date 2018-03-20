@@ -23,7 +23,7 @@ import kotlin.coroutines.experimental.buildSequence
 class KotlinGram(dbPath: String) {
     val db = DBMaker
         .fileDB(dbPath)
-        .fileMmapEnable()
+//        .fileMmapEnable()
         .closeOnJvmShutdown()
         .concurrencyScale(60)
         .make()

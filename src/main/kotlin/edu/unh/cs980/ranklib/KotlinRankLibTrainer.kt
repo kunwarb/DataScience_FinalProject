@@ -8,6 +8,8 @@ import java.lang.Double.sum
 import java.util.*
 import info.debatty.java.stringsimilarity.*
 import info.debatty.java.stringsimilarity.interfaces.StringDistance
+import org.apache.lucene.index.Fields
+import org.apache.lucene.index.TermContext
 import org.apache.lucene.search.similarities.*
 import java.lang.Double.max
 import java.lang.Float.max
