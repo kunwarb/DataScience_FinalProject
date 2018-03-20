@@ -67,7 +67,6 @@ fun getIndexSearcher(indexLocation: String): IndexSearcher {
 fun getIndexWriter(indexLocation: String): IndexWriter {
     val indexPath = Paths.get(indexLocation)
     val indexDir = FSDirectory.open(indexPath)
-    val indexReader = DirectoryReader.open(indexDir)
     val conf = IndexWriterConfig(EnglishAnalyzer())
         .apply { openMode = IndexWriterConfig.OpenMode.CREATE }
     return IndexWriter(indexDir, conf)
