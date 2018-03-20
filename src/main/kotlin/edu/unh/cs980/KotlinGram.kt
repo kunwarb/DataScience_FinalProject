@@ -6,6 +6,8 @@ import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.query.QueryAutoStopWordAnalyzer
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
+import org.apache.lucene.document.Document
+import org.apache.lucene.index.Term
 import org.mapdb.BTreeMap
 import org.mapdb.DBMaker
 import org.mapdb.Serializer
@@ -95,24 +97,26 @@ class KotlinGram(dbPath: String) {
     }
 
     fun indexGrams(filename: String) {
-        val f = File(filename).inputStream().buffered(16 * 1024)
-        val counter = AtomicInteger()
-
-        DeserializeData.iterableParagraphs(f)
-            .forEachParallel { par ->
-
-                // This is just to keep track of how many pages we've parsed
-                counter.incrementAndGet().let {
-                    if (it % 100000 == 0) {
-                        println(it)
-                    }
-                }
-
-                // Extract all of the anchors/entities and add them to database
-                if (ThreadLocalRandom.current().nextDouble() <= 0.1) {
-                    doIndex(par.textOnly)
-                }
-            }
+        val indexSearcher = getIndexSearcher(filename)
+        println(indexSearcher.indexReader.totalTermFreq(Term(CONTENT, "hello there")))
+//        val f = File(filename).inputStream().buffered(16 * 1024)
+//        val counter = AtomicInteger()
+//
+//        DeserializeData.iterableParagraphs(f)
+//            .forEachParallel { par ->
+//
+//                // This is just to keep track of how many pages we've parsed
+//                counter.incrementAndGet().let {
+//                    if (it % 100000 == 0) {
+//                        println(it)
+//                    }
+//                }
+//
+//                // Extract all of the anchors/entities and add them to database
+//                if (ThreadLocalRandom.current().nextDouble() <= 0.1) {
+//                    doIndex(par.textOnly)
+//                }
+//            }
 
     }
 
