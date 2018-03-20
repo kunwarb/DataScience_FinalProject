@@ -9,6 +9,7 @@ import org.apache.lucene.index.DirectoryReader
 import org.apache.lucene.index.IndexWriter
 import org.apache.lucene.index.IndexWriterConfig
 import org.apache.lucene.search.IndexSearcher
+import org.apache.lucene.search.TopDocs
 import org.apache.lucene.store.FSDirectory
 import java.nio.file.Paths
 import java.util.*
@@ -72,10 +73,13 @@ fun getIndexWriter(indexLocation: String): IndexWriter {
     return IndexWriter(indexDir, conf)
 }
 
+
 // Constants referring to Lucene fields
 public const val PID: String = "paragraphid"
 public const val CONTENT = "text"
 
+// Functional interface for features
+typealias FeatureInterface = (String, TopDocs, IndexSearcher) -> List<Double>
 
 // I don't know why the hell they don't have an identity function..
 fun <A> identity(it: A): A = it

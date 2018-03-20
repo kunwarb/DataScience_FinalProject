@@ -4,6 +4,8 @@ package edu.unh.cs980.ranklib
 import org.apache.lucene.index.Term
 import org.apache.lucene.search.*
 import edu.unh.cs980.*
+import edu.unh.cs980.features.featAverageAbstractScore
+import edu.unh.cs980.language.KotlinAbstractAnalyzer
 import java.lang.Double.sum
 import java.util.*
 import info.debatty.java.stringsimilarity.*
@@ -25,6 +27,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     val db = if (graphPath == "") null else KotlinDatabase(graphPath)
     val formatter = KotlinRanklibFormatter(queryPath, qrelPath, indexPath)
     val graphAnalyzer = if (graphPath == "") null else KotlinGraphAnalyzer(formatter.indexSearcher, db!!)
+    val abstractAnalyzer = KotlinAbstractAnalyzer("abstract")
 
 
     /**
@@ -325,13 +328,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     // Runs associated query method
     fun runRanklibQuery(method: String, out: String) {
         when (method) {
-            "entity_similarity" -> querySimilarity()
-            "average_query" -> queryAverage()
-            "split_sections" -> querySplit()
-            "mixtures" -> queryMixtures()
-            "lm_mercer" -> queryMercer()
-            "lm_dirichlet" -> queryDirichlet()
-            "combined" -> queryCombined()
+            "abstract_score" -> querySimilarity()
             else -> println("Unknown method!")
         }
 
@@ -444,6 +441,13 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         formatter.addFeature(this::expandSearch, normType = NormType.ZSCORE)
     }
 
+    private fun trainAbstractScore() {
+        formatter.addBM25(normType = NormType.ZSCORE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAverageAbstractScore(query, tops, indexSearcher, abstractAnalyzer.indexSearcher) },
+            normType = NormType.ZSCORE)
+    }
+
     /**
      * Function: train
      * Description: Add features associated with training method and then writes scored features to a RankLib compatible
@@ -451,13 +455,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
      */
     fun train(method: String, out: String) {
         when (method) {
-            "entity_similarity" -> trainSimilarity()
-            "average_query" -> trainAverageQuery()
-            "split_sections" -> trainSplit()
-            "expand_search" -> trainExpandSearch()
-            "combined" -> trainCombined()
-            "lm_dirichlet" -> trainDirichSim()
-            "lm_mercer" -> trainJelinekMercerSimilarity()
+            "abstract_score" -> trainAbstractScore()
             else -> println("Unknown method!")
         }
         formatter.writeToRankLibFile(out)
