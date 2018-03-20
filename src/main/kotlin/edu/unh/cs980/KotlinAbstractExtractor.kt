@@ -27,8 +27,8 @@ class KotlinAbstractExtractor {
 //                    .filterIsInstance<Data.Paragraph>()
 //                    .forEach { println(it) }
 
-                println("Starting")
-                page.flatSectionPathsParagraphs().take(2)
+                println("Starting ${page.pageName}")
+                page.flatSectionPathsParagraphs().take(4)
                     .forEach { psection ->
                         println(psection.paragraph.textOnly)
                     }
