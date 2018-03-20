@@ -105,12 +105,11 @@ class KotlinGram(dbPath: String) {
                 counter.incrementAndGet().let {
                     if (it % 100000 == 0) {
                         println(it)
-                        db.commit()
                     }
                 }
 
                 // Extract all of the anchors/entities and add them to database
-                if (rand.nextDouble() <= 0.1) {
+                if (ThreadLocalRandom.current().nextDouble() <= 0.1) {
                     doIndex(par.textOnly)
                 }
             }
