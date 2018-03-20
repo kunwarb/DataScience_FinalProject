@@ -54,6 +54,8 @@ data class QueryContainer(val query: String, val tops: TopDocs, val paragraphs: 
  */
 data class Feature(val score: Double, val weight: Double) {
     fun getAdjustedScore(): Double = sanitizeDouble(score * weight)
+    override fun toString(): String = getAdjustedScore().toString()
+
 }
 
 // Convenience function (turns NaN and infinite values into 0.0)
