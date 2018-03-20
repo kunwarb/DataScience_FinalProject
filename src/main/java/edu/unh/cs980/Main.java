@@ -168,6 +168,15 @@ public class Main {
 				.setDefault("gram")
 				.help("");
 
+        // Abstract
+        Subparser abstractParser = subparsers.addParser("abstract")
+                .setDefault("func", new Exec(Main::runAbstract))
+                .help("");
+
+        abstractParser.addArgument("corpus")
+                .help("Location of paragraph corpus to index.");
+
+
 		return parser;
 	}
 
@@ -191,6 +200,14 @@ public class Main {
 
 		KotlinGram kotlinGram = new KotlinGram(indexLocation);
 		kotlinGram.indexGrams(corpusFile);
+
+	}
+
+	private static void runAbstract(Namespace params) {
+		String corpusFile = params.getString("corpus");
+
+		KotlinAbstractExtractor extractor = new KotlinAbstractExtractor();
+		extractor.getAbstracts(corpusFile);
 
 	}
 
