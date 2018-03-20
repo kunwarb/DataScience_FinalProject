@@ -22,15 +22,17 @@ class KotlinAbstractExtractor {
                 }
 
                 // Extract all of the anchors/entities and add them to database
-                page.childSections[0]
-                    .children
-                    .filterIsInstance<Data.Paragraph>()
-                    .forEach { println(it) }
+//                page.childSections[0]
+//                    .children
+//                    .filterIsInstance<Data.Paragraph>()
+//                    .forEach { println(it) }
 
-//                .flatMap { psection ->
-//                    psection.paragraph.bodies
-//                        .filterIsInstance<Data.ParaLink>()
-//                        .map { paraLink -> paraLink.anchorText.toLowerCase() to paraLink.page.toLowerCase() } }
+                println("Starting")
+                page.flatSectionPathsParagraphs().take(2)
+                    .forEach { psection ->
+                        println(psection.paragraph.textOnly)
+                    }
+                println("Ending")
 //                .apply(this::addLinks)
             }
     }
