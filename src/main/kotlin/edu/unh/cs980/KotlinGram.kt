@@ -14,6 +14,8 @@ import java.io.File
 import java.io.StringReader
 import java.lang.Math.max
 import java.lang.Math.min
+import java.util.*
+import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.experimental.buildSequence
 
@@ -49,6 +51,7 @@ class KotlinGram(dbPath: String) {
         .createOrOpen()
 
     val analyzer = EnglishAnalyzer()
+    val rand = Random().apply { setSeed(128383197) }
 
     fun getFilteredTokens(text: String): Sequence<String> {
         val tokenStream = analyzer.tokenStream("text", StringReader(text)).apply { reset() }
@@ -80,13 +83,13 @@ class KotlinGram(dbPath: String) {
                 addBigram(tokens[i], tokens[i + 1])
             }
 
-//            ( i + 1 until min(i + 9, tokens.size)).forEach { j ->
-//                if (j - i == 1) {
-//                    addBigram(tokens[i], tokens[j])
-//                } else {
-//                    addBigramWindow(tokens[i], tokens[j])
-//                }
-//            }
+            ( i + 1 until min(i + 5, tokens.size)).forEach { j ->
+                if (j - i == 1) {
+                    addBigram(tokens[i], tokens[j])
+                } else {
+                    addBigramWindow(tokens[i], tokens[j])
+                }
+            }
         }
     }
 
@@ -95,6 +98,7 @@ class KotlinGram(dbPath: String) {
         val counter = AtomicInteger()
 
         DeserializeData.iterableParagraphs(f)
+            .filter {rand.nextDouble() <= 0.1}
             .forEachParallel { par ->
 
                 // This is just to keep track of how many pages we've parsed
@@ -105,7 +109,7 @@ class KotlinGram(dbPath: String) {
                 }
 
                 // Extract all of the anchors/entities and add them to database
-//                doIndex(par.textOnly)
+                doIndex(par.textOnly)
             }
 
     }
