@@ -75,3 +75,7 @@ fun getIndexWriter(indexLocation: String): IndexWriter {
 // Constants referring to Lucene fields
 public const val PID: String = "paragraphid"
 public const val CONTENT = "text"
+
+
+// I don't know why the hell they don't have an identity function..
+fun <A> identity(it: A): A = it

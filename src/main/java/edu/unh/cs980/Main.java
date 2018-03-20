@@ -176,6 +176,14 @@ public class Main {
         abstractParser.addArgument("corpus")
                 .help("Location of paragraph corpus to index.");
 
+        // Abstract Analyzer
+		Subparser abstractAnalyzerParser = subparsers.addParser("abstract_analyzer")
+				.setDefault("func", new Exec(Main::runAbstractAnalyzer))
+				.help("");
+
+		abstractAnalyzerParser.addArgument("index")
+				.help("Location of abstract index.");
+
 
 		return parser;
 	}
@@ -205,10 +213,14 @@ public class Main {
 
 	private static void runAbstract(Namespace params) {
 		String corpusFile = params.getString("corpus");
-
 		KotlinAbstractExtractor extractor = new KotlinAbstractExtractor("abstract");
 		extractor.getAbstracts(corpusFile);
+	}
 
+	private static void runAbstractAnalyzer(Namespace params) {
+		String index = params.getString("index");
+		KotlinAbstractAnalyzer analyzer = new KotlinAbstractAnalyzer(index);
+		analyzer.runTest();
 	}
 
 	// Runs Bindu's Query Heading Weights Variation
