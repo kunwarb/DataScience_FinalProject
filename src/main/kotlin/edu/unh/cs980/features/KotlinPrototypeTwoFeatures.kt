@@ -43,6 +43,7 @@ fun featAverageAbstractScore(query: String, tops: TopDocs, indexSearcher: IndexS
     return tops.scoreDocs.map { scoreDoc ->
         val doc = indexSearcher.doc(scoreDoc.doc)
         val entities = doc.getValues("spotlight").toSet().toList()
+        println(entities)
 
         val entityDocs = entities.mapNotNull { entity ->
             val nameQuery = buildEntityNameQuery(entity)
