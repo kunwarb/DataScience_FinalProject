@@ -165,7 +165,7 @@ public class Main {
 				.help("Location of paragraph corpus to index.");
 
 		gramParser.addArgument("--database")
-				.setDefault("gram.db")
+				.setDefault("gram")
 				.help("");
 
 		return parser;

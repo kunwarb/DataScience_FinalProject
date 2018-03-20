@@ -4,7 +4,10 @@ package edu.unh.cs980
 import kotlinx.coroutines.experimental.CommonPool
 import kotlinx.coroutines.experimental.async
 import kotlinx.coroutines.experimental.runBlocking
+import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.index.DirectoryReader
+import org.apache.lucene.index.IndexWriter
+import org.apache.lucene.index.IndexWriterConfig
 import org.apache.lucene.search.IndexSearcher
 import org.apache.lucene.store.FSDirectory
 import java.nio.file.Paths
@@ -59,6 +62,15 @@ fun getIndexSearcher(indexLocation: String): IndexSearcher {
     val indexDir = FSDirectory.open(indexPath)
     val indexReader = DirectoryReader.open(indexDir)
     return IndexSearcher(indexReader)
+}
+
+fun getIndexWriter(indexLocation: String): IndexWriter {
+    val indexPath = Paths.get(indexLocation)
+    val indexDir = FSDirectory.open(indexPath)
+    val indexReader = DirectoryReader.open(indexDir)
+    val conf = IndexWriterConfig(EnglishAnalyzer())
+        .apply { openMode = IndexWriterConfig.OpenMode.CREATE }
+    return IndexWriter(indexDir, conf)
 }
 
 // Constants referring to Lucene fields
