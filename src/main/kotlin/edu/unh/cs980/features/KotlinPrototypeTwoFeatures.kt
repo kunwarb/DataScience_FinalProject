@@ -29,7 +29,7 @@ private fun createTokenSequence(query: String): Sequence<String> {
 
 private fun buildEntityNameQuery(entity: String): BooleanQuery =
     BooleanQuery.Builder()
-        .apply { add(FuzzyQuery(Term("name", entity)), BooleanClause.Occur.SHOULD) }
+        .apply { add(TermQuery(Term("name", entity)), BooleanClause.Occur.SHOULD) }
         .build()
 
 private fun buildQuery(query: String): BooleanQuery =
