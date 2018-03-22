@@ -135,9 +135,9 @@ fun featLikehoodOfQueryGivenEntityMention(query: String, tops: TopDocs, indexSea
             .map    { queryToken ->
                          entities
                             .map { entity -> hIndexer.getMentionLikelihood(queryToken, entity) }
-                            .average()
-                    }
-            .fold(1.0, {acc, likelihood -> acc * max(likelihood, 0.0001)})
+                            .sum()
+                    }.sum()
+//            .fold(1.0, {acc, likelihood -> acc * max(likelihood, 0.001)})
     }.toList()
 }
 
@@ -162,7 +162,7 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         val doc = indexSearcher.doc(scoreDoc.doc)
         val entities = doc.getValues("spotlight").toList()
         entities
-            .mapNotNull { entity -> entityScores[entity.toLowerCase().replace(" ", "_")] }
+            .mapNotNull { entity -> entityScores[entity] }
             .sum()
     }.toList()
 }
