@@ -162,7 +162,7 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         val doc = indexSearcher.doc(scoreDoc.doc)
         val entities = doc.getValues("spotlight").toList()
         entities
-            .mapNotNull { entity -> entityScores[entity] }
+            .mapNotNull { entity -> entityScores[entity.toLowerCase().replace(" ", "_")] }
             .sum()
     }.toList()
 }
