@@ -70,6 +70,9 @@ class HyperlinkIndexer(filename: String) {
      * Desc: Given entity mention and linked entity, return probability of linked entity given entity mention
      */
     fun getMentionLikelihood(anchorText: String, linkedEntity: String): Double {
+        if (!hasEntityMention(anchorText)) {
+            return 0.0
+        }
         val cleanedAnchor = clean(anchorText)
         val cleanedEntity = clean(linkedEntity)
 
