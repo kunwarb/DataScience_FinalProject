@@ -167,7 +167,7 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         val doc = indexSearcher.doc(scoreDoc.doc)
         val entities = doc.getValues("spotlight").toList()
         entities
-            .map { entity -> entityScores.maxBy { (e, v) -> jac.distance(entity, e) }?.second ?: 0.0 }
+            .map { entity -> entityScores.maxBy { (e, v) -> jac.distance(entity, e) }?.let {it.second * jac.distance(entity, it.first)} ?: 0.0 }
 //            .mapNotNull { entity -> entityScores[entity] }
             .sum()
     }.toList()
