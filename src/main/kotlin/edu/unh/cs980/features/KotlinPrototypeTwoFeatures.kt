@@ -151,12 +151,12 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 
     abstractSearcher.setSimilarity(sim)
     val relevantEntities = abstractSearcher.search(booleanQuery, 100)
-    val totalScore = relevantEntities.scoreDocs.sumByDouble { it.score.toDouble() }
+//    val totalScore = relevantEntities.scoreDocs.sumByDouble { it.score.toDouble() }
 
     val entityScores = relevantEntities.scoreDocs.map { scoreDoc ->
         val doc = abstractSearcher.doc(scoreDoc.doc)
         val entity = doc.get("name")
-        entity.toLowerCase().replace(" ", "_") to scoreDoc.score.toDouble() / totalScore
+        entity.toLowerCase().replace(" ", "_") to scoreDoc.score.toDouble()
     }.toMap()
 
 
