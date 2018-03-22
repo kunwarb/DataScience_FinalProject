@@ -75,10 +75,9 @@ private fun retrieveEntityDocId(entity: String, abstractSearcher: IndexSearcher)
     })
 
 private fun retrieveEntityStats(entity: String, abstractAnalyzer: KotlinAbstractAnalyzer): LanguageStats? =
-        abstractAnalyzer.getEntityStats(entity)
-//        memoizedAbstractStats.computeIfAbsent(entity, {key ->
-//            abstractAnalyzer.getEntityStats(entity)
-//        })
+        memoizedAbstractStats.computeIfAbsent(entity, {key ->
+            abstractAnalyzer.getEntityStats(entity)
+        })
 
 private fun retrieveQueryAbstractStats(query: String, abstractAnalyzer: KotlinAbstractAnalyzer) =
     createTokenSequence(query).toList()

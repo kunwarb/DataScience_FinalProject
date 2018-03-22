@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import edu.unh.cs980.context.HyperlinkIndexer;
 import edu.unh.cs980.language.KotlinAbstractAnalyzer;
 import edu.unh.cs980.language.KotlinAbstractExtractor;
 import edu.unh.cs980.language.KotlinGram;
@@ -192,6 +193,13 @@ public class Main {
 		gramAnalyzerParser.addArgument("index")
 				.help("Location of abstract index.");
 
+		// Gram Analyzer
+		Subparser hyperlinkIndexerParser = subparsers.addParser("hyperlink_indexer")
+				.setDefault("func", new Exec(Main::runHyperlinkIndexer))
+				.help("");
+		gramAnalyzerParser.addArgument("corpus")
+				.help("Location of all alllButBenchmark corpus.");
+
 
 		return parser;
 	}
@@ -222,6 +230,12 @@ public class Main {
 		KotlinGramAnalyzer gramAnalyzer = new KotlinGramAnalyzer(indexLocation);
 		gramAnalyzer.runTest();
     }
+
+	private static void runHyperlinkIndexer(Namespace params) {
+		String corpus = params.getString("corpus");
+		HyperlinkIndexer hyperlinkIndexer = new HyperlinkIndexer("entity_mentions.db");
+		hyperlinkIndexer.indexHyperlinks(corpus);
+	}
 
 	private static void runAbstract(Namespace params) {
 		String corpusFile = params.getString("corpus");
