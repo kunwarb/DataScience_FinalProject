@@ -4,6 +4,7 @@ import edu.unh.cs980.CONTENT
 import edu.unh.cs980.context.HyperlinkIndexer
 import edu.unh.cs980.language.KotlinAbstractAnalyzer
 import edu.unh.cs980.language.LanguageStats
+import info.debatty.java.stringsimilarity.Jaccard
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
@@ -147,9 +148,8 @@ fun featLikehoodOfQueryGivenEntityMention(query: String, tops: TopDocs, indexSea
 fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                                           abstractSearcher: IndexSearcher, sim: Similarity): List<Double> {
 
-    val queryTokens = createTokenSequence(query).toList()
-    println(queryTokens.joinToString())
     val booleanQuery = buildQuery(query)
+    val jac = Jaccard()
 
     abstractSearcher.setSimilarity(sim)
     val relevantEntities = abstractSearcher.search(booleanQuery, 100)
@@ -160,14 +160,15 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         val doc = abstractSearcher.doc(scoreDoc.doc)
         val entity = doc.get("name")
         entity.toLowerCase().replace(" ", "_") to scoreDoc.score.toDouble()
-    }.toMap()
+    }.toList()
 
 
     return tops.scoreDocs.map { scoreDoc ->
         val doc = indexSearcher.doc(scoreDoc.doc)
         val entities = doc.getValues("spotlight").toList()
         entities
-            .mapNotNull { entity -> entityScores[entity] }
+            .map { entity -> entityScores.maxBy { (e, v) -> jac.distance(entity, e) }?.second ?: 0.0 }
+//            .mapNotNull { entity -> entityScores[entity] }
             .sum()
     }.toList()
 }
