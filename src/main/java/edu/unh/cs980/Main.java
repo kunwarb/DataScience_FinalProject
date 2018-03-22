@@ -197,7 +197,7 @@ public class Main {
 		Subparser hyperlinkIndexerParser = subparsers.addParser("hyperlink_indexer")
 				.setDefault("func", new Exec(Main::runHyperlinkIndexer))
 				.help("");
-		gramAnalyzerParser.addArgument("corpus")
+		hyperlinkIndexerParser.addArgument("corpus")
 				.help("Location of all alllButBenchmark corpus.");
 
 
