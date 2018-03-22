@@ -4,7 +4,9 @@ package edu.unh.cs980.ranklib
 import org.apache.lucene.index.Term
 import org.apache.lucene.search.*
 import edu.unh.cs980.*
+import edu.unh.cs980.context.HyperlinkIndexer
 import edu.unh.cs980.features.featAverageAbstractScore
+import edu.unh.cs980.features.featLikehoodOfQueryGivenEntityMention
 import edu.unh.cs980.features.featLikelihoodAbstract
 import edu.unh.cs980.language.KotlinAbstractAnalyzer
 import java.lang.Double.sum
@@ -444,9 +446,12 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 
     private fun trainAbstractScore() {
         formatter.addBM25(normType = NormType.ZSCORE)
+        val hLinker = HyperlinkIndexer("entity_mentions.db")
         formatter.addFeature({ query, tops, indexSearcher ->
-            featLikelihoodAbstract(query, tops, indexSearcher, abstractAnalyzer) },
-                normType = NormType.ZSCORE)
+            featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featLikelihoodAbstract(query, tops, indexSearcher, abstractAnalyzer) },
+//                normType = NormType.ZSCORE)
 
 //        formatter.addFeature({ query, tops, indexSearcher ->
 //            featAverageAbstractScore(query, tops, indexSearcher, abstractAnalyzer.indexSearcher) },

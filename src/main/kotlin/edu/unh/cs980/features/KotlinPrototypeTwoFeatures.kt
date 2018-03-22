@@ -1,13 +1,17 @@
 package edu.unh.cs980.features
 
 import edu.unh.cs980.CONTENT
+import edu.unh.cs980.context.HyperlinkIndexer
 import edu.unh.cs980.language.KotlinAbstractAnalyzer
 import edu.unh.cs980.language.LanguageStats
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.index.Term
 import org.apache.lucene.search.*
+import org.apache.lucene.search.similarities.LMDirichletSimilarity
+import org.apache.lucene.search.similarities.Similarity
 import java.io.StringReader
+import java.lang.Double.max
 import java.lang.Double.sum
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.experimental.buildSequence
@@ -116,6 +120,50 @@ fun featLikelihoodAbstract(query: String, tops: TopDocs, indexSearcher: IndexSea
 //            }
         0.0
 //        queryTerms.sumByDouble { term -> finalStats[term]!! }
+    }.toList()
+}
+
+
+fun featLikehoodOfQueryGivenEntityMention(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
+                                          hIndexer: HyperlinkIndexer): List<Double> {
+
+    val queryTokens = createTokenSequence(query).toList()
+    return tops.scoreDocs.map { scoreDoc ->
+        val doc = indexSearcher.doc(scoreDoc.doc)
+        val entities = doc.getValues("spotlight").toList()
+        queryTokens
+            .map    { queryToken ->
+                         entities
+                            .map { entity -> hIndexer.getMentionLikelihood(entity, queryToken) }
+                            .average()
+                    }
+            .fold(1.0, {acc, likelihood -> acc * max(likelihood, 0.0001)})
+    }.toList()
+}
+
+fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
+                                          abstractSearcher: IndexSearcher, sim: Similarity): List<Double> {
+
+//    val queryTokens = createTokenSequence(query).toList()
+    val booleanQuery = buildQuery(query)
+
+    abstractSearcher.setSimilarity(sim)
+    val relevantEntities = abstractSearcher.search(booleanQuery, 100)
+    val totalScore = relevantEntities.scoreDocs.sumByDouble { it.score.toDouble() }
+
+    val entityScores = relevantEntities.scoreDocs.map { scoreDoc ->
+        val doc = abstractSearcher.doc(scoreDoc.doc)
+        val entity = doc.get("name")
+        entity to scoreDoc.score.toDouble() / totalScore
+    }.toMap()
+
+
+    return tops.scoreDocs.map { scoreDoc ->
+        val doc = indexSearcher.doc(scoreDoc.doc)
+        val entities = doc.getValues("spotlight").toList()
+        entities
+            .mapNotNull { entity -> entityScores[entity] }
+            .sum()
     }.toList()
 }
 
