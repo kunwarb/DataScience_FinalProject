@@ -169,7 +169,7 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         entities
             .map { entity -> entityScores.maxBy { (e, v) -> jac.distance(entity, e) }?.let {it.second * jac.distance(entity, it.first)} ?: 0.0 }
 //            .mapNotNull { entity -> entityScores[entity] }
-            .average()
+            .sum()
     }.toList()
 }
 
