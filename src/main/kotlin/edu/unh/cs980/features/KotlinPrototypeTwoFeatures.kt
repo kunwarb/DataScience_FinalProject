@@ -29,7 +29,7 @@ private fun createTokenSequence(query: String): Sequence<String> {
 
 private fun buildEntityNameQuery(entity: String): BooleanQuery =
     BooleanQuery.Builder()
-        .apply { add(TermQuery(Term("name", entity)), BooleanClause.Occur.SHOULD) }
+        .apply { add(FuzzyQuery(Term("name", entity)), BooleanClause.Occur.SHOULD) }
         .build()
 
 private fun buildQuery(query: String): BooleanQuery =
@@ -75,9 +75,10 @@ private fun retrieveEntityDocId(entity: String, abstractSearcher: IndexSearcher)
     })
 
 private fun retrieveEntityStats(entity: String, abstractAnalyzer: KotlinAbstractAnalyzer): LanguageStats? =
-        memoizedAbstractStats.computeIfAbsent(entity, {key ->
-            abstractAnalyzer.getEntityStats(entity)
-        })
+        abstractAnalyzer.getEntityStats(entity)
+//        memoizedAbstractStats.computeIfAbsent(entity, {key ->
+//            abstractAnalyzer.getEntityStats(entity)
+//        })
 
 private fun retrieveQueryAbstractStats(query: String, abstractAnalyzer: KotlinAbstractAnalyzer) =
     createTokenSequence(query).toList()
