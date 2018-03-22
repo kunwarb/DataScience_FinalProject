@@ -156,7 +156,7 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
     val entityScores = relevantEntities.scoreDocs.map { scoreDoc ->
         val doc = abstractSearcher.doc(scoreDoc.doc)
         val entity = doc.get("name")
-        entity to scoreDoc.score.toDouble() / totalScore
+        entity.toLowerCase().replace(" ", "_") to scoreDoc.score.toDouble() / totalScore
     }.toMap()
 
 
