@@ -45,7 +45,6 @@ class KotlinAbstractAnalyzer(abstractLocation: String) {
 
         val entityDoc = indexSearcher.doc(topDocs.scoreDocs[0].doc)
         val content = entityDoc.get("text")
-        println(content)
         return createTokenSequence(content).toList()
     }
 

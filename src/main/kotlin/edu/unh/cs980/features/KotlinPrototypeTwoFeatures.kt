@@ -106,16 +106,16 @@ fun featLikelihoodAbstract(query: String, tops: TopDocs, indexSearcher: IndexSea
             .mapNotNull { entity -> retrieveEntityStats(entity, abstractAnalyzer) }
             .toList()
 
-        val finalStats = HashMap<String, Double>()
-        entityDocs
-            .map { entityLanguageDoc -> getSmoothedDocFreq(queryStats, entityLanguageDoc, 0.5) }
-            .forEach { smoothedEntityLikelihood ->
-                smoothedEntityLikelihood.forEach { term, freq ->
-                    finalStats.merge(term, freq, ::sum)
-                }
-            }
-
-        queryTerms.sumByDouble { term -> finalStats[term]!! }
+//        val finalStats = HashMap<String, Double>()
+//        entityDocs
+//            .map { entityLanguageDoc -> getSmoothedDocFreq(queryStats, entityLanguageDoc, 0.5) }
+//            .forEach { smoothedEntityLikelihood ->
+//                smoothedEntityLikelihood.forEach { term, freq ->
+//                    finalStats.merge(term, freq, ::sum)
+//                }
+//            }
+        0.0
+//        queryTerms.sumByDouble { term -> finalStats[term]!! }
     }.toList()
 }
 
