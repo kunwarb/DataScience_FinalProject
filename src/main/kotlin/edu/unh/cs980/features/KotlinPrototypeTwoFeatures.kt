@@ -146,12 +146,13 @@ fun featLikehoodOfQueryGivenEntityMention(query: String, tops: TopDocs, indexSea
 fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                                           abstractSearcher: IndexSearcher, sim: Similarity): List<Double> {
 
-//    val queryTokens = createTokenSequence(query).toList()
+    val queryTokens = createTokenSequence(query).toList()
+    println(queryTokens.joinToString())
     val booleanQuery = buildQuery(query)
 
     abstractSearcher.setSimilarity(sim)
     val relevantEntities = abstractSearcher.search(booleanQuery, 100)
-    println("$query: ${relevantEntities.maxScore}")
+//    println("$query: ${relevantEntities.maxScore}")
 //    val totalScore = relevantEntities.scoreDocs.sumByDouble { it.score.toDouble() }
 
     val entityScores = relevantEntities.scoreDocs.map { scoreDoc ->
