@@ -5,6 +5,7 @@ import edu.unh.cs980.context.HyperlinkIndexer
 import edu.unh.cs980.language.KotlinAbstractAnalyzer
 import edu.unh.cs980.language.LanguageStats
 import org.apache.lucene.analysis.en.EnglishAnalyzer
+import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.index.Term
 import org.apache.lucene.search.*
@@ -16,12 +17,12 @@ import java.lang.Double.sum
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.experimental.buildSequence
 
-private val englishAnalyzer = EnglishAnalyzer()
+private val englishAnalyzer = StandardAnalyzer()
 
 private fun createTokenSequence(query: String): Sequence<String> {
     val replaceNumbers = """(\d+|enwiki:)""".toRegex()
     val cleanQuery = query.replace(replaceNumbers, "").replace("/", " ")
-    val tokenStream = englishAnalyzer.tokenStream("text", StringReader(query)).apply { reset() }
+    val tokenStream = englishAnalyzer.tokenStream("text", StringReader(cleanQuery)).apply { reset() }
 
     return buildSequence<String> {
         while (tokenStream.incrementToken()) {
