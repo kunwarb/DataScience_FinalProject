@@ -137,6 +137,7 @@ fun featLikehoodOfQueryGivenEntityMention(query: String, tops: TopDocs, indexSea
                             .map { entity -> hIndexer.getMentionLikelihood(entity, queryToken) }
                             .average()
                     }
+            .onEach(::println)
             .fold(1.0, {acc, likelihood -> acc * max(likelihood, 0.0001)})
     }.toList()
 }
