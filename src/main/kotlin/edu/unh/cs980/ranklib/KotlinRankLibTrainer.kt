@@ -462,7 +462,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 //                normType = NormType.ZSCORE)
 
         formatter.addFeature({ query, tops, indexSearcher ->
-            featAbstractSim(query, tops, indexSearcher, abstractAnalyzer.indexSearcher, LMDirichletSimilarity()) },
+            featAbstractSim(query, tops, indexSearcher, abstractAnalyzer.indexSearcher, BM25Similarity()) },
             normType = NormType.ZSCORE)
     }
 

@@ -150,7 +150,6 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 
     val booleanQuery = buildQuery(query)
     val tokens = createTokenSequence(query).toList().joinToString()
-    println(tokens)
     val jac = Jaccard()
 
     abstractSearcher.setSimilarity(sim)
