@@ -162,7 +162,7 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         val entity = doc.get("name")
         entity.toLowerCase().replace(" ", "_") to scoreDoc.score.toDouble()
     }.toList()
-    println(abstractSearcher.doc(relevantEntities.scoreDocs[0]!!.doc).get("abstract"))
+    println(abstractSearcher.doc(relevantEntities.scoreDocs[0]!!.doc).get("text"))
 
 
     return tops.scoreDocs.map { scoreDoc ->
