@@ -19,6 +19,8 @@ import kotlin.coroutines.experimental.buildSequence
 private val englishAnalyzer = EnglishAnalyzer()
 
 private fun createTokenSequence(query: String): Sequence<String> {
+    val replaceNumbers = """(\d+|enwiki:)""".toRegex()
+    val cleanQuery = query.replace(replaceNumbers, "").replace("/", " ")
     val tokenStream = englishAnalyzer.tokenStream("text", StringReader(query)).apply { reset() }
 
     return buildSequence<String> {
