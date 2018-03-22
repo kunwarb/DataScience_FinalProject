@@ -148,10 +148,10 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 
 //    val queryTokens = createTokenSequence(query).toList()
     val booleanQuery = buildQuery(query)
-    println(query)
 
     abstractSearcher.setSimilarity(sim)
     val relevantEntities = abstractSearcher.search(booleanQuery, 100)
+    println("$query: ${relevantEntities.maxScore}")
 //    val totalScore = relevantEntities.scoreDocs.sumByDouble { it.score.toDouble() }
 
     val entityScores = relevantEntities.scoreDocs.map { scoreDoc ->
@@ -164,7 +164,6 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
     return tops.scoreDocs.map { scoreDoc ->
         val doc = indexSearcher.doc(scoreDoc.doc)
         val entities = doc.getValues("spotlight").toList()
-        println(entities.size)
         entities
             .mapNotNull { entity -> entityScores[entity] }
             .sum()
