@@ -49,8 +49,16 @@ class KotlinAbstractAnalyzer(abstractLocation: String) {
         return createTokenSequence(content).toList()
     }
 
+    fun getTermStats(terms: List<String>): List<Pair<String, Double>> {
+        val totalTerms = indexSearcher.indexReader.getSumTotalTermFreq("text").toDouble()
+        return terms.map { term ->
+            val termFreq = indexSearcher.indexReader.totalTermFreq(Term("text", term)) / totalTerms
+            term to termFreq
+        }.toList()
+    }
 
-    fun getEntityStats(entity: String): Pair<Map<String, Double>, Map<String, Double>>? {
+
+    fun getEntityStats(entity: String): LanguageStats? {
         val terms = getEntityTokens(entity) ?: return null
 
         val allTermsInDocument = terms.size.toDouble()
@@ -58,17 +66,19 @@ class KotlinAbstractAnalyzer(abstractLocation: String) {
             .getSumTotalTermFreq("text")
             .toDouble()
 
-        val termFreqs = terms
+        val docTermCounts = terms
             .groupingBy(::identity)
             .eachCount()
-            .mapValues { (term, freq) -> freq / allTermsInDocument }
 
-        val docFreqs = terms
+        val docTermFreqs = docTermCounts
+            .mapValues { (term, count) -> count / allTermsInDocument }
+
+        val corpusTermFreqs = terms
             .toSet()
             .map { term -> Pair(term, retrieveTermStats(term) / allTermsInCorpus)}
             .toMap()
 
-        return Pair(docFreqs, termFreqs)
+        return LanguageStats(docTermCounts, docTermFreqs, corpusTermFreqs)
     }
 
     fun runTest() {
@@ -77,7 +87,7 @@ class KotlinAbstractAnalyzer(abstractLocation: String) {
         testEntities
             .onEach(::println)
             .mapNotNull(this::getEntityStats)
-            .forEach { (docFreqs, termFreqs) ->
+            .forEach { (docFreqs, termFreqs, _) ->
                 println(docFreqs)
                 println(termFreqs)
             }

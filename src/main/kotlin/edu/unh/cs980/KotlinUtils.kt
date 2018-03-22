@@ -43,6 +43,7 @@ fun <A>Sequence<A>.forEachParallel(f: suspend (A) -> Unit): Unit = runBlocking {
     map { async(CommonPool) { f(it) } }.forEach { it.await() }
 }
 
+
 // Map Extensions
 fun <K,V>MutableMap<K,V>.removeAll(f: (key:K,value:V) -> Boolean) {
     this.entries

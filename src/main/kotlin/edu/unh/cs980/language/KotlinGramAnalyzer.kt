@@ -11,7 +11,7 @@ import kotlin.coroutines.experimental.buildSequence
 
 enum class GramStatType  { TYPE_UNIGRAM, TYPE_BIGRAM, TYPE_BIGRAM_WINDOW }
 
-data class GramStatistics(val docTermCounts: Map<String, Int>,
+data class LanguageStats(val docTermCounts: Map<String, Int>,
                           val docTermFreqs: Map<String, Double>,
                           val corpusTermFreqs: Map<String, Double>)
 
@@ -35,7 +35,7 @@ class KotlinGramAnalyzer(gramLoc: String) {
         }
     }
 
-    fun getBigramStats(text: String): GramStatistics {
+    fun getBigramStats(text: String): LanguageStats {
         val terms = createTokenSequence(text).toList()
         val docBigramCounts = terms.windowed(2, 1)
             .map { window -> window.joinToString(separator = "") }
@@ -59,10 +59,10 @@ class KotlinGramAnalyzer(gramLoc: String) {
             .map { (gram, count) -> Pair(gram, getCorpusGram(gram, "bigrams") / totalCorpusBigrams) }
             .toMap()
 
-        return GramStatistics(docBigramCounts, docBigramFreqs, corpusBigramFreqs)
+        return LanguageStats(docBigramCounts, docBigramFreqs, corpusBigramFreqs)
     }
 
-    fun getWindowedBigramStats(text: String): GramStatistics {
+    fun getWindowedBigramStats(text: String): LanguageStats {
         val terms = createTokenSequence(text).toList()
         val docBigramWindowCounts = terms
             .windowed(8, 1, true)
@@ -92,11 +92,11 @@ class KotlinGramAnalyzer(gramLoc: String) {
             .mapValues { (bigram, count) -> getCorpusGram(bigram, "bigram_windows") / totalCorpusBigrams }
             .toMap()
 
-        return GramStatistics(docBigramWindowCounts, docBigramWindowFreqs, corpusBigramWindowFreqs)
+        return LanguageStats(docBigramWindowCounts, docBigramWindowFreqs, corpusBigramWindowFreqs)
 
     }
 
-    fun getUnigramStats(text: String): GramStatistics {
+    fun getUnigramStats(text: String): LanguageStats {
         val terms = createTokenSequence(text).toList()
         val totalTerms = terms.size.toDouble()
         val totalCorpusTerms = indexSearcher.indexReader
@@ -116,10 +116,10 @@ class KotlinGramAnalyzer(gramLoc: String) {
             .map { (gram, count) -> Pair(gram, getCorpusGram(gram, "unigram") / totalCorpusTerms) }
             .toMap()
 
-        return GramStatistics(docTermCounts, docTermFreqs, corpusTermFreqs)
+        return LanguageStats(docTermCounts, docTermFreqs, corpusTermFreqs)
     }
 
-    fun getStats(text: String, statType: GramStatType): GramStatistics {
+    fun getStats(text: String, statType: GramStatType): LanguageStats {
         return when (statType) {
             GramStatType.TYPE_UNIGRAM -> getUnigramStats(text)
             GramStatType.TYPE_BIGRAM -> getBigramStats(text)
