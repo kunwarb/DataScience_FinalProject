@@ -1,6 +1,7 @@
 @file:JvmName("KotGramAnalyzer")
 package edu.unh.cs980.language
 
+import com.google.common.collect.ImmutableMap
 import edu.unh.cs980.getIndexSearcher
 import edu.unh.cs980.identity
 import org.apache.lucene.analysis.en.EnglishAnalyzer
@@ -11,9 +12,10 @@ import kotlin.coroutines.experimental.buildSequence
 
 enum class GramStatType  { TYPE_UNIGRAM, TYPE_BIGRAM, TYPE_BIGRAM_WINDOW }
 
+
 data class LanguageStats(val docTermCounts: Map<String, Int>,
-                          val docTermFreqs: Map<String, Double>,
-                          val corpusTermFreqs: Map<String, Double>)
+                         val docTermFreqs: Map<String, Double>,
+                         val corpusTermFreqs: Map<String, Double> = mapOf())
 
 class KotlinGramAnalyzer(gramLoc: String) {
     val indexSearcher = getIndexSearcher(gramLoc)

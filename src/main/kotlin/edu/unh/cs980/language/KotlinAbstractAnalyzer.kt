@@ -61,9 +61,9 @@ class KotlinAbstractAnalyzer(abstractLocation: String) {
         val terms = getEntityTokens(entity) ?: return null
 
         val allTermsInDocument = terms.size.toDouble()
-        val allTermsInCorpus = indexSearcher.indexReader
-            .getSumTotalTermFreq("text")
-            .toDouble()
+//        val allTermsInCorpus = indexSearcher.indexReader
+//            .getSumTotalTermFreq("text")
+//            .toDouble()
 
         val docTermCounts = terms
             .groupingBy(::identity)
@@ -72,12 +72,12 @@ class KotlinAbstractAnalyzer(abstractLocation: String) {
         val docTermFreqs = docTermCounts
             .mapValues { (term, count) -> count / allTermsInDocument }
 
-        val corpusTermFreqs = terms
-            .toSet()
-            .map { term -> Pair(term, retrieveTermStats(term) / allTermsInCorpus)}
-            .toMap()
+//        val corpusTermFreqs = terms
+//            .toSet()
+//            .map { term -> Pair(term, retrieveTermStats(term) / allTermsInCorpus)}
+//            .toMap()
 
-        return LanguageStats(docTermCounts, docTermFreqs, corpusTermFreqs)
+        return LanguageStats(docTermCounts, docTermFreqs)
     }
 
     fun runTest() {
