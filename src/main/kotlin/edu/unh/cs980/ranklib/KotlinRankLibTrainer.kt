@@ -455,15 +455,15 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     private fun trainAbstractScore() {
         formatter.addBM25(normType = NormType.ZSCORE)
         val hLinker = HyperlinkIndexer("entity_mentions.db")
-//        formatter.addFeature({ query, tops, indexSearcher ->
-//            featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
 //        formatter.addFeature({ query, tops, indexSearcher ->
 //            featLikelihoodAbstract(query, tops, indexSearcher, abstractAnalyzer) },
 //                normType = NormType.ZSCORE)
 
-        formatter.addFeature({ query, tops, indexSearcher ->
-            featAbstractSim(query, tops, indexSearcher, abstractAnalyzer.indexSearcher, BM25Similarity()) },
-            normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featAbstractSim(query, tops, indexSearcher, abstractAnalyzer.indexSearcher, BM25Similarity()) },
+//            normType = NormType.ZSCORE)
     }
 
     /**
