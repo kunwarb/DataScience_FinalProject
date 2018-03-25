@@ -4,6 +4,7 @@ package edu.unh.cs980.context
 import edu.unh.cs.treccar_v2.Data
 import edu.unh.cs.treccar_v2.read_data.DeserializeData
 import edu.unh.cs980.forEachParallel
+import info.debatty.java.stringsimilarity.Jaccard
 import org.mapdb.DBMaker
 import org.mapdb.Serializer
 import org.mapdb.serializer.SerializerArrayTuple
@@ -66,13 +67,27 @@ class HyperlinkIndexer(filename: String) {
                         }
                 }
 
+
+    fun findClosestMention(anchorText: String): String? {
+        if (anchorText in mentionSet) {
+            return anchorText
+        }
+
+        val dist = Jaccard()
+        mentionSet.map.keys.maxBy { dist.distance(anchorText, it) }!!.let {
+            val score = dist.distance(anchorText, it)
+            return if (score <= 0.9) null else it
+        }
+    }
+
     /**
      * Desc: Given entity mention and linked entity, return probability of linked entity given entity mention
      */
-    fun getMentionLikelihood(anchorText: String, linkedEntity: String): Double {
-        if (!hasEntityMention(anchorText)) {
-            return 0.0
-        }
+    fun getMentionLikelihood(aText: String, linkedEntity: String): Double {
+        val anchorText = findClosestMention(aText) ?: return 0.0
+//        if (!hasEntityMention(anchorText)) {
+//            return 0.0
+//        }
         val cleanedAnchor = clean(anchorText)
         val cleanedEntity = clean(linkedEntity)
 
