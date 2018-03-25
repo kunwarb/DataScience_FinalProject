@@ -128,6 +128,8 @@ fun featLikelihoodAbstract(query: String, tops: TopDocs, indexSearcher: IndexSea
 }
 
 
+// Get likelihood of query given entity mention
+// Then get likelihood of entity mention given document
 fun featLikehoodOfQueryGivenEntityMention(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                                           hIndexer: HyperlinkIndexer): List<Double> {
 
@@ -145,6 +147,10 @@ fun featLikehoodOfQueryGivenEntityMention(query: String, tops: TopDocs, indexSea
     }.toList()
 }
 
+// Get likelihood of entity (given indexed abstract) given query
+// Then get likelihood of entity given document
+// Then go backwards
+
 fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                                           abstractSearcher: IndexSearcher, sim: Similarity): List<Double> {
 
@@ -153,7 +159,7 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
     val jac = Jaccard()
 
     abstractSearcher.setSimilarity(sim)
-    val relevantEntities = abstractSearcher.search(booleanQuery, 100)
+    val relevantEntities = abstractSearcher.search(booleanQuery, 200)
 //    println("$query: ${relevantEntities.maxScore}")
 //    val totalScore = relevantEntities.scoreDocs.sumByDouble { it.score.toDouble() }
 
@@ -162,7 +168,6 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         val entity = doc.get("name")
         entity.toLowerCase().replace(" ", "_") to scoreDoc.score.toDouble()
     }.toList()
-    println(abstractSearcher.doc(relevantEntities.scoreDocs[0]!!.doc).get("text"))
 
 
     return tops.scoreDocs.map { scoreDoc ->

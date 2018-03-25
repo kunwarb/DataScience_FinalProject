@@ -5,6 +5,7 @@ import edu.unh.cs.treccar_v2.read_data.DeserializeData
 import edu.unh.cs980.forEachParallel
 import edu.unh.cs980.getIndexWriter
 import org.apache.lucene.analysis.en.EnglishAnalyzer
+import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.document.Document
 import org.apache.lucene.document.Field
@@ -49,7 +50,7 @@ class KotlinGram(filename: String) {
 //        .valueSerializer(Serializer.INTEGER)
 //        .createOrOpen()
 
-    val analyzer = EnglishAnalyzer()
+    val analyzer = StandardAnalyzer()
     val rand = Random().apply { setSeed(128383197) }
     val indexWriter = getIndexWriter(filename)
 
