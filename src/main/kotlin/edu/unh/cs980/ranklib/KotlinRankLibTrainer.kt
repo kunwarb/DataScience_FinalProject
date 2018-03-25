@@ -327,12 +327,12 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     }
 
     private fun queryAbstract() {
-        formatter.addBM25(normType = NormType.ZSCORE, weight = 0.7862476686280842)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = 0.6152879104997718)
 //        formatter.addBM25(normType = NormType.ZSCORE, weight = 1.0)
         val hGram = KotlinGramAnalyzer("gram")
         formatter.addFeature({ query, tops, indexSearcher ->
             featSDM(query, tops, indexSearcher, hGram)
-        }, normType = NormType.ZSCORE, weight = -0.1796174126816704)
+        }, normType = NormType.ZSCORE, weight = -0.384712089500228)
 
 //        val hLinker = HyperlinkIndexer("entity_mentions.db")
 //        formatter.addFeature({ query, tops, indexSearcher ->
