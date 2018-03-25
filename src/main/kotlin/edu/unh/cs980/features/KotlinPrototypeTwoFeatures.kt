@@ -2,7 +2,9 @@ package edu.unh.cs980.features
 
 import edu.unh.cs980.CONTENT
 import edu.unh.cs980.context.HyperlinkIndexer
+import edu.unh.cs980.language.GramStatType
 import edu.unh.cs980.language.KotlinAbstractAnalyzer
+import edu.unh.cs980.language.KotlinGramAnalyzer
 import edu.unh.cs980.language.LanguageStats
 import info.debatty.java.stringsimilarity.Jaccard
 import org.apache.lucene.analysis.en.EnglishAnalyzer
@@ -178,5 +180,37 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 //            .mapNotNull { entity -> entityScores[entity] }
             .sum()
     }.toList()
+}
+
+
+
+fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
+            gramAnalyzer: KotlinGramAnalyzer): List<Double> {
+    val tokens = createTokenSequence(query).toList()
+    val cleanQuery = tokens.toList().joinToString(" ")
+
+    val queryUnigram = gramAnalyzer.getStats(cleanQuery, GramStatType.TYPE_UNIGRAM)
+    val queryBigram = gramAnalyzer.getStats(cleanQuery, GramStatType.TYPE_BIGRAM)
+    val queryWindow = gramAnalyzer.getStats(cleanQuery, GramStatType.TYPE_BIGRAM_WINDOW)
+
+    return tops.scoreDocs.map { scoreDoc ->
+        val doc = indexSearcher.doc(scoreDoc.doc)
+        val text = doc.get(CONTENT) + " " + cleanQuery
+        val docUnigram = gramAnalyzer
+            .getStats(text, GramStatType.TYPE_UNIGRAM)
+            .smooth(0.5)
+        val docBigram = gramAnalyzer
+            .getStats(text, GramStatType.TYPE_BIGRAM)
+            .smooth(0.5)
+        val docBigramWindow = gramAnalyzer
+            .getStats(text, GramStatType.TYPE_BIGRAM_WINDOW)
+            .smooth(0.5)
+
+        val v1 = queryUnigram.docTermCounts.keys.map { key -> docUnigram[key]!! }.sum()
+        val v2 = queryBigram.docTermCounts.keys.map { key -> docBigram[key]!! }.sum()
+        val v3 = queryWindow.docTermCounts.keys.map { key -> docBigramWindow[key]!! }.sum()
+
+        v1 + v2 + v3
+    }
 }
 

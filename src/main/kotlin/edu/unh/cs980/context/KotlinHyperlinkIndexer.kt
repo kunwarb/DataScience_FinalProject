@@ -69,17 +69,6 @@ class HyperlinkIndexer(filename: String) {
                 }
 
 
-    fun findClosestMention(mention: String, prefixMap: ConcurrentNavigableMap<Array<Any>, Int>): Int {
-        val dist = Jaccard()
-        val result = prefixMap.map { (keyArray, value) ->
-            val arr = keyArray as Array<String>
-            val measure = dist.distance(mention, arr[1])
-            Triple(arr[1], value, measure) }
-        .maxBy { it.third }
-
-        return result!!.let { (ent, freq, meas) -> if (meas >= 0.9) freq else 0 }
-    }
-
     /**
      * Desc: Given entity mention and linked entity, return probability of linked entity given entity mention
      */
@@ -92,9 +81,8 @@ class HyperlinkIndexer(filename: String) {
         }
 
         val prefixMap = map.prefixSubMap(arrayOf(cleanedAnchor))
-        val mentionsReferringToEntity = findClosestMention(linkedEntity, prefixMap)
         val totalMentions = prefixMap.values.sum()
-//        val mentionsReferringToEntity = map[arrayOf(cleanedAnchor, cleanedEntity)] ?: 0
+        val mentionsReferringToEntity = map[arrayOf(cleanedAnchor, cleanedEntity)] ?: 0
 
         return mentionsReferringToEntity / totalMentions.toDouble()
     }
