@@ -45,8 +45,8 @@ class RankLauncher(val rankLibLoc: String) {
                 "-ranker", "4",
                 "-metric2t", "map",
                 "-kcv", "5",
-                "-tvs", "0.3",
-                "-kcvmd", "models"
+                "-tvs", "0.1",
+                "-kcvmd", "models/"
                 )
 
         val log = File("log_rank.log")
@@ -60,4 +60,10 @@ class RankLauncher(val rankLibLoc: String) {
         process.waitFor()
     }
 
+}
+
+fun main(args: Array<String>) {
+    val runner = RankLauncher("RankLib-2.1-patched.jar")
+    runner.runRankLib()
+    runner.extractLogResults()
 }
