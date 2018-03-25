@@ -45,7 +45,7 @@ class RankLauncher(val rankLibLoc: String) {
                 "-ranker", "4",
                 "-metric2t", "map",
                 "-kcv", "5",
-                "-tvs", "0.1",
+//                "-tvs", "0.1",
                 "-kcvmd", "models/"
                 )
 
