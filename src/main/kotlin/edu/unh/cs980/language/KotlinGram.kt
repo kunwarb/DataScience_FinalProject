@@ -107,6 +107,7 @@ class KotlinGram(filename: String) {
 
             ( i + 1 until min(i + 9, tokens.size)).forEach { j ->
                 bigramWindows.add(tokens[i] + tokens[j])
+                bigramWindows.add(tokens[j] + tokens[i])
             }
         }
         doc.add(TextField("unigram", unigrams.joinToString(separator = " "), Field.Store.YES))

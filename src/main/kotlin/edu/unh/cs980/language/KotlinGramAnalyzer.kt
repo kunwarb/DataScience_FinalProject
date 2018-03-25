@@ -180,7 +180,7 @@ class KotlinGramAnalyzer(gramLoc: String) {
 //        return LanguageStats(docBigramCounts, docBigramFreqs, corpusBigramFreqs)
     }
 
-    private fun getWindowedBigramCounts(text: String, add: Boolean = false): Map<String, Int> {
+    private fun getWindowedBigramCounts(text: String): Map<String, Int> {
         val terms = createTokenSequence(text).toList()
         val docBigramWindowCounts = terms
             .windowed(8, 1, true)
