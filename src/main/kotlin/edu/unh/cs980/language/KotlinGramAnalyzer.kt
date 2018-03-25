@@ -188,7 +188,8 @@ class KotlinGramAnalyzer(gramLoc: String) {
                             val firstTerm = window[0]
                             window
                                 .slice(1  until window.size)
-                                .map { secondTerm -> firstTerm + secondTerm } }
+                                .flatMap { secondTerm -> listOf(firstTerm + secondTerm, secondTerm + firstTerm) } }
+//                                .map { secondTerm -> firstTerm + secondTerm } }
             .groupingBy(::identity)
             .eachCount()
             .toMap()
