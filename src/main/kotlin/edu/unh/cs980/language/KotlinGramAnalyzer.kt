@@ -17,15 +17,15 @@ data class LanguageStats(val docTermCounts: Map<String, Int>,
                          val docTermFreqs: Map<String, Double>,
                          val corpusTermFreqs: Map<String, Double> = mapOf()) {
 
-    fun smooth(alpha: Double, stats: LanguageStats): Map<String, Double> {
-        return docTermFreqs.map { (k,v) -> k to v * alpha + stats.corpusTermFreqs[k]!! * (alpha - 1.0) }
-            .toMap()
-    }
-
-//    fun smooth(alpha: Double): Map<String, Double> {
-//        return docTermFreqs.map { (k,v) -> k to v * alpha + corpusTermFreqs[k]!! * (alpha - 1.0) }
+//    fun smooth(alpha: Double, stats: LanguageStats): Map<String, Double> {
+//        return docTermFreqs.map { (k,v) -> k to v * alpha + stats.corpusTermFreqs[k]!! * (alpha - 1.0) }
 //            .toMap()
 //    }
+
+    fun smooth(alpha: Double): Map<String, Double> {
+        return docTermFreqs.map { (k,v) -> k to v * alpha + corpusTermFreqs[k]!! * (alpha - 1.0) }
+            .toMap()
+    }
 }
 
 class KotlinGramAnalyzer(gramLoc: String) {
