@@ -16,7 +16,8 @@ enum class GramStatType  { TYPE_UNIGRAM, TYPE_BIGRAM, TYPE_BIGRAM_WINDOW }
 data class LikelihoodStat(val likelihoodMap: Map<String, Double>, val type: GramStatType) {
     fun likelihood() =
             likelihoodMap.values
-                .fold(1.0, {acc, prob -> acc * prob})
+                .sum()
+//                .fold(1.0, {acc, prob -> acc * prob})
 }
 data class LikelihoodContainer(val unigramLikelihood: LikelihoodStat,
                                val bigramLikelihood: LikelihoodStat,
