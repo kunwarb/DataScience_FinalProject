@@ -5,7 +5,6 @@ import edu.unh.cs980.context.HyperlinkIndexer
 import edu.unh.cs980.language.GramStatType
 import edu.unh.cs980.language.KotlinAbstractAnalyzer
 import edu.unh.cs980.language.KotlinGramAnalyzer
-import edu.unh.cs980.language.LanguageStats
 import info.debatty.java.stringsimilarity.Jaccard
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.standard.StandardAnalyzer
@@ -74,60 +73,61 @@ fun featAverageAbstractScore(query: String, tops: TopDocs, indexSearcher: IndexS
     }.toList()
 }
 
-private val memoizedAbstractDocs = ConcurrentHashMap<String, Int?>()
-private val memoizedAbstractStats = ConcurrentHashMap<String, LanguageStats?>()
+//private val memoizedAbstractDocs = ConcurrentHashMap<String, Int?>()
+//private val memoizedAbstractStats = ConcurrentHashMap<String, LanguageStats?>()
+//
+//
+//private fun retrieveEntityDocId(entity: String, abstractSearcher: IndexSearcher): Int? =
+//    memoizedAbstractDocs.computeIfAbsent(entity, {key ->
+//        val nameQuery = buildEntityNameQuery(entity)
+//        val searchResult = abstractSearcher.search(nameQuery, 1)
+//        if (searchResult.scoreDocs.isEmpty()) null else searchResult.scoreDocs[0].doc
+//    })
+//
+//private fun retrieveEntityStats(entity: String, abstractAnalyzer: KotlinAbstractAnalyzer): LanguageStats? =
+//        memoizedAbstractStats.computeIfAbsent(entity, {key ->
+//            abstractAnalyzer.getEntityStats(entity)
+//        })
+//
+//private fun retrieveQueryAbstractStats(query: String, abstractAnalyzer: KotlinAbstractAnalyzer) =
+//    createTokenSequence(query).toList()
+//        .run(abstractAnalyzer::getTermStats)
+//
+//
+//private fun getSmoothedDocFreq(queryFreq: List<Pair<String, Double>>,
+//                               languageStats: LanguageStats, lambda: Double): Map<String, Double> =
+//    queryFreq.map { (query, queryTermFreqInCollection) ->
+//        val collectionFreq = lambda * queryTermFreqInCollection
+//        val documentFreq = (1 - lambda) * languageStats.docTermFreqs.getOrDefault(query, 0.0)
+//        query to collectionFreq + documentFreq
+//    }.toMap()
 
-private fun retrieveEntityDocId(entity: String, abstractSearcher: IndexSearcher): Int? =
-    memoizedAbstractDocs.computeIfAbsent(entity, {key ->
-        val nameQuery = buildEntityNameQuery(entity)
-        val searchResult = abstractSearcher.search(nameQuery, 1)
-        if (searchResult.scoreDocs.isEmpty()) null else searchResult.scoreDocs[0].doc
-    })
-
-private fun retrieveEntityStats(entity: String, abstractAnalyzer: KotlinAbstractAnalyzer): LanguageStats? =
-        memoizedAbstractStats.computeIfAbsent(entity, {key ->
-            abstractAnalyzer.getEntityStats(entity)
-        })
-
-private fun retrieveQueryAbstractStats(query: String, abstractAnalyzer: KotlinAbstractAnalyzer) =
-    createTokenSequence(query).toList()
-        .run(abstractAnalyzer::getTermStats)
-
-
-private fun getSmoothedDocFreq(queryFreq: List<Pair<String, Double>>,
-                               languageStats: LanguageStats, lambda: Double): Map<String, Double> =
-    queryFreq.map { (query, queryTermFreqInCollection) ->
-        val collectionFreq = lambda * queryTermFreqInCollection
-        val documentFreq = (1 - lambda) * languageStats.docTermFreqs.getOrDefault(query, 0.0)
-        query to collectionFreq + documentFreq
-    }.toMap()
-
-fun featLikelihoodAbstract(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
-                             abstractAnalyzer: KotlinAbstractAnalyzer): List<Double> {
-
-    val queryStats = retrieveQueryAbstractStats(query, abstractAnalyzer)
-    val queryTerms = queryStats.map(Pair<String,Double>::first)
-
-    return tops.scoreDocs.map { scoreDoc ->
-        val doc = indexSearcher.doc(scoreDoc.doc)
-        val entities = doc.getValues("spotlight").toSet().toList()
-
-        val entityDocs = entities
-            .mapNotNull { entity -> retrieveEntityStats(entity, abstractAnalyzer) }
-            .toList()
-
-//        val finalStats = HashMap<String, Double>()
-//        entityDocs
-//            .map { entityLanguageDoc -> getSmoothedDocFreq(queryStats, entityLanguageDoc, 0.5) }
-//            .forEach { smoothedEntityLikelihood ->
-//                smoothedEntityLikelihood.forEach { term, freq ->
-//                    finalStats.merge(term, freq, ::sum)
-//                }
-//            }
-        0.0
-//        queryTerms.sumByDouble { term -> finalStats[term]!! }
-    }.toList()
-}
+//fun featLikelihoodAbstract(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
+//                             abstractAnalyzer: KotlinAbstractAnalyzer): List<Double> {
+//
+//    val queryStats = retrieveQueryAbstractStats(query, abstractAnalyzer)
+//    val queryTerms = queryStats.map(Pair<String,Double>::first)
+//
+//    return tops.scoreDocs.map { scoreDoc ->
+//        val doc = indexSearcher.doc(scoreDoc.doc)
+//        val entities = doc.getValues("spotlight").toSet().toList()
+//
+//        val entityDocs = entities
+//            .mapNotNull { entity -> retrieveEntityStats(entity, abstractAnalyzer) }
+//            .toList()
+//
+////        val finalStats = HashMap<String, Double>()
+////        entityDocs
+////            .map { entityLanguageDoc -> getSmoothedDocFreq(queryStats, entityLanguageDoc, 0.5) }
+////            .forEach { smoothedEntityLikelihood ->
+////                smoothedEntityLikelihood.forEach { term, freq ->
+////                    finalStats.merge(term, freq, ::sum)
+////                }
+////            }
+//        0.0
+////        queryTerms.sumByDouble { term -> finalStats[term]!! }
+//    }.toList()
+//}
 
 
 // Get likelihood of query given entity mention
@@ -189,26 +189,34 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
     val tokens = createTokenSequence(query).toList()
     val cleanQuery = tokens.toList().joinToString(" ")
 
-    val queryUnigram = gramAnalyzer.getStats(cleanQuery, GramStatType.TYPE_UNIGRAM)
-    val queryBigram = gramAnalyzer.getStats(cleanQuery, GramStatType.TYPE_BIGRAM)
-    val queryWindow = gramAnalyzer.getStats(cleanQuery, GramStatType.TYPE_BIGRAM_WINDOW)
+    val queryCorpus = gramAnalyzer.getCorpusStatContainer(query)
+
+//    val queryUnigram = gramAnalyzer.getStats(cleanQuery, GramStatType.TYPE_UNIGRAM)
+//    val queryBigram = gramAnalyzer.getStats(cleanQuery, GramStatType.TYPE_BIGRAM)
+//    val queryWindow = gramAnalyzer.getStats(cleanQuery, GramStatType.TYPE_BIGRAM_WINDOW)
 
     return tops.scoreDocs.map { scoreDoc ->
         val doc = indexSearcher.doc(scoreDoc.doc)
         val text = doc.get(CONTENT) + " " + cleanQuery
-        val docUnigram = gramAnalyzer
-            .getStats(text, GramStatType.TYPE_UNIGRAM)
-            .smooth(0.5)
-        val docBigram = gramAnalyzer
-            .getStats(text, GramStatType.TYPE_BIGRAM)
-            .smooth(0.5)
-        val docBigramWindow = gramAnalyzer
-            .getStats(text, GramStatType.TYPE_BIGRAM_WINDOW)
-            .smooth(0.5)
+        val docStat = gramAnalyzer.getLanguageStatContainer(text)
+        val queryLikelihood = docStat.getLikelihoodGivenQuery(queryCorpus, 0.5)
+        val v1 = queryLikelihood.unigramLikelihood.likelihood()
+        val v2 = queryLikelihood.bigramLikelihood.likelihood()
+        val v3 = queryLikelihood.bigramWindowLikelihood.likelihood()
 
-        val v1 = queryUnigram.docTermCounts.keys.map { key -> docUnigram[key]!! }.sum()
-        val v2 = queryBigram.docTermCounts.keys.map { key -> docBigram[key]!! }.sum()
-        val v3 = queryWindow.docTermCounts.keys.map { key -> docBigramWindow[key]!! }.sum()
+//        val docUnigram = gramAnalyzer
+//            .getStats(text, GramStatType.TYPE_UNIGRAM)
+//            .smooth(0.5)
+//        val docBigram = gramAnalyzer
+//            .getStats(text, GramStatType.TYPE_BIGRAM)
+//            .smooth(0.5)
+//        val docBigramWindow = gramAnalyzer
+//            .getStats(text, GramStatType.TYPE_BIGRAM_WINDOW)
+//            .smooth(0.5)
+
+//        val v1 = queryUnigram.docTermCounts.keys.map { key -> docUnigram[key]!! }.sum()
+//        val v2 = queryBigram.docTermCounts.keys.map { key -> docBigram[key]!! }.sum()
+//        val v3 = queryWindow.docTermCounts.keys.map { key -> docBigramWindow[key]!! }.sum()
 
         v1 + v2 + v3
     }
