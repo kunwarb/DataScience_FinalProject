@@ -57,39 +57,39 @@ class KotlinAbstractAnalyzer(abstractLocation: String) {
     }
 
 
-    fun getEntityStats(entity: String): LanguageStats? {
-        val terms = getEntityTokens(entity) ?: return null
-
-        val allTermsInDocument = terms.size.toDouble()
-//        val allTermsInCorpus = indexSearcher.indexReader
-//            .getSumTotalTermFreq("text")
-//            .toDouble()
-
-        val docTermCounts = terms
-            .groupingBy(::identity)
-            .eachCount()
-
-        val docTermFreqs = docTermCounts
-            .mapValues { (term, count) -> count / allTermsInDocument }
-
-//        val corpusTermFreqs = terms
-//            .toSet()
-//            .map { term -> Pair(term, retrieveTermStats(term) / allTermsInCorpus)}
-//            .toMap()
-
-        return LanguageStats(docTermCounts, docTermFreqs)
-    }
+//    fun getEntityStats(entity: String): LanguageStats? {
+//        val terms = getEntityTokens(entity) ?: return null
+//
+//        val allTermsInDocument = terms.size.toDouble()
+////        val allTermsInCorpus = indexSearcher.indexReader
+////            .getSumTotalTermFreq("text")
+////            .toDouble()
+//
+//        val docTermCounts = terms
+//            .groupingBy(::identity)
+//            .eachCount()
+//
+//        val docTermFreqs = docTermCounts
+//            .mapValues { (term, count) -> count / allTermsInDocument }
+//
+////        val corpusTermFreqs = terms
+////            .toSet()
+////            .map { term -> Pair(term, retrieveTermStats(term) / allTermsInCorpus)}
+////            .toMap()
+//
+//        return LanguageStats(docTermCounts, docTermFreqs)
+//    }
 
     fun runTest() {
-        val testEntities = listOf("Stack_exchange", "food", "theobromine", "united_states")
-
-        testEntities
-            .onEach(::println)
-            .mapNotNull(this::getEntityStats)
-            .forEach { (docFreqs, termFreqs, _) ->
-                println(docFreqs)
-                println(termFreqs)
-            }
+//        val testEntities = listOf("Stack_exchange", "food", "theobromine", "united_states")
+//
+//        testEntities
+//            .onEach(::println)
+//            .mapNotNull(this::getEntityStats)
+//            .forEach { (docFreqs, termFreqs, _) ->
+//                println(docFreqs)
+//                println(termFreqs)
+//            }
     }
 
 }
