@@ -28,6 +28,14 @@ class RankLauncher(val rankLibLoc: String) {
                     .let { (id, weight) -> id.toInt() to weight.toFloat() }
             }
 
+
+    fun extractLogResults() {
+        File("log_rank.log")
+            .readLines()
+            .filter { it.startsWith("Fold ") || it.startsWith("MAP on") }
+            .onEach(::println)
+    }
+
     fun runRankLib() {
         createModelDirectory()
 
@@ -41,9 +49,13 @@ class RankLauncher(val rankLibLoc: String) {
                 "-kcvmd", "models"
                 )
 
+        val log = File("log_rank.log")
+
+
         val processBuilder = ProcessBuilder(commands)
-        processBuilder.redirectOutput(File("/dev/null"))
-            .redirectErrorStream(true)
+//        processBuilder.redirectOutput(File("/dev/null"))
+        processBuilder.redirectOutput(log)
+            .redirectErrorStream(false)
         val process = processBuilder.start()
         process.waitFor()
     }
