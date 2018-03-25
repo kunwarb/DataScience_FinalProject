@@ -9,6 +9,7 @@ import org.mapdb.DBMaker
 import org.mapdb.Serializer
 import org.mapdb.serializer.SerializerArrayTuple
 import java.io.*
+import java.util.concurrent.ConcurrentNavigableMap
 import java.util.concurrent.atomic.AtomicInteger
 
 
@@ -68,32 +69,32 @@ class HyperlinkIndexer(filename: String) {
                 }
 
 
-    fun findClosestMention(anchorText: String): String? {
-        if (anchorText in mentionSet) {
-            return anchorText
-        }
-
+    fun findClosestMention(mention: String, prefixMap: ConcurrentNavigableMap<Array<Any>, Int>): Int {
         val dist = Jaccard()
-        mentionSet.map.keys.maxBy { dist.distance(anchorText, it) }!!.let {
-            val score = dist.distance(anchorText, it)
-            return if (score <= 0.9) null else it
-        }
+        val result = prefixMap.map { (keyArray, value) ->
+            val arr = keyArray as Array<String>
+            val measure = dist.distance(mention, arr[1])
+            Triple(arr[1], value, measure) }
+        .maxBy { it.third }
+
+        return result!!.let { (ent, freq, meas) -> if (meas >= 0.9) freq else 0 }
     }
 
     /**
      * Desc: Given entity mention and linked entity, return probability of linked entity given entity mention
      */
-    fun getMentionLikelihood(aText: String, linkedEntity: String): Double {
-        val anchorText = findClosestMention(aText) ?: return 0.0
-//        if (!hasEntityMention(anchorText)) {
-//            return 0.0
-//        }
+    fun getMentionLikelihood(anchorText: String, linkedEntity: String): Double {
         val cleanedAnchor = clean(anchorText)
         val cleanedEntity = clean(linkedEntity)
 
+        if (!hasEntityMention(cleanedAnchor)) {
+            return 0.0
+        }
+
         val prefixMap = map.prefixSubMap(arrayOf(cleanedAnchor))
+        val mentionsReferringToEntity = findClosestMention(linkedEntity, prefixMap)
         val totalMentions = prefixMap.values.sum()
-        val mentionsReferringToEntity = map[arrayOf(cleanedAnchor, cleanedEntity)] ?: 0
+//        val mentionsReferringToEntity = map[arrayOf(cleanedAnchor, cleanedEntity)] ?: 0
 
         return mentionsReferringToEntity / totalMentions.toDouble()
     }
