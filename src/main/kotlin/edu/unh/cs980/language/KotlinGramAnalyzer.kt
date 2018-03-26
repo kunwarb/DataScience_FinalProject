@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap
 import edu.unh.cs980.getIndexSearcher
 import edu.unh.cs980.identity
 import org.apache.lucene.analysis.en.EnglishAnalyzer
+import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.index.Term
 import org.apache.lucene.search.IndexSearcher
@@ -80,8 +81,8 @@ data class CorpusStatContainer(
 )
 
 class KotlinGramAnalyzer(val indexSearcher: IndexSearcher) {
-//    val indexSearcher = getIndexSearcher(gramLoc)
-    val analyzer = EnglishAnalyzer()
+    constructor(indexLoc: String) : this(getIndexSearcher(indexLoc))
+    val analyzer = StandardAnalyzer()
 
     private fun getCorpusGram(gram: String, gramType: String): Long =
             indexSearcher.indexReader.totalTermFreq(Term(gramType, gram))

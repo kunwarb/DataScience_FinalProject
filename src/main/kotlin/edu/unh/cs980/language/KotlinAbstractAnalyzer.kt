@@ -17,7 +17,8 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.experimental.buildSequence
 
 class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
-//    val indexSearcher = getIndexSearcher(abstractLocation)
+    constructor(indexLoc: String) : this(getIndexSearcher(indexLoc))
+
     val analyzer = StandardAnalyzer()
     val gramAnalyzer = KotlinGramAnalyzer(indexSearcher)
     private val memoizedAbstractDocs = ConcurrentHashMap<String, Document?>()
