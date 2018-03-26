@@ -29,12 +29,34 @@ class RankLauncher(val rankLibLoc: String) {
             }
 
 
-    fun extractLogResults() {
+    fun writeFeatures(featList: List<Int>) =
+        File("features.txt")
+            .writeText(featList.joinToString("\n"))
+
+
+    fun printLogResults() {
         File("log_rank.log")
             .readLines()
             .filter { it.startsWith("Fold ") || it.startsWith("MAP on") }
             .onEach(::println)
     }
+
+    fun extractLogResults() =
+        File("log_rank.log")
+            .readLines()
+            .filter { line -> line.startsWith("MAP on") }
+            .map { line -> line.split(":")[1].toDouble() }
+            .chunked(2)
+            .mapIndexed { index, chunk -> index + 1 to chunk.average() }
+
+
+    fun getBestModel() =
+            extractLogResults()
+                .maxBy { it.second }
+                .let { result ->
+                    val weights = retrieveWeights("models/f${result!!.first}.default")
+                    println(weights)
+                }
 
     fun runRankLib() {
         createModelDirectory()
@@ -42,11 +64,12 @@ class RankLauncher(val rankLibLoc: String) {
         val commands = arrayListOf(
                 "java", "-jar", "$rankLibLoc",
                 "-train", "ranklib_features.txt",
+                "-feature", "features.txt",
                 "-ranker", "4",
                 "-metric2t", "map",
                 "-kcv", "5",
-                "-i", "50",
-                "-r", "10",
+//                "-i", "50",
+//                "-r", "10",
                 "-tvs", "0.3",
                 "-kcvmd", "models/"
                 )
@@ -67,5 +90,6 @@ class RankLauncher(val rankLibLoc: String) {
 fun main(args: Array<String>) {
     val runner = RankLauncher("RankLib-2.1-patched.jar")
     runner.runRankLib()
-    runner.extractLogResults()
+    runner.printLogResults()
+    runner.getBestModel()
 }
