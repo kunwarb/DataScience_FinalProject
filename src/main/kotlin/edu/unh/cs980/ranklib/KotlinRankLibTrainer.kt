@@ -459,6 +459,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
 
         //[(1, 0.37643456), (2, 0.06951797), (3, 0.21233706), (4, -0.11022807), (5, -0.03575336), (6, -0.06678948), (7, 0.12893948)]
+        //[(1, 0.27711892), (2, 0.04586862), (3, 0.24996234), (4, -0.21980639), (5, -0.100580536), (6, 0.008560385), (7, 0.09810279)]
     }
 
 
@@ -471,7 +472,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     private fun trainAbstractScore() {
         formatter.addBM25(normType = NormType.ZSCORE)
         val gramIndexSearcher = getIndexSearcher("gram")
-        val hLinker = HyperlinkIndexer("entity_mentions.db")
+//        val hLinker = HyperlinkIndexer("entity_mentions.db")
         val hGram = KotlinGramAnalyzer(gramIndexSearcher)
         formatter.addFeature({ query, tops, indexSearcher ->
             featSDM(query, tops, indexSearcher, hGram)

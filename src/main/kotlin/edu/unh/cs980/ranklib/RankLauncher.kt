@@ -7,18 +7,14 @@ import java.io.File
 
 class RankLauncher(val rankLibLoc: String) {
 
-
-    fun getRankLibSpecs() {
+    private fun runFeatureTraining() {
 
     }
 
-    fun createModelDirectory() {
-        File("models/").applyIf({!exists()}) {
-            mkdir()
-        }
-    }
+    private fun createModelDirectory() =
+            File("models/").applyIf({!exists()}) { mkdir() }
 
-    fun retrieveWeights(fileLoc: String) =
+    private fun retrieveWeights(fileLoc: String) =
         File(fileLoc)
             .readLines()
             .last()
@@ -32,6 +28,14 @@ class RankLauncher(val rankLibLoc: String) {
     fun writeFeatures(featList: List<Int>) =
         File("features.txt")
             .writeText(featList.joinToString("\n"))
+
+
+    fun countFeatures(): Int =
+            File(rankLibLoc)
+                .bufferedReader()
+                .readLine()
+                .split(" ")
+                .count() - 2
 
 
     fun printLogResults() {
