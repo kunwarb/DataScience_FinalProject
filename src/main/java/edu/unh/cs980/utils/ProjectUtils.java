@@ -15,10 +15,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.CharArraySet;
 
 public class ProjectUtils {
 	// This class will contain some common utility methods for Project.
+
+	private static final Logger logger = Logger.getLogger(ProjectUtils.class);
 
 	// Create custom stop words for lucene.
 	public static CharArraySet getCustomStopWordSet() {
