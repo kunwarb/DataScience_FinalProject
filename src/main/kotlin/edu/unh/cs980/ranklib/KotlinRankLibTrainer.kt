@@ -447,6 +447,13 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             sectionSplit(query, tops, indexSearcher, 1) }, normType = NormType.ZSCORE)
         formatter.addFeature({ query, tops, indexSearcher ->
             sectionSplit(query, tops, indexSearcher, 2) }, normType = NormType.ZSCORE)
+        val hLinker = HyperlinkIndexer("entity_mentions.db")
+        val hGram = KotlinGramAnalyzer("gram")
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSDM(query, tops, indexSearcher, hGram)
+        }, normType = NormType.ZSCORE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
     }
 
 
