@@ -307,8 +307,10 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
      *              section headers (trained using RankLib).
      */
     private fun queryCombined() {
-        val weights = listOf(0.3106317698753524,-0.025891305471130843,
-                0.34751201103557083, -0.2358113441529167, -0.08015356975284649)
+//        val weights = listOf(0.3106317698753524,-0.025891305471130843,
+//                0.34751201103557083, -0.2358113441529167, -0.08015356975284649)
+
+        val weights = listOf(0.27711892, 0.04586862, 0.24996234, -0.21980639, -0.100580536, 0.008560385,0.09810279)
 
         formatter.addBM25(weight = weights[0], normType = NormType.ZSCORE)
 
@@ -324,6 +326,15 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 
         formatter.addFeature({ query, tops, indexSearcher ->
             sectionSplit(query, tops, indexSearcher, 2) }, weight = weights[4], normType = NormType.ZSCORE)
+
+        val gramIndexSearcher = getIndexSearcher("gram")
+        val hLinker = HyperlinkIndexer("entity_mentions.db")
+        val hGram = KotlinGramAnalyzer(gramIndexSearcher)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSDM(query, tops, indexSearcher, hGram)
+        }, normType = NormType.ZSCORE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
     }
 
     private fun queryAbstract() {
@@ -472,13 +483,13 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     private fun trainAbstractScore() {
         formatter.addBM25(normType = NormType.ZSCORE)
         val gramIndexSearcher = getIndexSearcher("gram")
-//        val hLinker = HyperlinkIndexer("entity_mentions.db")
+        val hLinker = HyperlinkIndexer("entity_mentions.db")
         val hGram = KotlinGramAnalyzer(gramIndexSearcher)
         formatter.addFeature({ query, tops, indexSearcher ->
             featSDM(query, tops, indexSearcher, hGram)
         }, normType = NormType.ZSCORE)
-//        formatter.addFeature({ query, tops, indexSearcher ->
-//            featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
 //        formatter.addFeature({ query, tops, indexSearcher ->
 //            featLikelihoodAbstract(query, tops, indexSearcher, abstractAnalyzer) },
 //                normType = NormType.ZSCORE)
