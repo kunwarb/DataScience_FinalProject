@@ -61,8 +61,9 @@ data class LanguageStatContainer(
                     .map { (term, freq) ->
 //                        val pred = docSmooth * (stat.docTermFreqs[term] ?: 0.0) + corpusSmooth * freq
                         val smoothCounts = (stat.docTermCounts[term] ?: 0) + freq * alpha
+                        println(freq)
                         log(smoothCounts / (docLength + alpha))
-                    }.onEach { println(it) }
+                    }
                     .sum()
 
         return likelihood
