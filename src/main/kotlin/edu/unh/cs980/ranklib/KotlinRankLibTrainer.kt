@@ -489,6 +489,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     fun train(method: String, out: String) {
         when (method) {
             "abstract_score" -> trainAbstractScore()
+            "combined" -> trainCombined()
             else -> println("Unknown method!")
         }
         formatter.writeToRankLibFile(out)
