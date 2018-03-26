@@ -4,17 +4,23 @@ package edu.unh.cs980.language
 import edu.unh.cs980.getIndexSearcher
 import edu.unh.cs980.identity
 import org.apache.lucene.analysis.en.EnglishAnalyzer
+import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
+import org.apache.lucene.document.Document
 import org.apache.lucene.index.Term
 import org.apache.lucene.search.BooleanClause
 import org.apache.lucene.search.BooleanQuery
 import org.apache.lucene.search.FuzzyQuery
+import org.apache.lucene.search.IndexSearcher
 import java.io.StringReader
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.experimental.buildSequence
 
-class KotlinAbstractAnalyzer(abstractLocation: String) {
-    val indexSearcher = getIndexSearcher(abstractLocation)
-    val analyzer = EnglishAnalyzer()
+class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
+//    val indexSearcher = getIndexSearcher(abstractLocation)
+    val analyzer = StandardAnalyzer()
+    val gramAnalyzer = KotlinGramAnalyzer(indexSearcher)
+    private val memoizedAbstractDocs = ConcurrentHashMap<String, Document?>()
 
     fun createTokenSequence(query: String): Sequence<String> {
         val tokenStream = analyzer.tokenStream("text", StringReader(query)).apply { reset() }
@@ -27,6 +33,18 @@ class KotlinAbstractAnalyzer(abstractLocation: String) {
             tokenStream.close()
         }
     }
+
+    fun retrieveEntityDoc(entity: String): Document? =
+            memoizedAbstractDocs.computeIfAbsent(entity, {key ->
+                val nameQuery = buildEntityNameQuery(entity)
+                val searchResult = indexSearcher.search(nameQuery, 1)
+                if (searchResult.scoreDocs.isEmpty()) null else indexSearcher.doc(searchResult.scoreDocs[0].doc)
+            })
+
+    fun buildEntityNameQuery(entity: String): BooleanQuery =
+            BooleanQuery.Builder()
+                .apply { add(FuzzyQuery(Term("name", entity)), BooleanClause.Occur.SHOULD) }
+                .build()
 
     fun retrieveTermStats(term: String): Long =
         indexSearcher.indexReader.totalTermFreq(Term("text", term))

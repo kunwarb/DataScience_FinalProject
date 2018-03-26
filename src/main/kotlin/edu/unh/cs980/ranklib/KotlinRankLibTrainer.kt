@@ -29,7 +29,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     val db = if (graphPath == "") null else KotlinDatabase(graphPath)
     val formatter = KotlinRanklibFormatter(queryPath, qrelPath, indexPath)
     val graphAnalyzer = if (graphPath == "") null else KotlinGraphAnalyzer(formatter.indexSearcher, db!!)
-    val abstractAnalyzer = KotlinAbstractAnalyzer("abstract")
+//    val abstractAnalyzer = KotlinAbstractAnalyzer("abstract")
 
 
     /**
@@ -328,8 +328,9 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 
     private fun queryAbstract() {
         formatter.addBM25(normType = NormType.ZSCORE, weight = 0.6848645483967299)
+        val gramSearcher = getIndexSearcher("gram")
 //        formatter.addBM25(normType = NormType.ZSCORE, weight = 1.0)
-        val hGram = KotlinGramAnalyzer("gram")
+        val hGram = KotlinGramAnalyzer(gramSearcher)
         formatter.addFeature({ query, tops, indexSearcher ->
             featSDM(query, tops, indexSearcher, hGram)
         }, normType = NormType.ZSCORE, weight = -0.31513545160327006)
@@ -447,13 +448,17 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             sectionSplit(query, tops, indexSearcher, 1) }, normType = NormType.ZSCORE)
         formatter.addFeature({ query, tops, indexSearcher ->
             sectionSplit(query, tops, indexSearcher, 2) }, normType = NormType.ZSCORE)
+
+        val gramIndexSearcher = getIndexSearcher("gram")
         val hLinker = HyperlinkIndexer("entity_mentions.db")
-        val hGram = KotlinGramAnalyzer("gram")
+        val hGram = KotlinGramAnalyzer(gramIndexSearcher)
         formatter.addFeature({ query, tops, indexSearcher ->
             featSDM(query, tops, indexSearcher, hGram)
         }, normType = NormType.ZSCORE)
         formatter.addFeature({ query, tops, indexSearcher ->
             featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
+
+        //[(1, 0.37643456), (2, 0.06951797), (3, 0.21233706), (4, -0.11022807), (5, -0.03575336), (6, -0.06678948), (7, 0.12893948)]
     }
 
 
@@ -465,8 +470,9 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 
     private fun trainAbstractScore() {
         formatter.addBM25(normType = NormType.ZSCORE)
+        val gramIndexSearcher = getIndexSearcher("gram")
         val hLinker = HyperlinkIndexer("entity_mentions.db")
-        val hGram = KotlinGramAnalyzer("gram")
+        val hGram = KotlinGramAnalyzer(gramIndexSearcher)
         formatter.addFeature({ query, tops, indexSearcher ->
             featSDM(query, tops, indexSearcher, hGram)
         }, normType = NormType.ZSCORE)

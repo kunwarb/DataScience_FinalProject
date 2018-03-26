@@ -5,10 +5,12 @@ import edu.unh.cs980.context.HyperlinkIndexer
 import edu.unh.cs980.language.GramStatType
 import edu.unh.cs980.language.KotlinAbstractAnalyzer
 import edu.unh.cs980.language.KotlinGramAnalyzer
+import edu.unh.cs980.language.LanguageStatContainer
 import info.debatty.java.stringsimilarity.Jaccard
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
+import org.apache.lucene.document.Document
 import org.apache.lucene.index.Term
 import org.apache.lucene.search.*
 import org.apache.lucene.search.similarities.LMDirichletSimilarity
@@ -36,10 +38,6 @@ private fun createTokenSequence(query: String): Sequence<String> {
 }
 
 
-private fun buildEntityNameQuery(entity: String): BooleanQuery =
-    BooleanQuery.Builder()
-        .apply { add(FuzzyQuery(Term("name", entity)), BooleanClause.Occur.SHOULD) }
-        .build()
 
 private fun buildQuery(query: String): BooleanQuery =
     createTokenSequence(query)
@@ -48,32 +46,31 @@ private fun buildQuery(query: String): BooleanQuery =
             builder.add(termQuery, BooleanClause.Occur.SHOULD) }
         .build()
 
-fun featAverageAbstractScore(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
-                              abstractSearcher: IndexSearcher): List<Double> {
+//fun featAverageAbstractScore(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
+//                              abstractSearcher: IndexSearcher): List<Double> {
+//
+//    val booleanQuery = buildQuery(query)
+//
+//    return tops.scoreDocs.map { scoreDoc ->
+//        val doc = indexSearcher.doc(scoreDoc.doc)
+//        val entities = doc.getValues("spotlight").toSet().toList()
+//
+//        val entityDocs = entities.mapNotNull { entity ->
+//            val nameQuery = buildEntityNameQuery(entity)
+//            val searchResult = abstractSearcher.search(nameQuery, 1)
+//            if (searchResult.scoreDocs.isEmpty()) null else searchResult.scoreDocs[0].doc
+//        }.toList()
+//
+//        val totalScore = entityDocs.sumByDouble { docId ->
+//            val score = abstractSearcher.explain(booleanQuery, docId).value
+//            if (score.isFinite()) score.toDouble() else 0.0
+//        }
+//
+//
+//        totalScore / entities.size.toDouble()
+//    }.toList()
+//}
 
-    val booleanQuery = buildQuery(query)
-
-    return tops.scoreDocs.map { scoreDoc ->
-        val doc = indexSearcher.doc(scoreDoc.doc)
-        val entities = doc.getValues("spotlight").toSet().toList()
-
-        val entityDocs = entities.mapNotNull { entity ->
-            val nameQuery = buildEntityNameQuery(entity)
-            val searchResult = abstractSearcher.search(nameQuery, 1)
-            if (searchResult.scoreDocs.isEmpty()) null else searchResult.scoreDocs[0].doc
-        }.toList()
-
-        val totalScore = entityDocs.sumByDouble { docId ->
-            val score = abstractSearcher.explain(booleanQuery, docId).value
-            if (score.isFinite()) score.toDouble() else 0.0
-        }
-
-
-        totalScore / entities.size.toDouble()
-    }.toList()
-}
-
-//private val memoizedAbstractDocs = ConcurrentHashMap<String, Int?>()
 //private val memoizedAbstractStats = ConcurrentHashMap<String, LanguageStats?>()
 //
 //
@@ -219,6 +216,30 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 //        val v3 = queryWindow.docTermCounts.keys.map { key -> docBigramWindow[key]!! }.sum()
 
         v1 + v2 + v3
+    }
+}
+
+
+fun featEntitySDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
+                  abstractAnalyzer: KotlinAbstractAnalyzer): List<Double> {
+    val tokens = createTokenSequence(query).toList()
+    val cleanQuery = tokens.toList().joinToString(" ")
+
+    val queryCorpus = abstractAnalyzer.gramAnalyzer.getCorpusStatContainer(query)
+    return tops.scoreDocs.map { scoreDoc ->
+        val doc = indexSearcher.doc(scoreDoc.doc)
+        val entities = doc.getValues("spotlight")
+
+        entities.mapNotNull { entity -> abstractAnalyzer.retrieveEntityDoc(entity) }
+            .map { entityDoc -> cleanQuery + entityDoc.get("text") + cleanQuery }
+            .map(abstractAnalyzer.gramAnalyzer::getLanguageStatContainer)
+            .map { stat -> stat.getLikelihoodGivenQuery(queryCorpus, 0.5)}
+            .map { queryLikelihood ->
+                val v1 = queryLikelihood.unigramLikelihood.likelihood()
+                val v2 = queryLikelihood.bigramLikelihood.likelihood()
+                val v3 = queryLikelihood.bigramWindowLikelihood.likelihood()
+                v1 + v2 + v3 }
+            .average()
     }
 }
 

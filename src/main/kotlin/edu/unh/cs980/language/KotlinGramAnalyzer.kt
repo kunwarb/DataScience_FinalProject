@@ -7,6 +7,7 @@ import edu.unh.cs980.identity
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.index.Term
+import org.apache.lucene.search.IndexSearcher
 import java.io.StringReader
 import kotlin.coroutines.experimental.buildSequence
 
@@ -78,8 +79,8 @@ data class CorpusStatContainer(
         val bigramWindowStat: CorpusStat
 )
 
-class KotlinGramAnalyzer(gramLoc: String) {
-    val indexSearcher = getIndexSearcher(gramLoc)
+class KotlinGramAnalyzer(val indexSearcher: IndexSearcher) {
+//    val indexSearcher = getIndexSearcher(gramLoc)
     val analyzer = EnglishAnalyzer()
 
     private fun getCorpusGram(gram: String, gramType: String): Long =
