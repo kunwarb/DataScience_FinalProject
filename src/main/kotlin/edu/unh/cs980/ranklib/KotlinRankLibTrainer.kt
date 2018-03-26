@@ -356,6 +356,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     fun runRanklibQuery(method: String, out: String) {
         when (method) {
             "abstract_score" -> queryAbstract()
+            "combined" -> queryCombined()
             else -> println("Unknown method!")
         }
 
