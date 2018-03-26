@@ -105,7 +105,7 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
     val tokens = createTokenSequence(query).toList()
     val cleanQuery = tokens.toList().joinToString(" ")
 
-    val queryCorpus = gramAnalyzer.getCorpusStatContainer(query)
+    val queryCorpus = gramAnalyzer.getCorpusStatContainer(cleanQuery)
 
     return tops.scoreDocs.map { scoreDoc ->
         val doc = indexSearcher.doc(scoreDoc.doc)
@@ -129,7 +129,7 @@ fun featEntitySDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
     val tokens = createTokenSequence(query).toList()
     val cleanQuery = tokens.toList().joinToString(" ")
 
-    val queryCorpus = abstractAnalyzer.gramAnalyzer.getCorpusStatContainer(query)
+    val queryCorpus = abstractAnalyzer.gramAnalyzer.getCorpusStatContainer(cleanQuery)
     return tops.scoreDocs.map { scoreDoc ->
         val doc = indexSearcher.doc(scoreDoc.doc)
         val entities = doc.getValues("spotlight")
