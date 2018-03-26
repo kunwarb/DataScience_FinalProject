@@ -135,7 +135,8 @@ fun featEntitySDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         val entities = doc.getValues("spotlight")
 
         entities.mapNotNull { entity -> abstractAnalyzer.retrieveEntityDoc(entity) }
-            .map { entityDoc -> cleanQuery + entityDoc.get("text") + cleanQuery }
+            .map { entityDoc -> entityDoc.get("text")  }
+//            .map { entityDoc -> cleanQuery + entityDoc.get("text") + cleanQuery }
             .map(abstractAnalyzer.gramAnalyzer::getLanguageStatContainer)
             .map { stat -> stat.getLikelihoodGivenQuery(queryCorpus, 0.5)}
             .map { queryLikelihood ->
