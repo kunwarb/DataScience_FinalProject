@@ -113,9 +113,12 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         val docStat = gramAnalyzer.getLanguageStatContainer(text)
 
         val queryLikelihood = docStat.getLikelihoodGivenQuery(queryCorpus, alpha)
-        val v1 = queryLikelihood.unigramLikelihood.likelihood()
-        val v2 = queryLikelihood.bigramLikelihood.likelihood()
-        val v3 = queryLikelihood.bigramWindowLikelihood.likelihood()
+        val v1 = queryLikelihood.unigramLikelihood
+        val v2 = queryLikelihood.bigramLikelihood
+        val v3 = queryLikelihood.bigramWindowLikelihood
+//        val v1 = queryLikelihood.unigramLikelihood.likelihood()
+//        val v2 = queryLikelihood.bigramLikelihood.likelihood()
+//        val v3 = queryLikelihood.bigramWindowLikelihood.likelihood()
         v1 + v2 + v3
     }
 }
@@ -136,9 +139,12 @@ fun featEntitySDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
             .map(abstractAnalyzer.gramAnalyzer::getLanguageStatContainer)
             .map { stat -> stat.getLikelihoodGivenQuery(queryCorpus, 0.5)}
             .map { queryLikelihood ->
-                val v1 = queryLikelihood.unigramLikelihood.likelihood()
-                val v2 = queryLikelihood.bigramLikelihood.likelihood()
-                val v3 = queryLikelihood.bigramWindowLikelihood.likelihood()
+                val v1 = queryLikelihood.unigramLikelihood
+                val v2 = queryLikelihood.bigramLikelihood
+                val v3 = queryLikelihood.bigramWindowLikelihood
+//                val v1 = queryLikelihood.unigramLikelihood.likelihood()
+//                val v2 = queryLikelihood.bigramLikelihood.likelihood()
+//                val v3 = queryLikelihood.bigramWindowLikelihood.likelihood()
                 v1 + v2 + v3 }
             .average()
     }

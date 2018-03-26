@@ -10,6 +10,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.index.Term
 import org.apache.lucene.search.IndexSearcher
 import java.io.StringReader
+import java.lang.Math.log
 import kotlin.coroutines.experimental.buildSequence
 
 enum class GramStatType  { TYPE_UNIGRAM, TYPE_BIGRAM, TYPE_BIGRAM_WINDOW }
@@ -21,9 +22,12 @@ data class LikelihoodStat(val likelihoodMap: Map<String, Double>, val type: Gram
                 .sum()
 //                .fold(1.0, {acc, prob -> acc * prob})
 }
-data class LikelihoodContainer(val unigramLikelihood: LikelihoodStat,
-                               val bigramLikelihood: LikelihoodStat,
-                               val bigramWindowLikelihood: LikelihoodStat)
+data class LikelihoodContainer(val unigramLikelihood: Double,
+                               val bigramLikelihood: Double,
+                               val bigramWindowLikelihood: Double)
+//data class LikelihoodContainer(val unigramLikelihood: LikelihoodStat,
+//                               val bigramLikelihood: LikelihoodStat,
+//                               val bigramWindowLikelihood: LikelihoodStat)
 
 data class LanguageStat(val docTermCounts: Map<String, Int>,
                          val docTermFreqs: Map<String, Double>,
@@ -35,7 +39,7 @@ data class LanguageStatContainer(
         val bigramStat: LanguageStat,
         val bigramWindowStat: LanguageStat) {
 
-    private fun getLikelihood(queryStat: CorpusStat, alpha: Double): LikelihoodStat {
+    private fun getLikelihood(queryStat: CorpusStat, alpha: Double): Double {
         val stat = when(queryStat.type) {
             GramStatType.TYPE_UNIGRAM -> unigramStat
             GramStatType.TYPE_BIGRAM -> bigramStat
@@ -48,12 +52,19 @@ data class LanguageStatContainer(
         val docSmooth = docLength / (docLength + alpha)
         val corpusSmooth = alpha / (alpha + docLength)
 
+//        val likelihood =
+//            queryStat.corpusFrequency
+//                .mapValues { (term, freq) ->
+//                    docSmooth * (stat.docTermFreqs[term] ?: 0.0) + corpusSmooth * freq }
         val likelihood =
-            queryStat.corpusFrequency
-                .mapValues { (term, freq) ->
-                    docSmooth * (stat.docTermFreqs[term] ?: 0.0) + corpusSmooth * freq }
+                queryStat.corpusFrequency
+                    .map { (term, freq) ->
+//                        val pred = docSmooth * (stat.docTermFreqs[term] ?: 0.0) + corpusSmooth * freq
+                        val smoothCounts = (stat.docTermCounts[term] ?: 0) + freq * alpha
+                        log(smoothCounts / (docLength + alpha))
+                    }.sum()
 
-        return LikelihoodStat(likelihood, queryStat.type)
+        return likelihood
     }
 
     fun getLikelihoodGivenQuery(query: CorpusStatContainer, alpha: Double = 1.0): LikelihoodContainer =
