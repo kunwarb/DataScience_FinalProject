@@ -101,7 +101,7 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 
 
 fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
-            gramAnalyzer: KotlinGramAnalyzer): List<Double> {
+            gramAnalyzer: KotlinGramAnalyzer, alpha: Double): List<Double> {
     val tokens = createTokenSequence(query).toList()
     val cleanQuery = tokens.toList().joinToString(" ")
 
@@ -112,7 +112,7 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         val text = cleanQuery + " " + doc.get(CONTENT) + " " + cleanQuery
         val docStat = gramAnalyzer.getLanguageStatContainer(text)
 
-        val queryLikelihood = docStat.getLikelihoodGivenQuery(queryCorpus, 0.5)
+        val queryLikelihood = docStat.getLikelihoodGivenQuery(queryCorpus, alpha)
         val v1 = queryLikelihood.unigramLikelihood.likelihood()
         val v2 = queryLikelihood.bigramLikelihood.likelihood()
         val v3 = queryLikelihood.bigramWindowLikelihood.likelihood()

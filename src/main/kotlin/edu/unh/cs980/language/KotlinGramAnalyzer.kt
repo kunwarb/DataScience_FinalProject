@@ -42,8 +42,16 @@ data class LanguageStatContainer(
             GramStatType.TYPE_BIGRAM_WINDOW -> bigramWindowStat
         }
 
-        val likelihood = queryStat.corpusFrequency
-            .mapValues { (term, freq) -> alpha * (stat.docTermFreqs[term] ?: 0.0) + (1 - alpha) * freq }
+//        val likelihood: Map<String, Double> = queryStat.corpusFrequency
+//            .mapValues { (term, freq) -> alpha * (stat.docTermFreqs[term] ?: 0.0) + (1 - alpha) * freq }
+        val docLength = stat.docTermCounts.values.sum().toDouble()
+        val docSmooth = docLength / (docLength + alpha)
+        val corpusSmooth = alpha / (alpha + docLength)
+
+        val likelihood =
+            queryStat.corpusFrequency
+                .mapValues { (term, freq) ->
+                    docSmooth * (stat.docTermFreqs[term] ?: 0.0) + corpusSmooth * freq }
 
         return LikelihoodStat(likelihood, queryStat.type)
     }

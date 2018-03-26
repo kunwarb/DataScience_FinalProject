@@ -331,7 +331,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         val hLinker = HyperlinkIndexer("entity_mentions.db")
         val hGram = KotlinGramAnalyzer(gramIndexSearcher)
         formatter.addFeature({ query, tops, indexSearcher ->
-            featSDM(query, tops, indexSearcher, hGram)
+            featSDM(query, tops, indexSearcher, hGram, 0.5)
         }, normType = NormType.ZSCORE)
         formatter.addFeature({ query, tops, indexSearcher ->
             featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
@@ -343,7 +343,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 //        formatter.addBM25(normType = NormType.ZSCORE, weight = 1.0)
         val hGram = KotlinGramAnalyzer(gramSearcher)
         formatter.addFeature({ query, tops, indexSearcher ->
-            featSDM(query, tops, indexSearcher, hGram)
+            featSDM(query, tops, indexSearcher, hGram, 0.5)
         }, normType = NormType.ZSCORE, weight = -0.40035537)
 
 //        val hLinker = HyperlinkIndexer("entity_mentions.db")
@@ -465,7 +465,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         val hLinker = HyperlinkIndexer("entity_mentions.db")
         val hGram = KotlinGramAnalyzer(gramIndexSearcher)
         formatter.addFeature({ query, tops, indexSearcher ->
-            featSDM(query, tops, indexSearcher, hGram)
+            featSDM(query, tops, indexSearcher, hGram, 0.5)
         }, normType = NormType.ZSCORE)
         formatter.addFeature({ query, tops, indexSearcher ->
             featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
@@ -475,6 +475,16 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     }
 
 
+    private fun trainDirichletAlpha() {
+        val gramIndexSearcher = getIndexSearcher("gram")
+        val hGram = KotlinGramAnalyzer(gramIndexSearcher)
+        listOf(1, 10, 100, 1000, 10000).forEach { alpha ->
+            formatter.addFeature({ query, tops, indexSearcher ->
+                featSDM(query, tops, indexSearcher, hGram, alpha.toDouble())
+            }, normType = NormType.ZSCORE)
+        }
+
+    }
 
     private fun trainAbstractSDM() {
         formatter.addBM25(normType = NormType.ZSCORE)
@@ -492,7 +502,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         val hLinker = HyperlinkIndexer("entity_mentions.db")
         val hGram = KotlinGramAnalyzer(gramIndexSearcher)
         formatter.addFeature({ query, tops, indexSearcher ->
-            featSDM(query, tops, indexSearcher, hGram)
+            featSDM(query, tops, indexSearcher, hGram, 1.0)
         }, normType = NormType.ZSCORE)
         formatter.addFeature({ query, tops, indexSearcher ->
             featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
@@ -514,6 +524,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         when (method) {
             "abstract_score" -> trainAbstractScore()
             "abstract_sdm" -> trainAbstractSDM()
+            "train_alpha" -> trainDirichletAlpha()
             "combined" -> trainCombined()
             else -> println("Unknown method!")
         }
