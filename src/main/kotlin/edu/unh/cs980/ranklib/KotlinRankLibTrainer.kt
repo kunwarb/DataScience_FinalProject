@@ -476,9 +476,14 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 
 
 
-    private fun trainExpandSearch() {
+    private fun trainAbstractSDM() {
         formatter.addBM25(normType = NormType.ZSCORE)
-        formatter.addFeature(this::expandSearch, normType = NormType.ZSCORE)
+        val abstractIndexer = getIndexSearcher("abstract")
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featEntitySDM(query, tops, indexSearcher, abstractAnalyzer)
+        }, normType = NormType.ZSCORE)
+
     }
 
     private fun trainAbstractScore() {
@@ -508,6 +513,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     fun train(method: String, out: String) {
         when (method) {
             "abstract_score" -> trainAbstractScore()
+            "abstract_sdm" -> trainAbstractSDM()
             "combined" -> trainCombined()
             else -> println("Unknown method!")
         }
