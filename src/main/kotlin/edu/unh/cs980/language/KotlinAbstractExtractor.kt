@@ -4,6 +4,7 @@ package edu.unh.cs980.language
 import edu.unh.cs.treccar_v2.read_data.DeserializeData
 import edu.unh.cs980.forEachParallel
 import edu.unh.cs980.getIndexWriter
+import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.document.Document
@@ -17,7 +18,7 @@ import kotlin.coroutines.experimental.buildSequence
 
 class KotlinAbstractExtractor(filename: String) {
     val indexWriter = getIndexWriter(filename)
-    val analyzer = StandardAnalyzer()
+    val analyzer = EnglishAnalyzer()
 
     private fun getFilteredTokens(text: String): Sequence<String> {
         val tokenStream = analyzer.tokenStream("text", StringReader(text)).apply { reset() }

@@ -20,7 +20,7 @@ import kotlin.coroutines.experimental.buildSequence
 
 
 class KotlinGram(filename: String) {
-    val analyzer = StandardAnalyzer()
+    val analyzer = EnglishAnalyzer()
     val rand = Random().apply { setSeed(128383197) }
     val indexWriter = getIndexWriter(filename)
 
