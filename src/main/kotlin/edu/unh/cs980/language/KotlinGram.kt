@@ -133,7 +133,7 @@ class KotlinGram(filename: String) {
                 }
 
                 // Extract all of the anchors/entities and add them to database
-                if (ThreadLocalRandom.current().nextDouble() <= 0.1) {
+                if (ThreadLocalRandom.current().nextDouble() <= 0.5) {
                     doIndex(par.textOnly)
                 }
             }

@@ -64,7 +64,7 @@ class RankLauncher(val rankLibLoc: String) {
         val commands = arrayListOf(
                 "java", "-jar", "$rankLibLoc",
                 "-train", "ranklib_features.txt",
-                "-feature", "features.txt",
+//                "-feature", "features.txt",
                 "-ranker", "4",
                 "-metric2t", "map",
                 "-kcv", "5",
