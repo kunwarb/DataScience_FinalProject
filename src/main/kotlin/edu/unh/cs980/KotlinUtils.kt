@@ -35,6 +35,11 @@ fun <A, B>Iterable<A>.pmap(f: suspend (A) -> B): List<B> = runBlocking {
     map { async(CommonPool) { f(it) } }.map { it.await() }
 }
 
+fun <A, B>Iterable<A>.pmapRestricted(nThreads: Int = 10, f: suspend (A) -> B): List<B> = runBlocking {
+    val pool = newFixedThreadPoolContext(nThreads, "parallel")
+    map { async(pool) { f(it) } }.map { it.await() }
+}
+
 
 fun <A>Iterable<A>.forEachParallel(f: suspend (A) -> Unit): Unit = runBlocking {
     map { async(CommonPool) { f(it) } }.forEach { it.await() }

@@ -189,7 +189,7 @@ class KotlinRanklibFormatter(queryLocation: String,
         val lock = ReentrantLock()
 
         queryContainers
-            .pmap { (query, tops, paragraphs) ->
+            .pmapRestricted(20) { (query, tops, paragraphs) ->
                     // Using scoring function, score each of the paragraphs in our query result
                     val featureResult: List<Double> =
                             f(query, tops, indexSearcher).run { normalizeResults(this, normType) }
