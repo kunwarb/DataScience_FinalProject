@@ -21,6 +21,7 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
 //    val analyzer = StandardAnalyzer()
     val gramAnalyzer = KotlinGramAnalyzer(indexSearcher)
     private val memoizedAbstractDocs = ConcurrentHashMap<String, Document?>()
+    private val memoizedAbstractStats = ConcurrentHashMap<String, LanguageStatContainer?>()
 
 //    fun createTokenSequence(query: String): Sequence<String> {
 //        val tokenStream = analyzer.tokenStream("text", StringReader(query)).apply { reset() }
@@ -33,6 +34,12 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
 //            tokenStream.close()
 //        }
 //    }
+
+    fun retrieveEntityStatContainer(entity: String): LanguageStatContainer? =
+            memoizedAbstractStats.computeIfAbsent(entity, {key ->
+                val entityDoc = retrieveEntityDoc(key)
+                entityDoc?.let { doc -> gramAnalyzer.getLanguageStatContainer(doc.get("text")) }
+            })
 
     fun retrieveEntityDoc(entity: String): Document? =
             memoizedAbstractDocs.computeIfAbsent(entity, {key ->

@@ -142,3 +142,166 @@ fun featAddScoreMixtureSims(query: String, tops:TopDocs, indexSearcher: IndexSea
         .map { pm -> pm.mixture.entries.sumByDouble { (k, v) -> sinks[k]!! * v } }
         .toList()
 }
+
+/**
+ * [Query / Training Results]
+ *      The following are the query and training functions that I originally used in KotlinRanklibFormatter for
+ *      prototype 1. I keep them (commented) down below for reference.
+ */
+
+//    /**
+//     * Function: querySimilarity
+//     * Description: Score with weighted combination of BM25 and string similarity functions (trained using RankLib).
+//     */
+//    fun querySimilarity() {
+//        formatter.addBM25(weight = 0.884669653, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, _ ->
+//            addStringDistanceFunction(query, tops, JaroWinkler())}, weight = -0.001055, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, _ ->
+//            addStringDistanceFunction(query, tops, Jaccard() )}, weight = 0.11427, normType = NormType.ZSCORE)
+//    }
+
+
+//    /**
+//     * Function: querySimilarity
+//     * Description: Score with weighted combination of BM25 and average_query (trained using RankLib).
+//     */
+//    private fun queryAverage() {
+//        formatter.addBM25(weight = 0.5, normType = NormType.ZSCORE)
+//        formatter.addFeature(this::addAverageQueryScore, weight = 0.5, normType = NormType.ZSCORE)
+//    }
+
+
+//    /**
+//     * Function: querySplit
+//     * Description: Score with weighted combination of BM25 and separate section scores (trained using RankLib).
+//     */
+//    private fun querySplit() {
+//        formatter.addBM25(weight = 0.4824247, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            sectionSplit(query, tops, indexSearcher, 0) }, weight = 0.069, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            sectionSplit(query, tops, indexSearcher, 1) }, weight = -0.1845, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            sectionSplit(query, tops, indexSearcher, 2) }, weight = -0.25063, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            sectionSplit(query, tops, indexSearcher, 3) }, weight = 0.0134, normType = NormType.ZSCORE)
+//    }
+
+
+//    /**
+//     * Function: queryMixtures
+//     * Description: Score with weighted combination of BM25 and mixtures method (trained using RankLib).
+//     */
+//    private fun queryMixtures() {
+//        if (graphAnalyzer == null) {
+//            println("You must supply a --graph_database location for this method!")
+//            return
+//        }
+//        formatter.addBM25(weight = 0.9703138257, normType = NormType.ZSCORE)
+//        formatter.addFeature(this::addScoreMixtureSims, weight = 0.029686174, normType = NormType.ZSCORE)
+//    }
+
+
+//    /**
+//     * Function: queryDirichlet
+//     * Description: Score with weighted combination of BM25 and LM_Dirichlet method (trained using RankLib)
+//     */
+//    private fun queryDirichlet() {
+//        formatter.addBM25(weight = 0.80067, normType = NormType.ZSCORE)
+//        formatter.addFeature({query, tops, indexSearcher ->
+//            useLucSim(query, tops, indexSearcher, LMDirichletSimilarity())}, weight = 0.19932975,
+//                normType = NormType.ZSCORE)
+//    }
+
+
+//    /**
+//     * Function: queryMercer
+//     * Description: Score with weighted combination of BM25 and LM_Dirichlet method (trained using RankLib)
+//     */
+//    private fun queryMercer() {
+//        formatter.addBM25(weight = 0.82, normType = NormType.ZSCORE)
+//
+//        formatter.addFeature({query, tops, indexSearcher ->
+//            useLucSim(query, tops, indexSearcher, LMJelinekMercerSimilarity(LMSimilarity.DefaultCollectionModel(),
+//                    0.5f))}, weight = 0.1798988, normType = NormType.ZSCORE)
+//    }
+
+
+//    /**
+//     * Function: trainSimilarity
+//     * Description: training for string_similarity method.
+//     * @see querySimilarity
+//     */
+//    private fun trainSimilarity() {
+//        formatter.addBM25(normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, _ ->
+//            addStringDistanceFunction(query, tops, JaroWinkler())}, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, _ ->
+//            addStringDistanceFunction(query, tops, Jaccard() )}, normType = NormType.ZSCORE)
+//    }
+
+
+//    /**
+//     * Function: trainSplit
+//     * Description: training for section_split method.
+//     * @see sectionSplit
+//     */
+//    private fun trainSplit() {
+//        formatter.addBM25(normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            sectionSplit(query, tops, indexSearcher, 0) }, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            sectionSplit(query, tops, indexSearcher, 1) }, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            sectionSplit(query, tops, indexSearcher, 2) }, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            sectionSplit(query, tops, indexSearcher, 3) }, normType = NormType.ZSCORE)
+//    }
+
+
+//    /**
+//     * Function: trainMixtures
+//     * Description: training for mixtures method.
+//     * @see queryMixtures
+//     */
+//    private fun trainMixtures() {
+//        formatter.addBM25(normType = NormType.ZSCORE)
+//        formatter.addFeature(this::addScoreMixtureSims, normType = NormType.ZSCORE)
+//    }
+
+
+//    /**
+//     * Function: trainAverageQuery
+//     * Description: training for average_query method.
+//     * @see queryAverage
+//     */
+//    private fun trainAverageQuery() {
+//        formatter.addBM25(normType = NormType.ZSCORE)
+//        formatter.addFeature(this::addAverageQueryScore, normType = NormType.ZSCORE)
+//    }
+
+
+//    /**
+//     * Function: trainDirichSim
+//     * Description: training for lm_dirichlet method.
+//     * @see queryDirichlet
+//     */
+//    private fun trainDirichSim() {
+//        formatter.addBM25(normType = NormType.ZSCORE)
+//        formatter.addFeature({query, tops, indexSearcher ->
+//            useLucSim(query, tops, indexSearcher, LMDirichletSimilarity())}, normType = NormType.ZSCORE)
+//    }
+
+
+//    /**
+//     * Function: trainJelinekMercerSimilarity
+//     * Description: training for lm_mercer method.
+//     * @see queryMercer
+//     */
+//    private fun trainJelinekMercerSimilarity() {
+//        formatter.addBM25(normType = NormType.ZSCORE)
+//        formatter.addFeature({query, tops, indexSearcher ->
+//            useLucSim(query, tops, indexSearcher, LMJelinekMercerSimilarity(LMSimilarity.DefaultCollectionModel(),
+//                    0.5f))}, normType = NormType.ZSCORE)
+//    }

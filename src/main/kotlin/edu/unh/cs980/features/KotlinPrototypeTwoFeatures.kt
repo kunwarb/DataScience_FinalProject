@@ -112,10 +112,12 @@ fun featEntitySDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         val doc = indexSearcher.doc(scoreDoc.doc)
         val entities = doc.getValues("spotlight")
 
-        entities.mapNotNull { entity -> abstractAnalyzer.retrieveEntityDoc(entity) }
-            .map { entityDoc -> entityDoc.get("text")  }
-            .map(abstractAnalyzer.gramAnalyzer::getLanguageStatContainer)
-            .map { stat -> stat.getLikelihoodGivenQuery(queryCorpus, 0.5)}
+//        entities.mapNotNull { entity -> abstractAnalyzer.retrieveEntityDoc(entity) }
+        entities
+            .mapNotNull(abstractAnalyzer::retrieveEntityStatContainer)
+//            .map { entityDoc -> entityDoc.get("text")  }
+//            .map(abstractAnalyzer.gramAnalyzer::getLanguageStatContainer)
+            .map { stat -> stat.getLikelihoodGivenQuery(queryCorpus, 4.0)}
             .map { queryLikelihood ->
                 val v1 = queryLikelihood.unigramLikelihood
                 val v2 = queryLikelihood.bigramLikelihood
