@@ -111,12 +111,14 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         val v1 = queryLikelihood.unigramLikelihood
         val v2 = queryLikelihood.bigramLikelihood
         val v3 = queryLikelihood.bigramWindowLikelihood
+        val weights = listOf(0.9113992744, 0.08220043144599, 0.0064001941)
 
         when (gramType) {
             GramStatType.TYPE_UNIGRAM -> v1
             GramStatType.TYPE_BIGRAM -> v2
             GramStatType.TYPE_BIGRAM_WINDOW -> v3
-            else -> v1 + v2 + v3
+//            else -> v1 + v2 + v3
+            else -> v1 * weights[0] + v2 * weights[1] + v3 * weights[2]
         }
 //        val v1 = queryLikelihood.unigramLikelihood.likelihood()
 //        val v2 = queryLikelihood.bigramLikelihood.likelihood()
