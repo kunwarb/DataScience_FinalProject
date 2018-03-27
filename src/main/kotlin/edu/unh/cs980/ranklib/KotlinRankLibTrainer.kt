@@ -357,10 +357,26 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 //                weight = 0.176)
     }
 
+    private fun querySDMComponents() {
+        formatter.addBM25(normType = NormType.ZSCORE, weight = 0.381845239)
+        val gramSearcher = getIndexSearcher("gram")
+        val hGram = KotlinGramAnalyzer(gramSearcher)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSDM(query, tops, indexSearcher, hGram, 4.0, GramStatType.TYPE_UNIGRAM)
+        }, normType = NormType.ZSCORE, weight = -0.385628901)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSDM(query, tops, indexSearcher, hGram, 4.0, GramStatType.TYPE_BIGRAM)
+        }, normType = NormType.ZSCORE, weight = 0.01499519)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSDM(query, tops, indexSearcher, hGram, 4.0, GramStatType.TYPE_BIGRAM_WINDOW)
+        }, normType = NormType.ZSCORE, weight = 0.217530662)
+    }
+
     // Runs associated query method
     fun runRanklibQuery(method: String, out: String) {
         when (method) {
             "abstract_score" -> queryAbstract()
+            "sdm_components" -> querySDMComponents()
             "combined" -> queryCombined()
             else -> println("Unknown method!")
         }
