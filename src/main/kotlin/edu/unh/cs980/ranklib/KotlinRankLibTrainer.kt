@@ -209,6 +209,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             featEntitySDM(query, tops, indexSearcher, abstractAnalyzer)
         }, normType = NormType.ZSCORE)
 
+
     }
 
     private fun trainSectionPath() {
@@ -232,6 +233,15 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         formatter.addFeature({ query, tops, indexSearcher ->
             featSDM(query, tops, indexSearcher, hGram, 4.0)
         }, normType = NormType.ZSCORE)
+
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAddStringDistanceFunction(query, tops, indexSearcher, Jaccard() )
+        }, normType = NormType.ZSCORE)
+        formatter.addFeature({query, tops, indexSearcher ->
+            featUseLucSim(query, tops, indexSearcher, LMDirichletSimilarity())
+        }, normType = NormType.ZSCORE)
+
+
 //        formatter.addFeature({ query, tops, indexSearcher ->
 //            featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
 //        formatter.addFeature({ query, tops, indexSearcher ->
