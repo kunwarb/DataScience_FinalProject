@@ -4,6 +4,7 @@ package edu.unh.cs980.context
 import edu.unh.cs.treccar_v2.Data
 import edu.unh.cs.treccar_v2.read_data.DeserializeData
 import edu.unh.cs980.forEachParallel
+import edu.unh.cs980.forEachParallelRestricted
 import org.mapdb.DBMaker
 import org.mapdb.Serializer
 import org.mapdb.serializer.SerializerArrayTuple
@@ -97,7 +98,7 @@ class HyperlinkIndexer(filename: String) {
         val counter = AtomicInteger()
 
         DeserializeData.iterableAnnotations(f)
-            .forEachParallel { page ->
+            .forEachParallelRestricted(20) { page ->
 
                 // This is just to keep track of how many pages we've parsed
                 counter.incrementAndGet().let {

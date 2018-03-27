@@ -107,6 +107,7 @@ fun featEntitySDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                   gramType: GramStatType? = null): List<Double> {
     val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
     val cleanQuery = tokens.toList().joinToString(" ")
+    val weights = listOf(0.6830338975799, -0.31628449221678, 0.00006816)
 
     val queryCorpus = abstractAnalyzer.gramAnalyzer.getCorpusStatContainer(cleanQuery)
     return tops.scoreDocs.map { scoreDoc ->
@@ -133,7 +134,7 @@ fun featEntitySDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                     GramStatType.TYPE_UNIGRAM -> v1
                     GramStatType.TYPE_BIGRAM -> v2
                     GramStatType.TYPE_BIGRAM_WINDOW -> v3
-                    else -> v1 + v2 + v3
+                    else -> weights[0] * v1 + weights[1] * v2 + weights[2] * v3
                 }}
             .average()
     }
