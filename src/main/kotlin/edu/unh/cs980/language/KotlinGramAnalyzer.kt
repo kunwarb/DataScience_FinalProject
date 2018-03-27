@@ -4,6 +4,8 @@ package edu.unh.cs980.language
 import edu.unh.cs980.defaultWhenNotFinite
 import edu.unh.cs980.getIndexSearcher
 import edu.unh.cs980.identity
+import edu.unh.cs980.misc.AnalyzerFunctions
+import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.index.Term
@@ -129,21 +131,21 @@ class KotlinGramAnalyzer(val indexSearcher: IndexSearcher) {
             indexSearcher.indexReader.totalTermFreq(Term(gramType, gram))
 
 
-    /**
-     * Func: createTokenSequence
-     * Desc: Given a string, returns stemmed tokens.
-     */
-    private fun createTokenSequence(query: String): Sequence<String> {
-        val tokenStream = analyzer.tokenStream("text", StringReader(query)).apply { reset() }
-
-        return buildSequence<String> {
-            while (tokenStream.incrementToken()) {
-                yield(tokenStream.getAttribute(CharTermAttribute::class.java).toString())
-            }
-            tokenStream.end()
-            tokenStream.close()
-        }
-    }
+//    /**
+//     * Func: createTokenSequence
+//     * Desc: Given a string, returns stemmed tokens.
+//     */
+//    private fun createTokenSequence(query: String): Sequence<String> {
+//        val tokenStream = analyzer.tokenStream("text", StringReader(query)).apply { reset() }
+//
+//        return buildSequence<String> {
+//            while (tokenStream.incrementToken()) {
+//                yield(tokenStream.getAttribute(CharTermAttribute::class.java).toString())
+//            }
+//            tokenStream.end()
+//            tokenStream.close()
+//        }
+//    }
 
 
     /**
@@ -219,7 +221,8 @@ class KotlinGramAnalyzer(val indexSearcher: IndexSearcher) {
      * Desc: Function used to count number of (stemmed) bigrams in text.
      */
     private fun countBigrams(text: String): Map<String, Int> {
-        val terms = createTokenSequence(text).toList()
+//        val terms = createTokenSequence(text).toList()
+        val terms = AnalyzerFunctions.createTokenList(text, analyzerType = ANALYZER_ENGLISH).toList()
         val docBigramCounts = terms.windowed(2, 1)
             .map { window -> window.joinToString(separator = "") }
             .groupingBy(::identity)
@@ -234,7 +237,8 @@ class KotlinGramAnalyzer(val indexSearcher: IndexSearcher) {
      * Desc: Function used to count number of (stemmed) windowed bigrams in text.
      */
     private fun countWindowedBigrams(text: String): Map<String, Int> {
-        val terms = createTokenSequence(text).toList()
+//        val terms = createTokenSequence(text).toList()
+        val terms = AnalyzerFunctions.createTokenList(text, analyzerType = ANALYZER_ENGLISH)
         val docBigramWindowCounts = terms
             .windowed(8, 1, true)
             .flatMap { window ->
@@ -254,7 +258,8 @@ class KotlinGramAnalyzer(val indexSearcher: IndexSearcher) {
      * Desc: Functions used to count number of (stemmed) unigrams in text.
      */
     private fun countUnigrams(text: String): Map<String, Int> {
-        val terms = createTokenSequence(text).toList()
+//        val terms = createTokenSequence(text).toList()
+        val terms = AnalyzerFunctions.createTokenList(text, analyzerType = ANALYZER_ENGLISH)
 
         val docTermCounts = terms
             .groupingBy(::identity)
