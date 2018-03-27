@@ -41,6 +41,7 @@ Thumbs.db
 DataSet/
 target/
 index/
+*_index/
 .idea
 
 
