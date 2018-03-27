@@ -7,6 +7,7 @@ import edu.unh.cs980.language.KotlinAbstractAnalyzer
 import edu.unh.cs980.language.KotlinGramAnalyzer
 import edu.unh.cs980.language.LanguageStatContainer
 import info.debatty.java.stringsimilarity.Jaccard
+import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
@@ -21,12 +22,12 @@ import java.lang.Double.sum
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.experimental.buildSequence
 
-private val englishAnalyzer = StandardAnalyzer()
+private val analyzer = StandardAnalyzer()
 
 private fun createTokenSequence(query: String): Sequence<String> {
     val replaceNumbers = """(\d+|enwiki:)""".toRegex()
     val cleanQuery = query.replace(replaceNumbers, "").replace("/", " ")
-    val tokenStream = englishAnalyzer.tokenStream("text", StringReader(cleanQuery)).apply { reset() }
+    val tokenStream = analyzer.tokenStream("text", StringReader(cleanQuery)).apply { reset() }
 
     return buildSequence<String> {
         while (tokenStream.incrementToken()) {
