@@ -4,6 +4,8 @@ package edu.unh.cs980.language
 import edu.unh.cs.treccar_v2.read_data.DeserializeData
 import edu.unh.cs980.forEachParallel
 import edu.unh.cs980.getIndexWriter
+import edu.unh.cs980.misc.AnalyzerFunctions
+import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.document.Document
@@ -24,23 +26,23 @@ import kotlin.coroutines.experimental.buildSequence
  * Desc: This class is responsible for extracting unigrams, bigrams, and windowed bigrams from the corpus.
  */
 class KotlinGram(filename: String) {
-    val analyzer = EnglishAnalyzer()
+//    val analyzer = EnglishAnalyzer()
     val indexWriter = getIndexWriter(filename)
 
-    /**
-     * Function: getFilteredtokens
-     * Desc: Returns a sequence of (stemmed) tokens from the given text
-     */
-    fun getFilteredTokens(text: String): Sequence<String> {
-        val tokenStream = analyzer.tokenStream("text", StringReader(text)).apply { reset() }
-        return buildSequence<String>() {
-            while (tokenStream.incrementToken()) {
-                yield(tokenStream.getAttribute(CharTermAttribute::class.java).toString())
-            }
-            tokenStream.end()
-            tokenStream.close()
-        }
-    }
+//    /**
+//     * Function: getFilteredtokens
+//     * Desc: Returns a sequence of (stemmed) tokens from the given text
+//     */
+//    fun getFilteredTokens(text: String): Sequence<String> {
+//        val tokenStream = analyzer.tokenStream("text", StringReader(text)).apply { reset() }
+//        return buildSequence<String>() {
+//            while (tokenStream.incrementToken()) {
+//                yield(tokenStream.getAttribute(CharTermAttribute::class.java).toString())
+//            }
+//            tokenStream.end()
+//            tokenStream.close()
+//        }
+//    }
 
 
     /**
@@ -48,7 +50,8 @@ class KotlinGram(filename: String) {
      * Desc: Given the context of a paragraph, indexes unigrams, bigrams, and windowed bigrams.
      */
     private fun doIndex(parText: String) {
-        val tokens = getFilteredTokens(parText).toList()
+//        val tokens = getFilteredTokens(parText).toList()
+        val tokens = AnalyzerFunctions.createTokenList(parText, ANALYZER_ENGLISH)
         val doc = Document()
         val unigrams = ArrayList<String>()
         val bigrams = ArrayList<String>()

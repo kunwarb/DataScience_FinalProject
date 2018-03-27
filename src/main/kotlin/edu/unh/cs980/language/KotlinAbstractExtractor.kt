@@ -4,6 +4,7 @@ package edu.unh.cs980.language
 import edu.unh.cs.treccar_v2.read_data.DeserializeData
 import edu.unh.cs980.forEachParallelRestricted
 import edu.unh.cs980.getIndexWriter
+import edu.unh.cs980.misc.AnalyzerFunctions
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.document.Document
@@ -11,27 +12,27 @@ import org.apache.lucene.document.Field
 import org.apache.lucene.document.TextField
 import java.io.BufferedInputStream
 import java.io.File
-import java.io.StringReader
 import java.lang.Integer.min
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.experimental.buildIterator
 import kotlin.coroutines.experimental.buildSequence
+import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH
 
 class KotlinAbstractExtractor(filename: String) {
     val indexWriter = getIndexWriter(filename)
-    val analyzer = EnglishAnalyzer()
-
-    private fun getFilteredTokens(text: String): Sequence<String> {
-        val tokenStream = analyzer.tokenStream("text", StringReader(text)).apply { reset() }
-
-        return buildSequence<String>() {
-            while (tokenStream.incrementToken()) {
-                yield(tokenStream.getAttribute(CharTermAttribute::class.java).toString())
-            }
-            tokenStream.end()
-            tokenStream.close()
-        }
-    }
+//    val analyzer = EnglishAnalyzer()
+//
+//    private fun getFilteredTokens(text: String): Sequence<String> {
+//        val tokenStream = analyzer.tokenStream("text", StringReader(text)).apply { reset() }
+//
+//        return buildSequence<String>() {
+//            while (tokenStream.incrementToken()) {
+//                yield(tokenStream.getAttribute(CharTermAttribute::class.java).toString())
+//            }
+//            tokenStream.end()
+//            tokenStream.close()
+//        }
+//    }
 
     private fun iterWrapper(f: BufferedInputStream): Iterable<Pair<String, String>> {
         val iter = DeserializeData.iterableAnnotations(f).iterator()
@@ -78,7 +79,8 @@ class KotlinAbstractExtractor(filename: String) {
                 doc.add(TextField("text", content, Field.Store.YES))
 
 
-                val tokens = getFilteredTokens(content).toList()
+//                val tokens = getFilteredTokens(content).toList()
+                val tokens = AnalyzerFunctions.createTokenList(content, ANALYZER_ENGLISH)
 //                val doc = Document()
                 val unigrams = ArrayList<String>()
                 val bigrams = ArrayList<String>()

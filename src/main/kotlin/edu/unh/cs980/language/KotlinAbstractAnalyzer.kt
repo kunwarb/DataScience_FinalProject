@@ -2,6 +2,7 @@
 package edu.unh.cs980.language
 
 import edu.unh.cs980.getIndexSearcher
+import edu.unh.cs980.misc.AnalyzerFunctions
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.document.Document
@@ -17,21 +18,21 @@ import kotlin.coroutines.experimental.buildSequence
 class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
     constructor(indexLoc: String) : this(getIndexSearcher(indexLoc))
 
-    val analyzer = StandardAnalyzer()
+//    val analyzer = StandardAnalyzer()
     val gramAnalyzer = KotlinGramAnalyzer(indexSearcher)
     private val memoizedAbstractDocs = ConcurrentHashMap<String, Document?>()
 
-    fun createTokenSequence(query: String): Sequence<String> {
-        val tokenStream = analyzer.tokenStream("text", StringReader(query)).apply { reset() }
-
-        return buildSequence<String> {
-            while (tokenStream.incrementToken()) {
-                yield(tokenStream.getAttribute(CharTermAttribute::class.java).toString())
-            }
-            tokenStream.end()
-            tokenStream.close()
-        }
-    }
+//    fun createTokenSequence(query: String): Sequence<String> {
+//        val tokenStream = analyzer.tokenStream("text", StringReader(query)).apply { reset() }
+//
+//        return buildSequence<String> {
+//            while (tokenStream.incrementToken()) {
+//                yield(tokenStream.getAttribute(CharTermAttribute::class.java).toString())
+//            }
+//            tokenStream.end()
+//            tokenStream.close()
+//        }
+//    }
 
     fun retrieveEntityDoc(entity: String): Document? =
             memoizedAbstractDocs.computeIfAbsent(entity, {key ->
@@ -62,7 +63,8 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
 
         val entityDoc = indexSearcher.doc(topDocs.scoreDocs[0].doc)
         val content = entityDoc.get("text")
-        return createTokenSequence(content).toList()
+//        return createTokenSequence(content).toList()
+        return AnalyzerFunctions.createTokenList(content)
     }
 
     fun getTermStats(terms: List<String>): List<Pair<String, Double>> {

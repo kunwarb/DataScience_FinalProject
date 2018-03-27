@@ -11,10 +11,13 @@ import org.apache.lucene.search.TermQuery
 import java.io.StringReader
 import kotlin.coroutines.experimental.buildSequence
 
-
+/**
+ * Static Class: AnalyzerFunctions
+ * Desc: Contains a collection of tokenizing / query building functions used by other scripts.
+ */
 object AnalyzerFunctions {
-    val standardAnalyzer = StandardAnalyzer()
-    val englishAnalyzer = EnglishAnalyzer()
+    private val standardAnalyzer = StandardAnalyzer()
+    private val englishAnalyzer = EnglishAnalyzer()
 
     enum class AnalyzerType { ANALYZER_STANDARD, ANALYZER_ENGLISH }
 
