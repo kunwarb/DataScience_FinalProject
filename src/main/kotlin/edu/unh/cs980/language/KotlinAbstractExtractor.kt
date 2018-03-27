@@ -4,6 +4,7 @@ package edu.unh.cs980.language
 import edu.unh.cs.treccar_v2.Data
 import edu.unh.cs.treccar_v2.read_data.DeserializeData
 import edu.unh.cs980.forEachParallel
+import edu.unh.cs980.forEachParallelRestricted
 import edu.unh.cs980.getIndexWriter
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.standard.StandardAnalyzer
@@ -59,7 +60,7 @@ class KotlinAbstractExtractor(filename: String) {
         val counter = AtomicInteger()
 
         iterWrapper(f)
-            .forEachParallel { (name, content) ->
+            .forEachParallelRestricted(10) { (name, content) ->
 
                 // This is just to keep track of how many pages we've parsed
                 counter.incrementAndGet().let {

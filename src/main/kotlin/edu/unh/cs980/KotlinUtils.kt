@@ -3,6 +3,7 @@ package edu.unh.cs980
 
 import kotlinx.coroutines.experimental.CommonPool
 import kotlinx.coroutines.experimental.async
+import kotlinx.coroutines.experimental.newFixedThreadPoolContext
 import kotlinx.coroutines.experimental.runBlocking
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.index.DirectoryReader
@@ -13,6 +14,8 @@ import org.apache.lucene.search.TopDocs
 import org.apache.lucene.store.FSDirectory
 import java.nio.file.Paths
 import java.util.*
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 
 // Conditional versions of run/let/apply/also
 fun <T,R> T.runIf(condition: Boolean, block: T.() -> R): R? = if (condition)  run(block)  else null
@@ -37,6 +40,11 @@ fun <A, B>Iterable<A>.pmap(f: suspend (A) -> B): List<B> = runBlocking {
 
 fun <A>Iterable<A>.forEachParallel(f: suspend (A) -> Unit): Unit = runBlocking {
     map { async(CommonPool) { f(it) } }.forEach { it.await() }
+}
+
+fun <A>Iterable<A>.forEachParallelRestricted(nThreads: Int = 10, f: suspend (A) -> Unit): Unit = runBlocking {
+    val pool = newFixedThreadPoolContext(nThreads, "parallel")
+    map { async(pool) { f(it) } }.forEach { it.await() }
 }
 
 
