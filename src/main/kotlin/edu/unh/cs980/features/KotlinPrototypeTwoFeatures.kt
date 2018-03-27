@@ -130,6 +130,7 @@ fun featEntitySDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                 val v1 = queryLikelihood.unigramLikelihood
                 val v2 = queryLikelihood.bigramLikelihood
                 val v3 = queryLikelihood.bigramWindowLikelihood
+                println("$v1 $v2 $v3")
                 when (gramType) {
                     GramStatType.TYPE_UNIGRAM -> v1
                     GramStatType.TYPE_BIGRAM -> v2
