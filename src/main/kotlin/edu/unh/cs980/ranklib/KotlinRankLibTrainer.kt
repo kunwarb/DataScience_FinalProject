@@ -74,6 +74,14 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
     }
 
+    private fun queryAbstractSim() {
+        val abstractSearcher = getIndexSearcher("abstract")
+        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE, weight = 0.8345728173873589)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAbstractSim(query, tops, indexSearcher, abstractSearcher, BM25Similarity())}, normType = NormType.ZSCORE,
+                weight = 0.16542718261264)
+    }
+
     private fun querySectionPath() {
         val weights = listOf(0.200983, 0.099785, 0.223777, 0.4754529531)
         formatter.addFeature({ query, tops, indexSearcher ->
@@ -131,6 +139,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         when (method) {
             "abstract_score" -> queryAbstract()
             "sdm_components" -> querySDMComponents()
+            "abstract_sim" -> queryAbstractSim()
             "section_path" -> querySectionPath()
             "combined" -> queryCombined()
             else -> println("Unknown method!")
