@@ -1,23 +1,27 @@
 @file:JvmName("KotRankLibTrainer")
 package edu.unh.cs980.ranklib
 
-import org.apache.lucene.index.Term
-import org.apache.lucene.search.*
-import edu.unh.cs980.*
+import edu.unh.cs980.CONTENT
+import edu.unh.cs980.KotlinDatabase
+import edu.unh.cs980.KotlinGraphAnalyzer
 import edu.unh.cs980.context.HyperlinkIndexer
-import edu.unh.cs980.features.*
+import edu.unh.cs980.features.featEntitySDM
+import edu.unh.cs980.features.featLikehoodOfQueryGivenEntityMention
+import edu.unh.cs980.features.featSDM
+import edu.unh.cs980.getIndexSearcher
 import edu.unh.cs980.language.KotlinAbstractAnalyzer
 import edu.unh.cs980.language.KotlinGramAnalyzer
+import info.debatty.java.stringsimilarity.Jaccard
+import info.debatty.java.stringsimilarity.JaroWinkler
+import info.debatty.java.stringsimilarity.interfaces.StringDistance
+import org.apache.lucene.index.Term
+import org.apache.lucene.search.*
+import org.apache.lucene.search.similarities.LMDirichletSimilarity
+import org.apache.lucene.search.similarities.LMJelinekMercerSimilarity
+import org.apache.lucene.search.similarities.LMSimilarity
+import org.apache.lucene.search.similarities.Similarity
 import java.lang.Double.sum
 import java.util.*
-import info.debatty.java.stringsimilarity.*
-import info.debatty.java.stringsimilarity.interfaces.StringDistance
-import org.apache.lucene.index.Fields
-import org.apache.lucene.index.TermContext
-import org.apache.lucene.search.similarities.*
-import java.lang.Double.max
-import java.lang.Float.max
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Function: KotlinRankLibTrainer
@@ -476,6 +480,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 
 
     private fun trainDirichletAlpha() {
+        formatter.addBM25(normType = NormType.ZSCORE)
         val gramIndexSearcher = getIndexSearcher("gram")
         val hGram = KotlinGramAnalyzer(gramIndexSearcher)
         listOf(1, 10, 100, 1000, 10000).forEach { alpha ->

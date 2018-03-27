@@ -2,24 +2,15 @@ package edu.unh.cs980.features
 
 import edu.unh.cs980.CONTENT
 import edu.unh.cs980.context.HyperlinkIndexer
-import edu.unh.cs980.language.GramStatType
 import edu.unh.cs980.language.KotlinAbstractAnalyzer
 import edu.unh.cs980.language.KotlinGramAnalyzer
-import edu.unh.cs980.language.LanguageStatContainer
 import info.debatty.java.stringsimilarity.Jaccard
-import org.apache.lucene.analysis.Analyzer
-import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
-import org.apache.lucene.document.Document
 import org.apache.lucene.index.Term
 import org.apache.lucene.search.*
-import org.apache.lucene.search.similarities.LMDirichletSimilarity
 import org.apache.lucene.search.similarities.Similarity
 import java.io.StringReader
-import java.lang.Double.max
-import java.lang.Double.sum
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.experimental.buildSequence
 
 private val analyzer = StandardAnalyzer()
