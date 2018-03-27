@@ -18,19 +18,19 @@ import kotlin.coroutines.experimental.buildSequence
 
 private val analyzer = StandardAnalyzer()
 
-private fun createTokenSequence(query: String): Sequence<String> {
-    val replaceNumbers = """(\d+|enwiki:)""".toRegex()
-    val cleanQuery = query.replace(replaceNumbers, "").replace("/", " ")
-    val tokenStream = analyzer.tokenStream("text", StringReader(cleanQuery)).apply { reset() }
-
-    return buildSequence<String> {
-        while (tokenStream.incrementToken()) {
-            yield(tokenStream.getAttribute(CharTermAttribute::class.java).toString())
-        }
-        tokenStream.end()
-        tokenStream.close()
-    }
-}
+//private fun createTokenSequence(query: String): Sequence<String> {
+//    val replaceNumbers = """(\d+|enwiki:)""".toRegex()
+//    val cleanQuery = query.replace(replaceNumbers, "").replace("/", " ")
+//    val tokenStream = analyzer.tokenStream("text", StringReader(cleanQuery)).apply { reset() }
+//
+//    return buildSequence<String> {
+//        while (tokenStream.incrementToken()) {
+//            yield(tokenStream.getAttribute(CharTermAttribute::class.java).toString())
+//        }
+//        tokenStream.end()
+//        tokenStream.close()
+//    }
+//}
 
 
 
@@ -100,8 +100,8 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
             gramAnalyzer: KotlinGramAnalyzer, alpha: Double,
             gramType: GramStatType? = null): List<Double> {
-    val tokens = createTokenSequence(query).toList()
-//    val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true, analyzerType = ANALYZER_ENGLISH)
+//    val tokens = createTokenSequence(query).toList()
+    val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
     val cleanQuery = tokens.toList().joinToString(" ")
 
     val queryCorpus = gramAnalyzer.getCorpusStatContainer(cleanQuery)
