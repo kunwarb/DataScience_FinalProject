@@ -13,6 +13,8 @@ import edu.unh.cs980.language.KotlinGramAnalyzer
 import edu.unh.cs980.misc.AnalyzerFunctions
 import info.debatty.java.stringsimilarity.Jaccard
 import info.debatty.java.stringsimilarity.JaroWinkler
+import info.debatty.java.stringsimilarity.NormalizedLevenshtein
+import info.debatty.java.stringsimilarity.SorensenDice
 import info.debatty.java.stringsimilarity.interfaces.StringDistance
 import org.apache.lucene.index.Term
 import org.apache.lucene.search.*
@@ -228,7 +230,21 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             featSectionSplit(query, tops, indexSearcher, 2) }, normType = NormType.NONE)
         formatter.addFeature({ query, tops, indexSearcher ->
             featSectionSplit(query, tops, indexSearcher, 3) }, normType = NormType.NONE)
+    }
 
+    private fun trainSimilarityComponents() {
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAddStringDistanceFunction(query, tops, indexSearcher, Jaccard() )
+        }, normType = NormType.ZSCORE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAddStringDistanceFunction(query, tops, indexSearcher, JaroWinkler() )
+        }, normType = NormType.ZSCORE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAddStringDistanceFunction(query, tops, indexSearcher, NormalizedLevenshtein() )
+        }, normType = NormType.ZSCORE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAddStringDistanceFunction(query, tops, indexSearcher, SorensenDice() )
+        }, normType = NormType.ZSCORE)
     }
 
     private fun trainAbstractScore() {
@@ -272,6 +288,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "train_alpha" -> trainDirichletAlpha()
             "section_path" -> trainSectionPath()
             "train_sdm_components" -> trainSDMComponents()
+            "string_similarity_components" -> trainSimilarityComponents()
             "train_entity_sdm_components" -> trainEntitySDMComponents()
             "combined" -> trainCombined()
             else -> println("Unknown method!")
