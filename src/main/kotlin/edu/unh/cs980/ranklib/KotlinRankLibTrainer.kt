@@ -235,16 +235,16 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     private fun trainSimilarityComponents() {
         formatter.addFeature({ query, tops, indexSearcher ->
             featAddStringDistanceFunction(query, tops, indexSearcher, Jaccard() )
-        }, normType = NormType.ZSCORE)
+        }, normType = NormType.NONE)
         formatter.addFeature({ query, tops, indexSearcher ->
             featAddStringDistanceFunction(query, tops, indexSearcher, JaroWinkler() )
-        }, normType = NormType.ZSCORE)
+        }, normType = NormType.NONE)
         formatter.addFeature({ query, tops, indexSearcher ->
             featAddStringDistanceFunction(query, tops, indexSearcher, NormalizedLevenshtein() )
-        }, normType = NormType.ZSCORE)
+        }, normType = NormType.NONE)
         formatter.addFeature({ query, tops, indexSearcher ->
             featAddStringDistanceFunction(query, tops, indexSearcher, SorensenDice() )
-        }, normType = NormType.ZSCORE)
+        }, normType = NormType.NONE)
     }
 
     private fun trainAbstractScore() {
