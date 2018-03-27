@@ -38,7 +38,9 @@ fun featSplitSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         .map { (weight, section) ->
                     func(section, tops, indexSearcher).map { result -> result * weight}}
 
-    return results.reduce { acc, list ->  acc.zip(list).map { (l1, l2) -> l1 + l2 }}
+    val finalList = try{results.reduce { acc, list ->  acc.zip(list).map { (l1, l2) -> l1 + l2 }} }
+                    catch(e: UnsupportedOperationException) { (0 until tops.scoreDocs.size).map { 0.0 }}
+    return finalList
 }
 
 fun featSectionComponent(query: String, tops: TopDocs, indexSearcher: IndexSearcher): List<Double> {
