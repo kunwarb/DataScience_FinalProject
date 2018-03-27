@@ -500,7 +500,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         formatter.addBM25(normType = NormType.ZSCORE)
         val gramIndexSearcher = getIndexSearcher("gram")
         val hGram = KotlinGramAnalyzer(gramIndexSearcher)
-        listOf(2, 3, 4, 5, 6, 7, 8, 9, 10).forEach { alpha ->
+        listOf(2, 8, 16, 32, 64, 128).forEach { alpha ->
             formatter.addFeature({ query, tops, indexSearcher ->
                 featSDM(query, tops, indexSearcher, hGram, alpha.toDouble())
             }, normType = NormType.ZSCORE)

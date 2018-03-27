@@ -117,8 +117,8 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
             GramStatType.TYPE_UNIGRAM -> v1
             GramStatType.TYPE_BIGRAM -> v2
             GramStatType.TYPE_BIGRAM_WINDOW -> v3
-//            else -> v1 + v2 + v3
-            else -> v1 * weights[0] + v2 * weights[1] + v3 * weights[2]
+            else -> v1 + v2 + v3
+//            else -> v1 * weights[0] + v2 * weights[1] + v3 * weights[2]
         }
 //        val v1 = queryLikelihood.unigramLikelihood.likelihood()
 //        val v2 = queryLikelihood.bigramLikelihood.likelihood()
