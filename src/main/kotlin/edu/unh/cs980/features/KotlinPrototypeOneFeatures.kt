@@ -119,6 +119,7 @@ fun featSectionSplit(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 }
 
 
+
 /**
  * Function: addScoreMixtureSims
  * Description: Uses Random Walk model over bipartite graph of entities and paragraphs to rescore paragraphs.

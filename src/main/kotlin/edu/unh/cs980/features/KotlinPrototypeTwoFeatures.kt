@@ -23,6 +23,24 @@ import kotlin.coroutines.experimental.buildSequence
 
 //private val analyzer = StandardAnalyzer()
 
+fun featSplitSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
+                 func: (String, TopDocs, IndexSearcher) -> List<Double>,
+                 secWeights: List<Double> = listOf(1.0, 1.0, 1.0, 1.0)): List<Double> {
+
+    val sections = query.split("/")
+        .map { section -> AnalyzerFunctions
+            .createTokenList(section, useFiltering = true)
+            .joinToString(" ")}
+        .toList()
+
+    val results = secWeights.zip(sections)
+        .filter { (weight, section) -> weight != 0.0 }
+        .map { (weight, section) ->
+                    func(section, tops, indexSearcher).map { result -> result * weight}}
+
+    return results.reduce { acc, list ->  acc.zip(list).map { (l1, l2) -> l1 + l2 }}
+}
+
 fun featSectionComponent(query: String, tops: TopDocs, indexSearcher: IndexSearcher): List<Double> {
     val termQueries = query.split("/")
         .map { section -> AnalyzerFunctions

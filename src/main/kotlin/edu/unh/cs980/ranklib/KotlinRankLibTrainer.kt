@@ -25,6 +25,7 @@ import org.apache.lucene.search.similarities.Similarity
 import java.lang.Double.sum
 import java.util.*
 
+
 /**
  * Function: KotlinRankLibTrainer
  * Description: This is used to encapsulate my different query methods, and the training methods I used to
@@ -103,12 +104,14 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 //        formatter.addFeature({ query, tops, indexSearcher ->
 //            featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE,
 //                weight = 0.176)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            featAddStringDistanceFunction(query, tops, indexSearcher, Jaccard() )
-        }, normType = NormType.ZSCORE, weight = weights[2])
-        formatter.addFeature({query, tops, indexSearcher ->
-            featUseLucSim(query, tops, indexSearcher, LMDirichletSimilarity())
-        }, normType = NormType.ZSCORE, weight = weights[3])
+        formatter.addFeature(::featStringSimilarityComponent, normType = NormType.ZSCORE)
+
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featAddStringDistanceFunction(query, tops, indexSearcher, Jaccard() )
+//        }, normType = NormType.ZSCORE, weight = weights[2])
+//        formatter.addFeature({query, tops, indexSearcher ->
+//            featUseLucSim(query, tops, indexSearcher, LMDirichletSimilarity())
+//        }, normType = NormType.ZSCORE, weight = weights[3])
     }
 
     private fun querySDMComponents() {
@@ -247,6 +250,21 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         }, normType = NormType.NONE)
     }
 
+    private fun trainSimilaritySection() {
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSplitSim(query, tops, indexSearcher, ::featStringSimilarityComponent,
+                    secWeights = listOf(1.0, 0.0, 0.0, 0.0))}, normType = NormType.NONE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSplitSim(query, tops, indexSearcher, ::featStringSimilarityComponent,
+                    secWeights = listOf(0.0, 1.0, 0.0, 0.0))}, normType = NormType.NONE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSplitSim(query, tops, indexSearcher, ::featStringSimilarityComponent,
+                    secWeights = listOf(0.0, 0.0, 1.0, 0.0))}, normType = NormType.NONE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSplitSim(query, tops, indexSearcher, ::featStringSimilarityComponent,
+                    secWeights = listOf(0.0, 0.0, 0.0, 1.0))}, normType = NormType.NONE)
+    }
+
     private fun trainAbstractScore() {
 //        formatter.addBM25(normType = NormType.ZSCORE)
         formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE)
@@ -287,6 +305,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "section_path" -> trainSectionPath()
             "train_sdm_components" -> trainSDMComponents()
             "string_similarity_components" -> trainSimilarityComponents()
+            "similarity_section" -> trainSimilaritySection()
             "train_entity_sdm_components" -> trainEntitySDMComponents()
             "combined" -> trainCombined()
             else -> println("Unknown method!")
