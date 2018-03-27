@@ -88,18 +88,25 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     }
 
     private fun queryAbstract() {
-        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE, weight = 0.634754239)
+        val weights = listOf(0.49827237108, 0.23021207089, 0.1280351944, 0.143480363604666)
+        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE, weight = weights[0])
         val gramSearcher = getIndexSearcher("gram")
 //        formatter.addBM25(normType = NormType.ZSCORE, weight = 1.0)
         val hGram = KotlinGramAnalyzer(gramSearcher)
         formatter.addFeature({ query, tops, indexSearcher ->
             featSDM(query, tops, indexSearcher, hGram, 4.0)
-        }, normType = NormType.ZSCORE, weight = 0.3652457606517)
+        }, normType = NormType.ZSCORE, weight = weights[1])
 
 //        val hLinker = HyperlinkIndexer("entity_mentions.db")
 //        formatter.addFeature({ query, tops, indexSearcher ->
 //            featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE,
 //                weight = 0.176)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAddStringDistanceFunction(query, tops, indexSearcher, Jaccard() )
+        }, normType = NormType.ZSCORE, weight = weights[2])
+        formatter.addFeature({query, tops, indexSearcher ->
+            featUseLucSim(query, tops, indexSearcher, LMDirichletSimilarity())
+        }, normType = NormType.ZSCORE, weight = weights[3])
     }
 
     private fun querySDMComponents() {
