@@ -93,7 +93,7 @@ data class LanguageStatContainer(
                     .map { (term, freq) ->
 //                        val pred = docSmooth * (stat.docTermFreqs[term] ?: 0.0) + corpusSmooth * freq
                         val smoothCounts = (stat.docTermCounts[term] ?: 0) + freq * alpha
-                        println("$term : $freq : ${queryStat.type}")
+//                        println("$term : $freq : ${queryStat.type}")
                         log(smoothCounts / (docLength + alpha))
                     }
                     .sum()
