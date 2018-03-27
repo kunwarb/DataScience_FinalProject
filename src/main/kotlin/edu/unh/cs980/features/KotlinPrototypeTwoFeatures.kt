@@ -133,7 +133,7 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                         Triple("", 0.0, 0.0)
                 println(bestSimilarity)
                 if (bestSimilarity < 0.9) 0.0 else bestScore}
-            .average()
+            .let { result -> if (result.isEmpty()) 0.0 else result.average()  }
     }.toList()
 }
 
