@@ -105,11 +105,6 @@ fun featSectionSplit(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
             .joinToString(" ")}
         .map { section -> AnalyzerFunctions.createQuery(section)}
         .toList()
-//        val termQueries = retrieveSequence(query)
-//            .map { token -> TermQuery(Term(CONTENT, token))}
-//            .map { termQuery -> BooleanQuery.Builder().add(termQuery, BooleanClause.Occur.SHOULD).build()}
-//            .toList()
-//    val termQueries = AnalyzerFunctions.createQueryList(query, useFiltering = true)
 
     if (termQueries.size < secIndex + 1) {
         return (0 until tops.scoreDocs.size).map { 0.0 }

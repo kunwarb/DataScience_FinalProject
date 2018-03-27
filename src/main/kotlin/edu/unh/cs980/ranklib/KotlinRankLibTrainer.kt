@@ -224,7 +224,8 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     }
 
     private fun trainAbstractScore() {
-        formatter.addBM25(normType = NormType.ZSCORE)
+//        formatter.addBM25(normType = NormType.ZSCORE)
+        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE)
         val gramIndexSearcher = getIndexSearcher("gram")
 //        val hLinker = HyperlinkIndexer("entity_mentions.db")
         val hGram = KotlinGramAnalyzer(gramIndexSearcher)

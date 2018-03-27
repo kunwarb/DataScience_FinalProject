@@ -17,8 +17,32 @@ import org.apache.lucene.search.similarities.Similarity
 import java.io.StringReader
 import kotlin.coroutines.experimental.buildSequence
 
-private val analyzer = StandardAnalyzer()
+//private val analyzer = StandardAnalyzer()
 
+fun featSectionComponent(query: String, tops: TopDocs, indexSearcher: IndexSearcher): List<Double> {
+    val termQueries = query.split("/")
+        .map { section -> AnalyzerFunctions
+            .createTokenList(section, useFiltering = true)
+            .joinToString(" ")}
+        .map { section -> AnalyzerFunctions.createQuery(section)}
+        .toList()
+
+    val weights = listOf(0.200983, 0.099785, 0.223777, 0.4754529531)
+    val validQueries = weights.zip(termQueries)
+
+//    if (termQueries.size < secIndex + 1) {
+//        return (0 until tops.scoreDocs.size).map { 0.0 }
+//    }
+
+//    val boolQuery = termQueries[secIndex]
+
+    return tops.scoreDocs
+        .map { scoreDoc ->
+            validQueries.map { (weight, boolQuery) ->
+                indexSearcher.explain(boolQuery, scoreDoc.doc).value.toDouble() * weight }
+            .sum()
+        }
+}
 
 
 // Get likelihood of query given entity mention
