@@ -1,6 +1,7 @@
 @file:JvmName("KotGramAnalyzer")
 package edu.unh.cs980.language
 
+import edu.unh.cs980.defaultWhenNotFinite
 import edu.unh.cs980.getIndexSearcher
 import edu.unh.cs980.identity
 import org.apache.lucene.analysis.en.EnglishAnalyzer
@@ -94,7 +95,7 @@ data class LanguageStatContainer(
 //                        val pred = docSmooth * (stat.docTermFreqs[term] ?: 0.0) + corpusSmooth * freq
                         val smoothCounts = (stat.docTermCounts[term] ?: 0) + freq * alpha
 //                        println("$term : $freq : ${queryStat.type}")
-                        log(smoothCounts / (docLength + alpha))
+                        log(smoothCounts / (docLength + alpha)).defaultWhenNotFinite(0.0)
                     }
                     .sum()
 

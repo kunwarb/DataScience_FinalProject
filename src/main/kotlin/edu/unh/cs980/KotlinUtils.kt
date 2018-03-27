@@ -86,3 +86,5 @@ typealias FeatureInterface = (String, TopDocs, IndexSearcher) -> List<Double>
 
 // I don't know why the hell they don't have an identity function..
 fun <A> identity(it: A): A = it
+
+fun Double.defaultWhenNotFinite(default: Double = 0.0): Double = if (!isFinite()) default else this
