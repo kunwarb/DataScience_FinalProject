@@ -121,7 +121,7 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
     val retrieveMostSimilarEntity = { candidateEntity: String ->
         entityScores
             .map { (targetEntity, score) -> Triple(targetEntity, score, jac.distance(candidateEntity, targetEntity)) }
-            .maxBy { (targetEntity, score, similarity) -> score }
+            .maxBy { (targetEntity, score, similarity) -> similarity }
     }
 
     return tops.scoreDocs.map { scoreDoc ->
@@ -129,7 +129,8 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         val entities = doc.getValues("spotlight").toList()
         entities
             .mapNotNull { candidateEntity ->
-                val (_, bestScore, bestSimilarity) = retrieveMostSimilarEntity(candidateEntity)!!
+                val (_, bestScore, bestSimilarity) = retrieveMostSimilarEntity(candidateEntity) ?:
+                        Triple("", 0.0, 0.0)
                 if (bestSimilarity < 0.9) 0.0 else bestScore}
             .average()
     }.toList()
