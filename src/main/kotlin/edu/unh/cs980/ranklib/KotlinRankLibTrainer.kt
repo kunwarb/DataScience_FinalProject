@@ -293,7 +293,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         when (method) {
             "abstract_score" -> trainAbstractScore()
             "abstract_sdm" -> trainAbstractSDM()
-            "abstract_sim" -> trainAbstractSDM()
+            "abstract_sim" -> trainAbstractSim()
             "train_alpha" -> trainDirichletAlpha()
             "section_path" -> trainSectionPath()
             "train_sdm_components" -> trainSDMComponents()
