@@ -99,7 +99,7 @@ class QueryRetriever(val indexSearcher: IndexSearcher) {
 
 //                        val result = queryId to indexSearcher.search(createQuery(queryStr), 100)
                         val query = indexSearcher
-                            .search(AnalyzerFunctions.createQuery(queryStr, useFiltering = true), 100)
+                            .search(AnalyzerFunctions.createQuery(queryStr, useFiltering = false), 100)
 //                        val result = queryId to indexSearcher.search(createQuery(queryStr), 100)
                         val result = queryId to query
                         result.takeUnless {seen.put(queryId, "") != null}   // remove duplicates
