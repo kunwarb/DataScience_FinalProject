@@ -12,6 +12,7 @@ import edu.unh.cs980.getIndexSearcher
 import edu.unh.cs980.language.GramStatType
 import edu.unh.cs980.language.KotlinAbstractAnalyzer
 import edu.unh.cs980.language.KotlinGramAnalyzer
+import edu.unh.cs980.misc.AnalyzerFunctions
 import info.debatty.java.stringsimilarity.Jaccard
 import info.debatty.java.stringsimilarity.JaroWinkler
 import info.debatty.java.stringsimilarity.interfaces.StringDistance
@@ -37,16 +38,16 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 //    val abstractAnalyzer = KotlinAbstractAnalyzer("abstract")
 
 
-    /**
-     * Function: retrieveSequence
-     * Description: For qiven query string, filters out numbers (and enwiki) and retruns a list of tokens
-     */
-    fun retrieveSequence(query: String): List<String> {
-        val replaceNumbers = """(\d+|enwiki:)""".toRegex()
-        return query.replace(replaceNumbers, "")
-            .run { formatter.queryRetriever.createTokenSequence(this) }
-            .toList()
-    }
+//    /**
+//     * Function: retrieveCleanedTokens
+//     * Description: For qiven query string, filters out numbers (and enwiki) and retruns a list of tokens
+//     */
+//    fun retrieveSequence(query: String): List<String> {
+//        val replaceNumbers = """(\d+|enwiki:)""".toRegex()
+//        return query.replace(replaceNumbers, "")
+//            .run { formatter.queryRetriever.createTokenSequence(this) }
+//            .toList()
+//    }
 
 
     /**
@@ -56,7 +57,8 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
      * @params dist: StingDistance interface (from debatty stringsimilarity library)
      */
     fun addStringDistanceFunction(query: String, tops: TopDocs, dist: StringDistance): List<Double> {
-        val tokens = retrieveSequence(query)
+//        val tokens = retrieveSequence(query)
+        val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
 
         // Map this over the score docs, taking the average similarity between query tokens and entities
         return tops.scoreDocs
@@ -75,7 +77,8 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
      *              I then get the BM25 score of each query to each document and average the results.
      */
     fun addAverageQueryScore(query: String, tops: TopDocs, indexSearcher: IndexSearcher): List<Double> {
-        val termQueries = retrieveSequence(query)
+//        val termQueries = retrieveSequence(query)
+        val termQueries = AnalyzerFunctions.createTokenList(query, useFiltering = true)
             .map { token -> TermQuery(Term(CONTENT, token))}
             .map { termQuery -> BooleanQuery.Builder().add(termQuery, BooleanClause.Occur.SHOULD).build()}
             .toList()
@@ -90,10 +93,11 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 
     /**
      * Function: addEntityQueries
-     * Description: This method is supposed to consider query only the
+     * Description: This method calculates the score using only entities
      */
     fun addEntityQueries(query: String, tops: TopDocs, indexSearcher: IndexSearcher): List<Double> {
-        val entityQuery = retrieveSequence(query)
+//        val entityQuery = retrieveSequence(query)
+        val entityQuery = AnalyzerFunctions.createTokenList(query, useFiltering = true)
             .flatMap { token ->
                 listOf(TermQuery(Term("spotlight", token)), TermQuery(Term(CONTENT, token)))
             }
@@ -112,17 +116,19 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
      * Description: Takes a Lucene similarity function and uses it to rescore documents.
      */
     fun useLucSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher, sim: Similarity): List<Double> {
-        val entityQuery = retrieveSequence(query)
-            .map { token -> TermQuery(Term(CONTENT, token)) }
-            .fold(BooleanQuery.Builder()) { builder, termQuery ->
-                builder.add(termQuery, BooleanClause.Occur.SHOULD) }
-            .build()
+//        val entityQuery = retrieveSequence(query)
+        val booleanQuery = AnalyzerFunctions.createQuery(query, useFiltering = true)
+//        val entityQuery = AnalyzerFunctions.createTokenList(query, useFiltering = true)
+//            .map { token -> TermQuery(Term(CONTENT, token)) }
+//            .fold(BooleanQuery.Builder()) { builder, termQuery ->
+//                builder.add(termQuery, BooleanClause.Occur.SHOULD) }
+//            .build()
 
         val curSim = indexSearcher.getSimilarity(true)
         indexSearcher.setSimilarity(sim)
 
         return tops.scoreDocs.map { scoreDoc ->
-                                    indexSearcher.explain(entityQuery, scoreDoc.doc).value.toDouble() }
+                                    indexSearcher.explain(booleanQuery, scoreDoc.doc).value.toDouble() }
             .apply { indexSearcher.setSimilarity(curSim) }  // Gotta remember to set the similarity back
     }
 
@@ -132,10 +138,11 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
      * Description: Splits query up and only uses a particular section for scoring.
      */
     fun sectionSplit(query: String, tops: TopDocs, indexSearcher: IndexSearcher, secIndex: Int): List<Double> {
-        val termQueries = retrieveSequence(query)
-            .map { token -> TermQuery(Term(CONTENT, token))}
-            .map { termQuery -> BooleanQuery.Builder().add(termQuery, BooleanClause.Occur.SHOULD).build()}
-            .toList()
+//        val termQueries = retrieveSequence(query)
+//            .map { token -> TermQuery(Term(CONTENT, token))}
+//            .map { termQuery -> BooleanQuery.Builder().add(termQuery, BooleanClause.Occur.SHOULD).build()}
+//            .toList()
+        val termQueries = AnalyzerFunctions.createQueryList(query, useFiltering = true)
 
         if (termQueries.size < secIndex + 1) {
             return (0 until tops.scoreDocs.size).map { 0.0 }
@@ -174,56 +181,6 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             .toList()
     }
 
-
-    fun expandSearch(query: String, tops: TopDocs, indexSearcher: IndexSearcher): List <Double> {
-        val sinks = HashMap<String, Double>()
-
-//        tops.scoreDocs.forEach { scoreDoc ->
-//            val boolQuery = retrieveSequence(query)
-//                .map { token -> TermQuery(Term(CONTENT, token))}
-//                .fold(BooleanQuery.Builder()) { builder, termQuery ->
-//                    builder.add(termQuery, BooleanClause.Occur.SHOULD) }
-//                .build()
-//
-//            val neighbors = indexSearcher.search(boolQuery, 100)
-//            val scoreSum = neighbors.scoreDocs.sumByDouble { neighDoc -> neighDoc.score.toDouble() }
-//
-//            neighbors.scoreDocs.forEach { neighDoc ->
-//                val id = indexSearcher.doc(neighDoc.doc).get(PID)
-//                val ratio = neighDoc.score.toDouble() / scoreSum
-//                val adjustedScore = ratio * scoreDoc.score
-//
-//                sinks.merge(id, adjustedScore, ::sum)
-//            }
-//        }
-
-        return tops.scoreDocs
-//            .map { scoreDoc ->
-//                    val id = indexSearcher.doc(scoreDoc.doc).get(PID)
-//                    sinks[id] ?: 0.0 }
-            .map { scoreDoc ->
-                val doc = indexSearcher.doc(scoreDoc.doc)
-                val content = doc.get(CONTENT)
-                val tv = indexSearcher.indexReader.getTermVector(scoreDoc.doc, CONTENT)
-                println(tv)
-
-//                val boolQuery = retrieveSequence(content)
-//                    .map { token -> TermQuery(Term(CONTENT, token))}
-//                    .fold(BooleanQuery.Builder()) { builder, termQuery ->
-//                        builder.add(termQuery, BooleanClause.Occur.SHOULD) }
-//                    .build()
-//
-//                val neighborSum = tops.scoreDocs.sumByDouble { neighbor ->
-//                    indexSearcher.explain(boolQuery, neighbor.doc).value.toDouble()
-//                }
-//                scoreDoc.score.toDouble() / neighborSum
-                1.0
-
-//                val neighbors = indexSearcher.search(boolQuery, 10)
-//                val neighborSum = neighbors.scoreDocs.sumByDouble { neighborDoc -> neighborDoc.score.toDouble() }
-//                scoreDoc.score.toDouble() / neighborSum
-            }
-    }
 
 
 

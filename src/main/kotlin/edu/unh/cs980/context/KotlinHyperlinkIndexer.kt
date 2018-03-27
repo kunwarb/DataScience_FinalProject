@@ -4,12 +4,10 @@ package edu.unh.cs980.context
 import edu.unh.cs.treccar_v2.Data
 import edu.unh.cs.treccar_v2.read_data.DeserializeData
 import edu.unh.cs980.forEachParallel
-import info.debatty.java.stringsimilarity.Jaccard
 import org.mapdb.DBMaker
 import org.mapdb.Serializer
 import org.mapdb.serializer.SerializerArrayTuple
 import java.io.*
-import java.util.concurrent.ConcurrentNavigableMap
 import java.util.concurrent.atomic.AtomicInteger
 
 

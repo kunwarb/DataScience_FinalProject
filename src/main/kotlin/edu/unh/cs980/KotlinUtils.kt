@@ -14,8 +14,6 @@ import org.apache.lucene.search.TopDocs
 import org.apache.lucene.store.FSDirectory
 import java.nio.file.Paths
 import java.util.*
-import java.util.concurrent.Executor
-import java.util.concurrent.Executors
 
 // Conditional versions of run/let/apply/also
 fun <T,R> T.runIf(condition: Boolean, block: T.() -> R): R? = if (condition)  run(block)  else null
@@ -96,3 +94,4 @@ typealias FeatureInterface = (String, TopDocs, IndexSearcher) -> List<Double>
 fun <A> identity(it: A): A = it
 
 fun Double.defaultWhenNotFinite(default: Double = 0.0): Double = if (!isFinite()) default else this
+

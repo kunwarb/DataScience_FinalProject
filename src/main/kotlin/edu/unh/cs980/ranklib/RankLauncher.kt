@@ -1,7 +1,6 @@
 package edu.unh.cs980.ranklib
 
 import edu.unh.cs980.applyIf
-import edu.unh.cs980.runIf
 import java.io.File
 
 

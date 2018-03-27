@@ -5,6 +5,7 @@ import edu.unh.cs980.context.HyperlinkIndexer
 import edu.unh.cs980.language.GramStatType
 import edu.unh.cs980.language.KotlinAbstractAnalyzer
 import edu.unh.cs980.language.KotlinGramAnalyzer
+import edu.unh.cs980.misc.AnalyzerFunctions
 import info.debatty.java.stringsimilarity.Jaccard
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
@@ -16,28 +17,28 @@ import kotlin.coroutines.experimental.buildSequence
 
 private val analyzer = StandardAnalyzer()
 
-private fun createTokenSequence(query: String): Sequence<String> {
-    val replaceNumbers = """(\d+|enwiki:)""".toRegex()
-    val cleanQuery = query.replace(replaceNumbers, "").replace("/", " ")
-    val tokenStream = analyzer.tokenStream("text", StringReader(cleanQuery)).apply { reset() }
+//private fun createTokenSequence(query: String): Sequence<String> {
+//    val replaceNumbers = """(\d+|enwiki:)""".toRegex()
+//    val cleanQuery = query.replace(replaceNumbers, "").replace("/", " ")
+//    val tokenStream = analyzer.tokenStream("text", StringReader(cleanQuery)).apply { reset() }
+//
+//    return buildSequence<String> {
+//        while (tokenStream.incrementToken()) {
+//            yield(tokenStream.getAttribute(CharTermAttribute::class.java).toString())
+//        }
+//        tokenStream.end()
+//        tokenStream.close()
+//    }
+//}
 
-    return buildSequence<String> {
-        while (tokenStream.incrementToken()) {
-            yield(tokenStream.getAttribute(CharTermAttribute::class.java).toString())
-        }
-        tokenStream.end()
-        tokenStream.close()
-    }
-}
 
 
-
-private fun buildQuery(query: String): BooleanQuery =
-    createTokenSequence(query)
-        .map { token -> TermQuery(Term(CONTENT, token))}
-        .fold(BooleanQuery.Builder()) { builder, termQuery ->
-            builder.add(termQuery, BooleanClause.Occur.SHOULD) }
-        .build()
+//private fun buildQuery(query: String): BooleanQuery =
+//    createTokenSequence(query)
+//        .map { token -> TermQuery(Term(CONTENT, token))}
+//        .fold(BooleanQuery.Builder()) { builder, termQuery ->
+//            builder.add(termQuery, BooleanClause.Occur.SHOULD) }
+//        .build()
 
 
 
@@ -47,7 +48,8 @@ private fun buildQuery(query: String): BooleanQuery =
 fun featLikehoodOfQueryGivenEntityMention(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                                           hIndexer: HyperlinkIndexer): List<Double> {
 
-    val queryTokens = createTokenSequence(query).toList()
+//    val queryTokens = createTokenSequence(query).toList()
+    val queryTokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
     return tops.scoreDocs.map { scoreDoc ->
         val doc = indexSearcher.doc(scoreDoc.doc)
         val entities = doc.getValues("spotlight").toList()
@@ -65,8 +67,9 @@ fun featLikehoodOfQueryGivenEntityMention(query: String, tops: TopDocs, indexSea
 fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                                           abstractSearcher: IndexSearcher, sim: Similarity): List<Double> {
 
-    val booleanQuery = buildQuery(query)
-    val tokens = createTokenSequence(query).toList().joinToString()
+//    val booleanQuery = buildQuery(query)
+    val booleanQuery = AnalyzerFunctions.createQuery(query, useFiltering = true)
+//    val tokens = createTokenSequence(query).toList().joinToString()
     val jac = Jaccard()
 
     abstractSearcher.setSimilarity(sim)
@@ -96,7 +99,8 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
             gramAnalyzer: KotlinGramAnalyzer, alpha: Double,
             gramType: GramStatType? = null): List<Double> {
-    val tokens = createTokenSequence(query).toList()
+//    val tokens = createTokenSequence(query).toList()
+    val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
     val cleanQuery = tokens.toList().joinToString(" ")
 
     val queryCorpus = gramAnalyzer.getCorpusStatContainer(cleanQuery)
@@ -130,7 +134,8 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 
 fun featEntitySDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                   abstractAnalyzer: KotlinAbstractAnalyzer): List<Double> {
-    val tokens = createTokenSequence(query).toList()
+//    val tokens = createTokenSequence(query).toList()
+    val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
     val cleanQuery = tokens.toList().joinToString(" ")
 
     val queryCorpus = abstractAnalyzer.gramAnalyzer.getCorpusStatContainer(cleanQuery)

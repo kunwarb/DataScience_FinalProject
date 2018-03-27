@@ -5,9 +5,11 @@ import org.apache.lucene.search.TopDocs
 import java.io.File
 import java.util.*
 import edu.unh.cs980.*
+import edu.unh.cs980.PID
+import edu.unh.cs980.getIndexSearcher
+import edu.unh.cs980.pmap
 import me.tongfei.progressbar.ProgressBar
 import me.tongfei.progressbar.ProgressBarStyle
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 

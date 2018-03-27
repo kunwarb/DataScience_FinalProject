@@ -2,8 +2,6 @@
 package edu.unh.cs980.language
 
 import edu.unh.cs980.getIndexSearcher
-import edu.unh.cs980.identity
-import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.document.Document
