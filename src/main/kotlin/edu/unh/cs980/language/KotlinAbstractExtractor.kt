@@ -1,6 +1,7 @@
 @file:JvmName("KotAbstractExtractor")
 package edu.unh.cs980.language
 
+import edu.unh.cs.treccar_v2.Data
 import edu.unh.cs.treccar_v2.read_data.DeserializeData
 import edu.unh.cs980.forEachParallel
 import edu.unh.cs980.getIndexWriter
@@ -10,10 +11,12 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.document.Document
 import org.apache.lucene.document.Field
 import org.apache.lucene.document.TextField
+import java.io.BufferedInputStream
 import java.io.File
 import java.io.StringReader
 import java.lang.Integer.min
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.coroutines.experimental.buildIterator
 import kotlin.coroutines.experimental.buildSequence
 
 class KotlinAbstractExtractor(filename: String) {
@@ -32,12 +35,23 @@ class KotlinAbstractExtractor(filename: String) {
         }
     }
 
+    private fun iterWrapper(f: BufferedInputStream): Iterable<Data.Page> {
+        val iter = DeserializeData.iterableAnnotations(f).iterator()
+        val iterWrapper = buildIterator<Data.Page>() {
+            while (iter.hasNext()) {
+                val nextPage = iter.next()
+                yield(nextPage)
+            }
+        }
+        return Iterable { iterWrapper }
+    }
+
 
     fun getAbstracts(filename: String) {
         val f = File(filename).inputStream().buffered(16 * 1024)
         val counter = AtomicInteger()
 
-        DeserializeData.iterableAnnotations(f)
+        iterWrapper(f)
             .forEachParallel { page ->
 
                 // This is just to keep track of how many pages we've parsed
