@@ -504,13 +504,13 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     private fun trainAbstractScore() {
         formatter.addBM25(normType = NormType.ZSCORE)
         val gramIndexSearcher = getIndexSearcher("gram")
-        val hLinker = HyperlinkIndexer("entity_mentions.db")
+//        val hLinker = HyperlinkIndexer("entity_mentions.db")
         val hGram = KotlinGramAnalyzer(gramIndexSearcher)
         formatter.addFeature({ query, tops, indexSearcher ->
-            featSDM(query, tops, indexSearcher, hGram, 1.0)
+            featSDM(query, tops, indexSearcher, hGram, 4.0)
         }, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
 //        formatter.addFeature({ query, tops, indexSearcher ->
 //            featLikelihoodAbstract(query, tops, indexSearcher, abstractAnalyzer) },
 //                normType = NormType.ZSCORE)

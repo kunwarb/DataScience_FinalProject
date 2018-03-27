@@ -35,12 +35,19 @@ class KotlinAbstractExtractor(filename: String) {
         }
     }
 
-    private fun iterWrapper(f: BufferedInputStream): Iterable<Data.Page> {
+    private fun iterWrapper(f: BufferedInputStream): Iterable<Pair<String, String>> {
         val iter = DeserializeData.iterableAnnotations(f).iterator()
-        val iterWrapper = buildIterator<Data.Page>() {
+        val iterWrapper = buildIterator<Pair<String, String>>() {
             while (iter.hasNext()) {
                 val nextPage = iter.next()
-                yield(nextPage)
+
+                val name = nextPage.pageName.toLowerCase().replace(" ", "_")
+                val content = nextPage.flatSectionPathsParagraphs()
+                    .take(4)
+                    .map { psection -> psection.paragraph.textOnly }
+                    .joinToString(" ")
+
+                yield(Pair(name, content))
             }
         }
         return Iterable { iterWrapper }
@@ -52,7 +59,7 @@ class KotlinAbstractExtractor(filename: String) {
         val counter = AtomicInteger()
 
         iterWrapper(f)
-            .forEachParallel { page ->
+            .forEachParallel { (name, content) ->
 
                 // This is just to keep track of how many pages we've parsed
                 counter.incrementAndGet().let {
@@ -62,11 +69,11 @@ class KotlinAbstractExtractor(filename: String) {
                     }
                 }
 
-                val name = page.pageName.toLowerCase().replace(" ", "_")
-                val content = page.flatSectionPathsParagraphs()
-                    .take(4)
-                    .map { psection -> psection.paragraph.textOnly }
-                    .joinToString(" ")
+//                val name = page.pageName.toLowerCase().replace(" ", "_")
+//                val content = page.flatSectionPathsParagraphs()
+//                    .take(4)
+//                    .map { psection -> psection.paragraph.textOnly }
+//                    .joinToString(" ")
 
                 val doc = Document()
                 doc.add(TextField("name", name, Field.Store.YES))
