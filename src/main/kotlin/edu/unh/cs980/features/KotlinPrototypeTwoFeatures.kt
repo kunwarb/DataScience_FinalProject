@@ -6,6 +6,7 @@ import edu.unh.cs980.language.GramStatType
 import edu.unh.cs980.language.KotlinAbstractAnalyzer
 import edu.unh.cs980.language.KotlinGramAnalyzer
 import edu.unh.cs980.misc.AnalyzerFunctions
+import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.*
 import info.debatty.java.stringsimilarity.Jaccard
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
@@ -100,7 +101,7 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
             gramAnalyzer: KotlinGramAnalyzer, alpha: Double,
             gramType: GramStatType? = null): List<Double> {
 //    val tokens = createTokenSequence(query).toList()
-    val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
+    val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true, analyzerType = ANALYZER_ENGLISH)
     val cleanQuery = tokens.toList().joinToString(" ")
 
     val queryCorpus = gramAnalyzer.getCorpusStatContainer(cleanQuery)
