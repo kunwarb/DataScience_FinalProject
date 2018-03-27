@@ -112,14 +112,24 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
     abstractSearcher.setSimilarity(sim)
     val relevantEntities = abstractSearcher.search(booleanQuery, 300)
 
+//    val entityScores = relevantEntities.scoreDocs.mapIndexed { index, scoreDoc ->
+//        val doc = abstractSearcher.doc(scoreDoc.doc)
+//        val entity = doc.get("name")
+//        entity.toLowerCase().replace(" ", "_") to scoreDoc.score.toDouble()
+//    }.toList()
+
     val entityScores = relevantEntities.scoreDocs.map { scoreDoc ->
         val doc = abstractSearcher.doc(scoreDoc.doc)
         val entity = doc.get("name")
         entity.toLowerCase().replace(" ", "_") to scoreDoc.score.toDouble()
     }.toList()
 
+    val entityRanks = entityScores
+        .sortedByDescending { (entity, score) -> score }
+        .mapIndexed{ index, (entity, score) -> entity to (entityScores.size - index) / entityScores.size.toDouble() }
+
     val retrieveMostSimilarEntity = { candidateEntity: String ->
-        entityScores
+        entityRanks
             .map { (targetEntity, score) -> Triple(targetEntity, score, jac.distance(candidateEntity, targetEntity)) }
             .maxBy { (targetEntity, score, similarity) -> similarity }
     }
@@ -201,7 +211,7 @@ fun featEntitySDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                     GramStatType.TYPE_BIGRAM_WINDOW -> v3
                     else -> weights[0] * v1 + weights[1] * v2 + weights[2] * v3
                 }}
-            .average()
+            .let { result -> if  (result.isEmpty()) 0.0 else result.average() }
     }
 }
 
