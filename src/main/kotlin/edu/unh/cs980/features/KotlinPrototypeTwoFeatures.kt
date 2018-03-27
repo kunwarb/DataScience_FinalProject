@@ -18,30 +18,6 @@ import kotlin.coroutines.experimental.buildSequence
 
 private val analyzer = StandardAnalyzer()
 
-//private fun createTokenSequence(query: String): Sequence<String> {
-//    val replaceNumbers = """(\d+|enwiki:)""".toRegex()
-//    val cleanQuery = query.replace(replaceNumbers, "").replace("/", " ")
-//    val tokenStream = analyzer.tokenStream("text", StringReader(cleanQuery)).apply { reset() }
-//
-//    return buildSequence<String> {
-//        while (tokenStream.incrementToken()) {
-//            yield(tokenStream.getAttribute(CharTermAttribute::class.java).toString())
-//        }
-//        tokenStream.end()
-//        tokenStream.close()
-//    }
-//}
-
-
-
-//private fun buildQuery(query: String): BooleanQuery =
-//    createTokenSequence(query)
-//        .map { token -> TermQuery(Term(CONTENT, token))}
-//        .fold(BooleanQuery.Builder()) { builder, termQuery ->
-//            builder.add(termQuery, BooleanClause.Occur.SHOULD) }
-//        .build()
-
-
 
 
 // Get likelihood of query given entity mention
@@ -100,15 +76,12 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
             gramAnalyzer: KotlinGramAnalyzer, alpha: Double,
             gramType: GramStatType? = null): List<Double> {
-//    val tokens = createTokenSequence(query).toList()
     val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
     val cleanQuery = tokens.toList().joinToString(" ")
-
     val queryCorpus = gramAnalyzer.getCorpusStatContainer(cleanQuery)
 
     return tops.scoreDocs.map { scoreDoc ->
         val doc = indexSearcher.doc(scoreDoc.doc)
-//        val text = cleanQuery + " " + doc.get(CONTENT) + " " + cleanQuery
         val text = doc.get(CONTENT)
         val docStat = gramAnalyzer.getLanguageStatContainer(text)
 
@@ -125,17 +98,12 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 //            else -> v1 + v2 + v3
             else -> v1 * weights[0] + v2 * weights[1] + v3 * weights[2]
         }
-//        val v1 = queryLikelihood.unigramLikelihood.likelihood()
-//        val v2 = queryLikelihood.bigramLikelihood.likelihood()
-//        val v3 = queryLikelihood.bigramWindowLikelihood.likelihood()
-//        v1 + v2 + v3
     }
 }
 
 
 fun featEntitySDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                   abstractAnalyzer: KotlinAbstractAnalyzer): List<Double> {
-//    val tokens = createTokenSequence(query).toList()
     val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
     val cleanQuery = tokens.toList().joinToString(" ")
 
@@ -146,7 +114,6 @@ fun featEntitySDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 
         entities.mapNotNull { entity -> abstractAnalyzer.retrieveEntityDoc(entity) }
             .map { entityDoc -> entityDoc.get("text")  }
-//            .map { entityDoc -> cleanQuery + entityDoc.get("text") + cleanQuery }
             .map(abstractAnalyzer.gramAnalyzer::getLanguageStatContainer)
             .map { stat -> stat.getLikelihoodGivenQuery(queryCorpus, 0.5)}
             .map { queryLikelihood ->

@@ -5,9 +5,7 @@ import edu.unh.cs980.CONTENT
 import edu.unh.cs980.KotlinDatabase
 import edu.unh.cs980.KotlinGraphAnalyzer
 import edu.unh.cs980.context.HyperlinkIndexer
-import edu.unh.cs980.features.featEntitySDM
-import edu.unh.cs980.features.featLikehoodOfQueryGivenEntityMention
-import edu.unh.cs980.features.featSDM
+import edu.unh.cs980.features.*
 import edu.unh.cs980.getIndexSearcher
 import edu.unh.cs980.language.GramStatType
 import edu.unh.cs980.language.KotlinAbstractAnalyzer
@@ -35,236 +33,88 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     val db = if (graphPath == "") null else KotlinDatabase(graphPath)
     val formatter = KotlinRanklibFormatter(queryPath, qrelPath, indexPath)
     val graphAnalyzer = if (graphPath == "") null else KotlinGraphAnalyzer(formatter.indexSearcher, db!!)
-//    val abstractAnalyzer = KotlinAbstractAnalyzer("abstract")
+
+//    /**
+//     * Function: querySimilarity
+//     * Description: Score with weighted combination of BM25 and string similarity functions (trained using RankLib).
+//     */
+//    fun querySimilarity() {
+//        formatter.addBM25(weight = 0.884669653, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, _ ->
+//            addStringDistanceFunction(query, tops, JaroWinkler())}, weight = -0.001055, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, _ ->
+//            addStringDistanceFunction(query, tops, Jaccard() )}, weight = 0.11427, normType = NormType.ZSCORE)
+//    }
 
 
 //    /**
-//     * Function: retrieveCleanedTokens
-//     * Description: For qiven query string, filters out numbers (and enwiki) and retruns a list of tokens
+//     * Function: querySimilarity
+//     * Description: Score with weighted combination of BM25 and average_query (trained using RankLib).
 //     */
-//    fun retrieveSequence(query: String): List<String> {
-//        val replaceNumbers = """(\d+|enwiki:)""".toRegex()
-//        return query.replace(replaceNumbers, "")
-//            .run { formatter.queryRetriever.createTokenSequence(this) }
-//            .toList()
+//    private fun queryAverage() {
+//        formatter.addBM25(weight = 0.5, normType = NormType.ZSCORE)
+//        formatter.addFeature(this::addAverageQueryScore, weight = 0.5, normType = NormType.ZSCORE)
+//    }
+
+
+//    /**
+//     * Function: querySplit
+//     * Description: Score with weighted combination of BM25 and separate section scores (trained using RankLib).
+//     */
+//    private fun querySplit() {
+//        formatter.addBM25(weight = 0.4824247, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            sectionSplit(query, tops, indexSearcher, 0) }, weight = 0.069, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            sectionSplit(query, tops, indexSearcher, 1) }, weight = -0.1845, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            sectionSplit(query, tops, indexSearcher, 2) }, weight = -0.25063, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            sectionSplit(query, tops, indexSearcher, 3) }, weight = 0.0134, normType = NormType.ZSCORE)
+//    }
+
+
+//    /**
+//     * Function: queryMixtures
+//     * Description: Score with weighted combination of BM25 and mixtures method (trained using RankLib).
+//     */
+//    private fun queryMixtures() {
+//        if (graphAnalyzer == null) {
+//            println("You must supply a --graph_database location for this method!")
+//            return
+//        }
+//        formatter.addBM25(weight = 0.9703138257, normType = NormType.ZSCORE)
+//        formatter.addFeature(this::addScoreMixtureSims, weight = 0.029686174, normType = NormType.ZSCORE)
+//    }
+
+
+//    /**
+//     * Function: queryDirichlet
+//     * Description: Score with weighted combination of BM25 and LM_Dirichlet method (trained using RankLib)
+//     */
+//    private fun queryDirichlet() {
+//        formatter.addBM25(weight = 0.80067, normType = NormType.ZSCORE)
+//        formatter.addFeature({query, tops, indexSearcher ->
+//            useLucSim(query, tops, indexSearcher, LMDirichletSimilarity())}, weight = 0.19932975,
+//                normType = NormType.ZSCORE)
+//    }
+
+
+//    /**
+//     * Function: queryMercer
+//     * Description: Score with weighted combination of BM25 and LM_Dirichlet method (trained using RankLib)
+//     */
+//    private fun queryMercer() {
+//        formatter.addBM25(weight = 0.82, normType = NormType.ZSCORE)
+//
+//        formatter.addFeature({query, tops, indexSearcher ->
+//            useLucSim(query, tops, indexSearcher, LMJelinekMercerSimilarity(LMSimilarity.DefaultCollectionModel(),
+//                    0.5f))}, weight = 0.1798988, normType = NormType.ZSCORE)
 //    }
 
 
     /**
-     * Function: addStringDistanceFunction
-     * Description: In this method, I try to the distance (or similarity) between the terms (after splitting)
-     *              and the entities in each document.
-     * @params dist: StingDistance interface (from debatty stringsimilarity library)
-     */
-    fun addStringDistanceFunction(query: String, tops: TopDocs, dist: StringDistance): List<Double> {
-//        val tokens = retrieveSequence(query)
-        val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
-
-        // Map this over the score docs, taking the average similarity between query tokens and entities
-        return tops.scoreDocs
-            .map { scoreDoc ->
-                val doc = formatter.indexSearcher.doc(scoreDoc.doc)
-                val entities = doc.getValues("spotlight").map { it.replace("_", " ") }
-                if (entities.isEmpty()) 0.0 else
-                    // This is the actual part where I average the results using the distance function
-                tokens.flatMap { q -> entities.map { e -> dist.distance(q, e)  } }.average()
-            }
-    }
-
-    /**
-     * Function: addAverageQueryScore
-     * Description: In this method, I tokenize the query and treat each token as an individual query.
-     *              I then get the BM25 score of each query to each document and average the results.
-     */
-    fun addAverageQueryScore(query: String, tops: TopDocs, indexSearcher: IndexSearcher): List<Double> {
-//        val termQueries = retrieveSequence(query)
-        val termQueries = AnalyzerFunctions.createTokenList(query, useFiltering = true)
-            .map { token -> TermQuery(Term(CONTENT, token))}
-            .map { termQuery -> BooleanQuery.Builder().add(termQuery, BooleanClause.Occur.SHOULD).build()}
-            .toList()
-
-        return tops.scoreDocs.map { scoreDoc ->
-                termQueries.map { booleanQuery ->
-                    indexSearcher.explain(booleanQuery, scoreDoc.doc).value.toDouble() }
-                    .average()
-            }
-    }
-
-
-    /**
-     * Function: addEntityQueries
-     * Description: This method calculates the score using only entities
-     */
-    fun addEntityQueries(query: String, tops: TopDocs, indexSearcher: IndexSearcher): List<Double> {
-//        val entityQuery = retrieveSequence(query)
-        val entityQuery = AnalyzerFunctions.createTokenList(query, useFiltering = true)
-            .flatMap { token ->
-                listOf(TermQuery(Term("spotlight", token)), TermQuery(Term(CONTENT, token)))
-            }
-            .fold(BooleanQuery.Builder()) { builder, termQuery ->
-                builder.add(termQuery, BooleanClause.Occur.SHOULD) }
-            .build()
-
-
-        return tops.scoreDocs.map { scoreDoc ->
-                indexSearcher.explain(entityQuery, scoreDoc.doc).value.toDouble() }
-    }
-
-
-    /**
-     * Function: useLucSim
-     * Description: Takes a Lucene similarity function and uses it to rescore documents.
-     */
-    fun useLucSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher, sim: Similarity): List<Double> {
-//        val entityQuery = retrieveSequence(query)
-        val booleanQuery = AnalyzerFunctions.createQuery(query, useFiltering = true)
-//        val entityQuery = AnalyzerFunctions.createTokenList(query, useFiltering = true)
-//            .map { token -> TermQuery(Term(CONTENT, token)) }
-//            .fold(BooleanQuery.Builder()) { builder, termQuery ->
-//                builder.add(termQuery, BooleanClause.Occur.SHOULD) }
-//            .build()
-
-        val curSim = indexSearcher.getSimilarity(true)
-        indexSearcher.setSimilarity(sim)
-
-        return tops.scoreDocs.map { scoreDoc ->
-                                    indexSearcher.explain(booleanQuery, scoreDoc.doc).value.toDouble() }
-            .apply { indexSearcher.setSimilarity(curSim) }  // Gotta remember to set the similarity back
-    }
-
-
-    /**
-     * Function: sectionSplit
-     * Description: Splits query up and only uses a particular section for scoring.
-     */
-    fun sectionSplit(query: String, tops: TopDocs, indexSearcher: IndexSearcher, secIndex: Int): List<Double> {
-//        val termQueries = retrieveSequence(query)
-//            .map { token -> TermQuery(Term(CONTENT, token))}
-//            .map { termQuery -> BooleanQuery.Builder().add(termQuery, BooleanClause.Occur.SHOULD).build()}
-//            .toList()
-        val termQueries = AnalyzerFunctions.createQueryList(query, useFiltering = true)
-
-        if (termQueries.size < secIndex + 1) {
-            return (0 until tops.scoreDocs.size).map { 0.0 }
-        }
-
-        val boolQuery = termQueries[secIndex]!!
-
-        return tops.scoreDocs
-            .map { scoreDoc ->
-                indexSearcher.explain(boolQuery, scoreDoc.doc).value.toDouble()
-            }
-    }
-
-
-    /**
-     * Function: addScoreMixtureSims
-     * Description: Uses Random Walk model over bipartite graph of entities and paragraphs to rescore paragraphs.
-     */
-    fun addScoreMixtureSims(query: String, tops:TopDocs, indexSearcher: IndexSearcher): List<Double> {
-        val sinks = HashMap<String, Double>()
-        val mixtures = graphAnalyzer!!.getMixtures(tops)
-
-        mixtures.forEach { pm ->
-            pm.mixture.forEach { entity, probability ->
-                sinks.merge(entity, probability * pm.score, ::sum)
-            }
-        }
-
-        val total = sinks.values.sum()
-        sinks.replaceAll { k, v -> v / total }
-
-        // The score of each paragraph depends on the total value of all scored paragraphs with respect to their
-        // distributions over entities.
-        return mixtures
-            .map { pm -> pm.mixture.entries.sumByDouble { (k, v) -> sinks[k]!! * v } }
-            .toList()
-    }
-
-
-
-
-    /**
-     * Function: querySimilarity
-     * Description: Score with weighted combination of BM25 and string similarity functions (trained using RankLib).
-     */
-    fun querySimilarity() {
-        formatter.addBM25(weight = 0.884669653, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, _ ->
-            addStringDistanceFunction(query, tops, JaroWinkler())}, weight = -0.001055, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, _ ->
-            addStringDistanceFunction(query, tops, Jaccard() )}, weight = 0.11427, normType = NormType.ZSCORE)
-    }
-
-
-    /**
-     * Function: querySimilarity
-     * Description: Score with weighted combination of BM25 and average_query (trained using RankLib).
-     */
-    private fun queryAverage() {
-        formatter.addBM25(weight = 0.5, normType = NormType.ZSCORE)
-        formatter.addFeature(this::addAverageQueryScore, weight = 0.5, normType = NormType.ZSCORE)
-    }
-
-
-    /**
-     * Function: querySplit
-     * Description: Score with weighted combination of BM25 and separate section scores (trained using RankLib).
-     */
-    private fun querySplit() {
-        formatter.addBM25(weight = 0.4824247, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 0) }, weight = 0.069, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 1) }, weight = -0.1845, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 2) }, weight = -0.25063, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 3) }, weight = 0.0134, normType = NormType.ZSCORE)
-    }
-
-
-    /**
-     * Function: queryMixtures
-     * Description: Score with weighted combination of BM25 and mixtures method (trained using RankLib).
-     */
-    private fun queryMixtures() {
-        if (graphAnalyzer == null) {
-            println("You must supply a --graph_database location for this method!")
-            return
-        }
-        formatter.addBM25(weight = 0.9703138257, normType = NormType.ZSCORE)
-        formatter.addFeature(this::addScoreMixtureSims, weight = 0.029686174, normType = NormType.ZSCORE)
-    }
-
-
-    /**
-     * Function: queryDirichlet
-     * Description: Score with weighted combination of BM25 and LM_Dirichlet method (trained using RankLib)
-     */
-    private fun queryDirichlet() {
-        formatter.addBM25(weight = 0.80067, normType = NormType.ZSCORE)
-        formatter.addFeature({query, tops, indexSearcher ->
-            useLucSim(query, tops, indexSearcher, LMDirichletSimilarity())}, weight = 0.19932975,
-                normType = NormType.ZSCORE)
-    }
-
-
-    /**
-     * Function: queryMercer
-     * Description: Score with weighted combination of BM25 and LM_Dirichlet method (trained using RankLib)
-     */
-    private fun queryMercer() {
-        formatter.addBM25(weight = 0.82, normType = NormType.ZSCORE)
-
-        formatter.addFeature({query, tops, indexSearcher ->
-            useLucSim(query, tops, indexSearcher, LMJelinekMercerSimilarity(LMSimilarity.DefaultCollectionModel(),
-                    0.5f))}, weight = 0.1798988, normType = NormType.ZSCORE)
-    }
-
-
-    /**
-     * Function: queryMercer
+     * Function: queryCombined
      * Description: Score with weighted combination of BM25, Jaccard string similarity, LM_Dirichlet, and second/third
      *              section headers (trained using RankLib).
      */
@@ -276,18 +126,20 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 
         formatter.addBM25(weight = weights[0], normType = NormType.ZSCORE)
 
-        formatter.addFeature({ query, tops, _ ->
-            addStringDistanceFunction(query, tops, Jaccard() )}, weight = weights[1], normType = NormType.ZSCORE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAddStringDistanceFunction(query, tops, indexSearcher, Jaccard() )
+        }, weight = weights[1], normType = NormType.ZSCORE)
 
         formatter.addFeature({query, tops, indexSearcher ->
-            useLucSim(query, tops, indexSearcher, LMDirichletSimilarity())}, weight = weights[2],
+            featUseLucSim(query, tops, indexSearcher, LMDirichletSimilarity())
+        }, weight = weights[2],
                 normType = NormType.ZSCORE)
 
         formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 1) }, weight = weights[3], normType = NormType.ZSCORE)
+            featSectionSplit(query, tops, indexSearcher, 1) }, weight = weights[3], normType = NormType.ZSCORE)
 
         formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 2) }, weight = weights[4], normType = NormType.ZSCORE)
+            featSectionSplit(query, tops, indexSearcher, 2) }, weight = weights[4], normType = NormType.ZSCORE)
 
         val gramIndexSearcher = getIndexSearcher("gram")
         val hLinker = HyperlinkIndexer("entity_mentions.db")
@@ -344,83 +196,83 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     }
 
 
-    /**
-     * Function: trainSimilarity
-     * Description: training for string_similarity method.
-     * @see querySimilarity
-     */
-    private fun trainSimilarity() {
-        formatter.addBM25(normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, _ ->
-            addStringDistanceFunction(query, tops, JaroWinkler())}, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, _ ->
-            addStringDistanceFunction(query, tops, Jaccard() )}, normType = NormType.ZSCORE)
-    }
+//    /**
+//     * Function: trainSimilarity
+//     * Description: training for string_similarity method.
+//     * @see querySimilarity
+//     */
+//    private fun trainSimilarity() {
+//        formatter.addBM25(normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, _ ->
+//            addStringDistanceFunction(query, tops, JaroWinkler())}, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, _ ->
+//            addStringDistanceFunction(query, tops, Jaccard() )}, normType = NormType.ZSCORE)
+//    }
 
 
-    /**
-     * Function: trainSplit
-     * Description: training for section_split method.
-     * @see sectionSplit
-     */
-    private fun trainSplit() {
-        formatter.addBM25(normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 0) }, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 1) }, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 2) }, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 3) }, normType = NormType.ZSCORE)
-    }
+//    /**
+//     * Function: trainSplit
+//     * Description: training for section_split method.
+//     * @see sectionSplit
+//     */
+//    private fun trainSplit() {
+//        formatter.addBM25(normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            sectionSplit(query, tops, indexSearcher, 0) }, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            sectionSplit(query, tops, indexSearcher, 1) }, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            sectionSplit(query, tops, indexSearcher, 2) }, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            sectionSplit(query, tops, indexSearcher, 3) }, normType = NormType.ZSCORE)
+//    }
 
 
-    /**
-     * Function: trainMixtures
-     * Description: training for mixtures method.
-     * @see queryMixtures
-     */
-    private fun trainMixtures() {
-        formatter.addBM25(normType = NormType.ZSCORE)
-        formatter.addFeature(this::addScoreMixtureSims, normType = NormType.ZSCORE)
-    }
+//    /**
+//     * Function: trainMixtures
+//     * Description: training for mixtures method.
+//     * @see queryMixtures
+//     */
+//    private fun trainMixtures() {
+//        formatter.addBM25(normType = NormType.ZSCORE)
+//        formatter.addFeature(this::addScoreMixtureSims, normType = NormType.ZSCORE)
+//    }
 
 
-    /**
-     * Function: trainAverageQuery
-     * Description: training for average_query method.
-     * @see queryAverage
-     */
-    private fun trainAverageQuery() {
-        formatter.addBM25(normType = NormType.ZSCORE)
-        formatter.addFeature(this::addAverageQueryScore, normType = NormType.ZSCORE)
-    }
+//    /**
+//     * Function: trainAverageQuery
+//     * Description: training for average_query method.
+//     * @see queryAverage
+//     */
+//    private fun trainAverageQuery() {
+//        formatter.addBM25(normType = NormType.ZSCORE)
+//        formatter.addFeature(this::addAverageQueryScore, normType = NormType.ZSCORE)
+//    }
 
 
-    /**
-     * Function: trainDirichSim
-     * Description: training for lm_dirichlet method.
-     * @see queryDirichlet
-     */
-    private fun trainDirichSim() {
-        formatter.addBM25(normType = NormType.ZSCORE)
-        formatter.addFeature({query, tops, indexSearcher ->
-            useLucSim(query, tops, indexSearcher, LMDirichletSimilarity())}, normType = NormType.ZSCORE)
-    }
+//    /**
+//     * Function: trainDirichSim
+//     * Description: training for lm_dirichlet method.
+//     * @see queryDirichlet
+//     */
+//    private fun trainDirichSim() {
+//        formatter.addBM25(normType = NormType.ZSCORE)
+//        formatter.addFeature({query, tops, indexSearcher ->
+//            useLucSim(query, tops, indexSearcher, LMDirichletSimilarity())}, normType = NormType.ZSCORE)
+//    }
 
 
-    /**
-     * Function: trainJelinekMercerSimilarity
-     * Description: training for lm_mercer method.
-     * @see queryMercer
-     */
-    private fun trainJelinekMercerSimilarity() {
-        formatter.addBM25(normType = NormType.ZSCORE)
-        formatter.addFeature({query, tops, indexSearcher ->
-            useLucSim(query, tops, indexSearcher, LMJelinekMercerSimilarity(LMSimilarity.DefaultCollectionModel(),
-                    0.5f))}, normType = NormType.ZSCORE)
-    }
+//    /**
+//     * Function: trainJelinekMercerSimilarity
+//     * Description: training for lm_mercer method.
+//     * @see queryMercer
+//     */
+//    private fun trainJelinekMercerSimilarity() {
+//        formatter.addBM25(normType = NormType.ZSCORE)
+//        formatter.addFeature({query, tops, indexSearcher ->
+//            useLucSim(query, tops, indexSearcher, LMJelinekMercerSimilarity(LMSimilarity.DefaultCollectionModel(),
+//                    0.5f))}, normType = NormType.ZSCORE)
+//    }
 
 
     /**
@@ -430,14 +282,16 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
      */
     private fun trainCombined() {
         formatter.addBM25(weight = 1.0, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, _ ->
-            addStringDistanceFunction(query, tops, Jaccard() )}, normType = NormType.ZSCORE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAddStringDistanceFunction(query, tops, indexSearcher, Jaccard() )
+        }, normType = NormType.ZSCORE)
         formatter.addFeature({query, tops, indexSearcher ->
-            useLucSim(query, tops, indexSearcher, LMDirichletSimilarity())}, normType = NormType.ZSCORE)
+            featUseLucSim(query, tops, indexSearcher, LMDirichletSimilarity())
+        }, normType = NormType.ZSCORE)
         formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 1) }, normType = NormType.ZSCORE)
+            featSectionSplit(query, tops, indexSearcher, 1) }, normType = NormType.ZSCORE)
         formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 2) }, normType = NormType.ZSCORE)
+            featSectionSplit(query, tops, indexSearcher, 2) }, normType = NormType.ZSCORE)
 
         val gramIndexSearcher = getIndexSearcher("gram")
         val hLinker = HyperlinkIndexer("entity_mentions.db")
