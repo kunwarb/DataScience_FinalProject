@@ -41,12 +41,14 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
                 entityDoc?.let { doc -> gramAnalyzer.getLanguageStatContainer(doc.get("text")) }
             })
 
-    fun retrieveEntityDoc(entity: String): Document? =
-            memoizedAbstractDocs.computeIfAbsent(entity, {key ->
-                val nameQuery = buildEntityNameQuery(entity)
-                val searchResult = indexSearcher.search(nameQuery, 1)
-                if (searchResult.scoreDocs.isEmpty()) null else indexSearcher.doc(searchResult.scoreDocs[0].doc)
-            })
+    fun retrieveEntityDoc(entity: String): Document? {
+        //            memoizedAbstractDocs.computeIfAbsent(entity, {key ->
+        val nameQuery = buildEntityNameQuery(entity)
+        val searchResult = indexSearcher.search(nameQuery, 1)
+        val result =    if (searchResult.scoreDocs.isEmpty()) null
+                        else indexSearcher.doc(searchResult.scoreDocs[0].doc)
+        return result
+    }
 
     fun buildEntityNameQuery(entity: String): BooleanQuery =
             BooleanQuery.Builder()

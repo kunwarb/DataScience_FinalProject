@@ -96,7 +96,6 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
             GramStatType.TYPE_UNIGRAM -> v1
             GramStatType.TYPE_BIGRAM -> v2
             GramStatType.TYPE_BIGRAM_WINDOW -> v3
-//            else -> v1 + v2 + v3
             else -> v1 * weights[0] + v2 * weights[1] + v3 * weights[2]
         }
     }
@@ -104,7 +103,8 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 
 
 fun featEntitySDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
-                  abstractAnalyzer: KotlinAbstractAnalyzer): List<Double> {
+                  abstractAnalyzer: KotlinAbstractAnalyzer,
+                  gramType: GramStatType? = null): List<Double> {
     val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
     val cleanQuery = tokens.toList().joinToString(" ")
 
@@ -129,10 +129,12 @@ fun featEntitySDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                 val v1 = queryLikelihood.unigramLikelihood
                 val v2 = queryLikelihood.bigramLikelihood
                 val v3 = queryLikelihood.bigramWindowLikelihood
-//                val v1 = queryLikelihood.unigramLikelihood.likelihood()
-//                val v2 = queryLikelihood.bigramLikelihood.likelihood()
-//                val v3 = queryLikelihood.bigramWindowLikelihood.likelihood()
-                v1 + v2 + v3 }
+                when (gramType) {
+                    GramStatType.TYPE_UNIGRAM -> v1
+                    GramStatType.TYPE_BIGRAM -> v2
+                    GramStatType.TYPE_BIGRAM_WINDOW -> v3
+                    else -> v1 + v2 + v3
+                }}
             .average()
     }
 }
