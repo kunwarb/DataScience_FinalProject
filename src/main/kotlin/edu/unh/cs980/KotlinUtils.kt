@@ -39,8 +39,9 @@ fun <A>Iterable<A>.forEachParallel(f: suspend (A) -> Unit): Unit = runBlocking {
     map { async(CommonPool) { f(it) } }.forEach { it.await() }
 }
 
+
 fun <A>Sequence<A>.forEachParallel(f: suspend (A) -> Unit): Unit = runBlocking {
-    map { async(CommonPool) { f(it) } }.forEach { it.await() }
+    forEach { async(CommonPool) { f(it) }.await() }
 }
 
 
