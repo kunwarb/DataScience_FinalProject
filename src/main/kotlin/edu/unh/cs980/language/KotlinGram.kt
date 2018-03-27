@@ -72,10 +72,10 @@ class KotlinGram(filename: String) {
 
     }
 
-    private fun iterWrapper(f: BufferedInputStream): Sequence<String> {
+    private fun iterWrapper(f: BufferedInputStream): Iterable<String> {
         val iter = DeserializeData.iterParagraphs(f)
         var counter = 0
-        return buildSequence<String>() {
+        val iterWrapper = buildIterator<String>() {
             while (iter.hasNext()) {
                 val nextPar = iter.next()
                 if (counter % 3 == 0) {
@@ -83,6 +83,7 @@ class KotlinGram(filename: String) {
                 }
             }
         }
+        return Iterable { iterWrapper }
     }
 
 
