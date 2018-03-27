@@ -131,7 +131,6 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
             .mapNotNull { candidateEntity ->
                 val (_, bestScore, bestSimilarity) = retrieveMostSimilarEntity(candidateEntity) ?:
                         Triple("", 0.0, 0.0)
-                println(bestSimilarity)
                 if (bestSimilarity < 0.9) 0.0 else bestScore}
             .let { result -> if (result.isEmpty()) 0.0 else result.average()  }
     }.toList()
