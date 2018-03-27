@@ -2,6 +2,7 @@ package edu.unh.cs980.features
 
 import edu.unh.cs980.CONTENT
 import edu.unh.cs980.context.HyperlinkIndexer
+import edu.unh.cs980.identity
 import edu.unh.cs980.language.GramStatType
 import edu.unh.cs980.language.KotlinAbstractAnalyzer
 import edu.unh.cs980.language.KotlinGramAnalyzer
@@ -111,6 +112,12 @@ fun featEntitySDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
     return tops.scoreDocs.map { scoreDoc ->
         val doc = indexSearcher.doc(scoreDoc.doc)
         val entities = doc.getValues("spotlight")
+            .groupingBy(::identity)
+            .eachCount()
+            .entries
+            .sortedByDescending { entry -> entry.value }
+            .take(3)
+            .map { entry -> entry.key }
 
 //        entities.mapNotNull { entity -> abstractAnalyzer.retrieveEntityDoc(entity) }
         entities
