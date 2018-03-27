@@ -5,7 +5,7 @@ import edu.unh.cs980.runIf
 import java.io.File
 
 
-class RankLauncher(val rankLibLoc: String) {
+class RankLauncher(val rankLibLoc: String, val featuresLoc: String) {
 
     private fun runFeatureTraining() {
 
@@ -31,11 +31,11 @@ class RankLauncher(val rankLibLoc: String) {
 
 
     fun countFeatures(): Int =
-            File(rankLibLoc)
+            File(featuresLoc)
                 .bufferedReader()
                 .readLine()
                 .split(" ")
-                .count() - 2
+                .size - 2
 
 
     fun printLogResults() {
@@ -62,21 +62,47 @@ class RankLauncher(val rankLibLoc: String) {
                     println(weights)
                 }
 
-    fun runRankLib() {
+    fun getAveragePerformance() =
+            extractLogResults()
+                .run { sumByDouble { it.second } / size }
+
+
+    fun tryAblation() {
+        val nFeatures = countFeatures()
+        println(nFeatures)
+        val features = (2 .. nFeatures)
+        val results = ArrayList<Pair<Int, Double>>()
+
+        features.forEach { feature ->
+            writeFeatures(listOf(1, feature))
+            runRankLib(true)
+            val result = feature to getAveragePerformance()
+            println(result)
+            results.add(feature to getAveragePerformance())
+        }
+
+        println(features)
+    }
+
+    fun runRankLib(useFeatures: Boolean = false) {
         createModelDirectory()
 
         val commands = arrayListOf(
-                "java", "-jar", "$rankLibLoc",
-                "-train", "ranklib_features.txt",
+                "java", "-jar", rankLibLoc,
+                "-train", featuresLoc,
 //                "-feature", "features.txt",
                 "-ranker", "4",
                 "-metric2t", "map",
                 "-kcv", "5",
-                "-i", "50",
-                "-r", "10",
+//                "-i", "50",
+//                "-r", "10",
                 "-tvs", "0.3",
                 "-kcvmd", "models/"
                 )
+
+        if (useFeatures) {
+            commands.addAll(listOf("-feature", "features.txt"))
+        }
 
         val log = File("log_rank.log")
 
@@ -92,8 +118,9 @@ class RankLauncher(val rankLibLoc: String) {
 }
 
 fun main(args: Array<String>) {
-    val runner = RankLauncher("RankLib-2.1-patched.jar")
-    runner.runRankLib()
-    runner.printLogResults()
-    runner.getBestModel()
+    val runner = RankLauncher("RankLib-2.1-patched.jar", "ranklib_features.txt")
+    runner.tryAblation()
+//    runner.runRankLib()
+//    runner.printLogResults()
+//    runner.getBestModel()
 }
