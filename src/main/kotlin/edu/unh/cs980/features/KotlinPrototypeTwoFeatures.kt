@@ -106,15 +106,11 @@ fun featLikehoodOfQueryGivenEntityMention(query: String, tops: TopDocs, indexSea
 fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                                           abstractSearcher: IndexSearcher, sim: Similarity): List<Double> {
 
-//    val booleanQuery = buildQuery(query)
     val booleanQuery = AnalyzerFunctions.createQuery(query, useFiltering = true)
-//    val tokens = createTokenSequence(query).toList().joinToString()
     val jac = Jaccard()
 
     abstractSearcher.setSimilarity(sim)
-    val relevantEntities = abstractSearcher.search(booleanQuery, 200)
-//    println("$query: ${relevantEntities.maxScore}")
-//    val totalScore = relevantEntities.scoreDocs.sumByDouble { it.score.toDouble() }
+    val relevantEntities = abstractSearcher.search(booleanQuery, 300)
 
     val entityScores = relevantEntities.scoreDocs.map { scoreDoc ->
         val doc = abstractSearcher.doc(scoreDoc.doc)
@@ -122,14 +118,20 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         entity.toLowerCase().replace(" ", "_") to scoreDoc.score.toDouble()
     }.toList()
 
+    val retrieveMostSimilarEntity = { candidateEntity: String ->
+        entityScores
+            .map { (targetEntity, score) -> Triple(targetEntity, score, jac.distance(candidateEntity, targetEntity)) }
+            .maxBy { (targetEntity, score, similarity) -> score }
+    }
 
     return tops.scoreDocs.map { scoreDoc ->
         val doc = indexSearcher.doc(scoreDoc.doc)
         val entities = doc.getValues("spotlight").toList()
         entities
-            .map { entity -> entityScores.maxBy { (e, v) -> jac.distance(entity, e) }?.let {it.second * jac.distance(entity, it.first)} ?: 0.0 }
-//            .mapNotNull { entity -> entityScores[entity] }
-            .sum()
+            .mapNotNull { candidateEntity ->
+                val (_, bestScore, bestSimilarity) = retrieveMostSimilarEntity(candidateEntity)!!
+                if (bestSimilarity < 0.9) 0.0 else bestScore}
+            .average()
     }.toList()
 }
 

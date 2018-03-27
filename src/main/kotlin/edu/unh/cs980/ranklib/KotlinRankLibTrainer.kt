@@ -18,10 +18,7 @@ import info.debatty.java.stringsimilarity.SorensenDice
 import info.debatty.java.stringsimilarity.interfaces.StringDistance
 import org.apache.lucene.index.Term
 import org.apache.lucene.search.*
-import org.apache.lucene.search.similarities.LMDirichletSimilarity
-import org.apache.lucene.search.similarities.LMJelinekMercerSimilarity
-import org.apache.lucene.search.similarities.LMSimilarity
-import org.apache.lucene.search.similarities.Similarity
+import org.apache.lucene.search.similarities.*
 import java.lang.Double.sum
 import java.util.*
 
@@ -263,6 +260,8 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         formatter.addFeature({ query, tops, indexSearcher ->
             featSplitSim(query, tops, indexSearcher, ::featStringSimilarityComponent,
                     secWeights = listOf(0.0, 0.0, 0.0, 1.0))}, normType = NormType.NONE)
+
+//        val weights = listOf(0.13506566, -0.49940691, 0.21757824, 0.14794917259)
     }
 
     private fun trainAbstractScore() {
@@ -276,20 +275,13 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         }, normType = NormType.ZSCORE)
 
         formatter.addFeature(::featStringSimilarityComponent, normType = NormType.ZSCORE)
-//        formatter.addFeature({query, tops, indexSearcher ->
-//            featUseLucSim(query, tops, indexSearcher, LMDirichletSimilarity())
-//        }, normType = NormType.ZSCORE)
+    }
 
-
-//        formatter.addFeature({ query, tops, indexSearcher ->
-//            featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
-//        formatter.addFeature({ query, tops, indexSearcher ->
-//            featLikelihoodAbstract(query, tops, indexSearcher, abstractAnalyzer) },
-//                normType = NormType.ZSCORE)
-
-//        formatter.addFeature({ query, tops, indexSearcher ->
-//            featAbstractSim(query, tops, indexSearcher, abstractAnalyzer.indexSearcher, BM25Similarity()) },
-//            normType = NormType.ZSCORE)
+    private fun trainAbstractSim() {
+        val abstractSearcher = getIndexSearcher("abstract")
+        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAbstractSim(query, tops, indexSearcher, abstractSearcher, BM25Similarity())}, normType = NormType.ZSCORE)
     }
 
     /**
@@ -301,6 +293,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         when (method) {
             "abstract_score" -> trainAbstractScore()
             "abstract_sdm" -> trainAbstractSDM()
+            "abstract_sim" -> trainAbstractSDM()
             "train_alpha" -> trainDirichletAlpha()
             "section_path" -> trainSectionPath()
             "train_sdm_components" -> trainSDMComponents()
