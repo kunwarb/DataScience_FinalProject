@@ -74,6 +74,19 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
     }
 
+    private fun querySectionPath() {
+        val weights = listOf(0.200983, 0.099785, 0.223777, 0.4754529531)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSectionSplit(query, tops, indexSearcher, 0) }, normType = NormType.NONE, weight = weights[0])
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSectionSplit(query, tops, indexSearcher, 1) }, normType = NormType.NONE, weight = weights[1])
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSectionSplit(query, tops, indexSearcher, 2) }, normType = NormType.NONE, weight = weights[2])
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSectionSplit(query, tops, indexSearcher, 3) }, normType = NormType.NONE, weight = weights[3])
+
+    }
+
     private fun queryAbstract() {
         formatter.addBM25(normType = NormType.ZSCORE, weight = 0.1295723092588)
         val gramSearcher = getIndexSearcher("gram")
@@ -109,6 +122,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         when (method) {
             "abstract_score" -> queryAbstract()
             "sdm_components" -> querySDMComponents()
+            "section_path" -> querySectionPath()
             "combined" -> queryCombined()
             else -> println("Unknown method!")
         }
@@ -196,22 +210,6 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         }, normType = NormType.ZSCORE)
 
     }
-//    /**
-//     * Function: trainSplit
-//     * Description: training for section_split method.
-//     * @see sectionSplit
-//     */
-//    private fun trainSplit() {
-//        formatter.addBM25(normType = NormType.ZSCORE)
-//        formatter.addFeature({ query, tops, indexSearcher ->
-//            sectionSplit(query, tops, indexSearcher, 0) }, normType = NormType.ZSCORE)
-//        formatter.addFeature({ query, tops, indexSearcher ->
-//            sectionSplit(query, tops, indexSearcher, 1) }, normType = NormType.ZSCORE)
-//        formatter.addFeature({ query, tops, indexSearcher ->
-//            sectionSplit(query, tops, indexSearcher, 2) }, normType = NormType.ZSCORE)
-//        formatter.addFeature({ query, tops, indexSearcher ->
-//            sectionSplit(query, tops, indexSearcher, 3) }, normType = NormType.ZSCORE)
-//    }
 
     private fun trainSectionPath() {
         formatter.addFeature({ query, tops, indexSearcher ->
