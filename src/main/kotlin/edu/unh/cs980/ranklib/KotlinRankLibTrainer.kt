@@ -76,11 +76,10 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 
     private fun queryAbstractSim() {
         val abstractSearcher = getIndexSearcher("abstract")
-//        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE, weight = 0.8345728173873589)
-        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE, weight = 1.0)
-//        formatter.addFeature({ query, tops, indexSearcher ->
-//            featAbstractSim(query, tops, indexSearcher, abstractSearcher, BM25Similarity())}, normType = NormType.ZSCORE,
-//                weight = 0.16542718261264)
+        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE, weight = 0.8345728173873589)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAbstractSim(query, tops, indexSearcher, abstractSearcher, BM25Similarity())}, normType = NormType.ZSCORE,
+                weight = 0.16542718261264)
     }
 
     private fun querySectionPath() {
