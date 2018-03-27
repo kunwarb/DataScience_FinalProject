@@ -99,17 +99,23 @@ fun featUseLucSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher, si
  * Description: Splits query up and only uses a particular section for scoring.
  */
 fun featSectionSplit(query: String, tops: TopDocs, indexSearcher: IndexSearcher, secIndex: Int): List<Double> {
+    val termQueries = query.split("/")
+        .map { section -> AnalyzerFunctions
+            .createTokenList(section, useFiltering = true)
+            .joinToString(" ")}
+        .map { section -> AnalyzerFunctions.createQuery(section)}
+        .toList()
 //        val termQueries = retrieveSequence(query)
 //            .map { token -> TermQuery(Term(CONTENT, token))}
 //            .map { termQuery -> BooleanQuery.Builder().add(termQuery, BooleanClause.Occur.SHOULD).build()}
 //            .toList()
-    val termQueries = AnalyzerFunctions.createQueryList(query, useFiltering = true)
+//    val termQueries = AnalyzerFunctions.createQueryList(query, useFiltering = true)
 
     if (termQueries.size < secIndex + 1) {
         return (0 until tops.scoreDocs.size).map { 0.0 }
     }
 
-    val boolQuery = termQueries[secIndex]!!
+    val boolQuery = termQueries[secIndex]
 
     return tops.scoreDocs
         .map { scoreDoc ->

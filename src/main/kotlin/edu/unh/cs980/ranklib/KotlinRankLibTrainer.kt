@@ -196,6 +196,34 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         }, normType = NormType.ZSCORE)
 
     }
+//    /**
+//     * Function: trainSplit
+//     * Description: training for section_split method.
+//     * @see sectionSplit
+//     */
+//    private fun trainSplit() {
+//        formatter.addBM25(normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            sectionSplit(query, tops, indexSearcher, 0) }, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            sectionSplit(query, tops, indexSearcher, 1) }, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            sectionSplit(query, tops, indexSearcher, 2) }, normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            sectionSplit(query, tops, indexSearcher, 3) }, normType = NormType.ZSCORE)
+//    }
+
+    private fun trainSectionPath() {
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSectionSplit(query, tops, indexSearcher, 0) }, normType = NormType.NONE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSectionSplit(query, tops, indexSearcher, 1) }, normType = NormType.NONE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSectionSplit(query, tops, indexSearcher, 2) }, normType = NormType.NONE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSectionSplit(query, tops, indexSearcher, 3) }, normType = NormType.NONE)
+
+    }
 
     private fun trainAbstractScore() {
         formatter.addBM25(normType = NormType.ZSCORE)
@@ -226,6 +254,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "abstract_score" -> trainAbstractScore()
             "abstract_sdm" -> trainAbstractSDM()
             "train_alpha" -> trainDirichletAlpha()
+            "section_path" -> trainSectionPath()
             "train_sdm_components" -> trainSDMComponents()
             "train_entity_sdm_components" -> trainEntitySDMComponents()
             "combined" -> trainCombined()
