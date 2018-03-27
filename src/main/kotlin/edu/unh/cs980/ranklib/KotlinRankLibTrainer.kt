@@ -257,12 +257,10 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             featSDM(query, tops, indexSearcher, hGram, 4.0)
         }, normType = NormType.ZSCORE)
 
-        formatter.addFeature({ query, tops, indexSearcher ->
-            featAddStringDistanceFunction(query, tops, indexSearcher, Jaccard() )
-        }, normType = NormType.ZSCORE)
-        formatter.addFeature({query, tops, indexSearcher ->
-            featUseLucSim(query, tops, indexSearcher, LMDirichletSimilarity())
-        }, normType = NormType.ZSCORE)
+        formatter.addFeature(::featStringSimilarityComponent, normType = NormType.ZSCORE)
+//        formatter.addFeature({query, tops, indexSearcher ->
+//            featUseLucSim(query, tops, indexSearcher, LMDirichletSimilarity())
+//        }, normType = NormType.ZSCORE)
 
 
 //        formatter.addFeature({ query, tops, indexSearcher ->

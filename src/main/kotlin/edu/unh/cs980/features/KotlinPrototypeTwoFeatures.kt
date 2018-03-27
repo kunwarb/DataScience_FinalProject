@@ -9,6 +9,10 @@ import edu.unh.cs980.language.KotlinGramAnalyzer
 import edu.unh.cs980.misc.AnalyzerFunctions
 import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.*
 import info.debatty.java.stringsimilarity.Jaccard
+import info.debatty.java.stringsimilarity.JaroWinkler
+import info.debatty.java.stringsimilarity.NormalizedLevenshtein
+import info.debatty.java.stringsimilarity.SorensenDice
+import info.debatty.java.stringsimilarity.interfaces.StringDistance
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.index.Term
@@ -42,6 +46,19 @@ fun featSectionComponent(query: String, tops: TopDocs, indexSearcher: IndexSearc
                 indexSearcher.explain(boolQuery, scoreDoc.doc).value.toDouble() * weight }
             .sum()
         }
+}
+
+fun featStringSimilarityComponent(query: String, tops: TopDocs, indexSearcher: IndexSearcher): List<Double> {
+    val weights = listOf(-0.52902088057, 0.009563578, -0.10055384, 0.3608616989)
+    val sims = listOf<StringDistance>(Jaccard(), JaroWinkler(), NormalizedLevenshtein(), SorensenDice())
+    val simTrials = weights.zip(sims)
+
+    val simResults = simTrials.map { (weight, sim) ->
+        featAddStringDistanceFunction(query, tops, indexSearcher, sim)
+            .map { score -> score * weight }
+    }
+
+    return simResults.reduce { acc, scores -> acc.zip(scores).map { (l1, l2) -> l1 + l2 } }
 }
 
 
