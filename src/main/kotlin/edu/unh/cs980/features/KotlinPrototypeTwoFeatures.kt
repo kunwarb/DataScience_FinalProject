@@ -103,7 +103,8 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 
     return tops.scoreDocs.map { scoreDoc ->
         val doc = indexSearcher.doc(scoreDoc.doc)
-        val text = cleanQuery + " " + doc.get(CONTENT) + " " + cleanQuery
+//        val text = cleanQuery + " " + doc.get(CONTENT) + " " + cleanQuery
+        val text = doc.get(CONTENT)
         val docStat = gramAnalyzer.getLanguageStatContainer(text)
 
         val queryLikelihood = docStat.getLikelihoodGivenQuery(queryCorpus, alpha)
