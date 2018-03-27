@@ -9,6 +9,7 @@ import edu.unh.cs980.features.featEntitySDM
 import edu.unh.cs980.features.featLikehoodOfQueryGivenEntityMention
 import edu.unh.cs980.features.featSDM
 import edu.unh.cs980.getIndexSearcher
+import edu.unh.cs980.language.GramStatType
 import edu.unh.cs980.language.KotlinAbstractAnalyzer
 import edu.unh.cs980.language.KotlinGramAnalyzer
 import info.debatty.java.stringsimilarity.Jaccard
@@ -491,6 +492,19 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 
     }
 
+    private fun trainSDMComponents() {
+        formatter.addBM25(normType = NormType.ZSCORE)
+        val gramIndexSearcher = getIndexSearcher("gram")
+        val hGram = KotlinGramAnalyzer(gramIndexSearcher)
+        val grams = listOf(GramStatType.TYPE_UNIGRAM, GramStatType.TYPE_BIGRAM, GramStatType.TYPE_BIGRAM_WINDOW)
+        grams.forEach { gram ->
+            formatter.addFeature({ query, tops, indexSearcher ->
+                featSDM(query, tops, indexSearcher, hGram, 4.0, gramType = gram)
+            }, normType = NormType.ZSCORE)
+        }
+
+    }
+
     private fun trainAbstractSDM() {
         formatter.addBM25(normType = NormType.ZSCORE)
         val abstractIndexer = getIndexSearcher("abstract")
@@ -530,6 +544,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "abstract_score" -> trainAbstractScore()
             "abstract_sdm" -> trainAbstractSDM()
             "train_alpha" -> trainDirichletAlpha()
+            "train_sdm_components" -> trainSDMComponents()
             "combined" -> trainCombined()
             else -> println("Unknown method!")
         }

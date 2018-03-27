@@ -2,6 +2,7 @@ package edu.unh.cs980.features
 
 import edu.unh.cs980.CONTENT
 import edu.unh.cs980.context.HyperlinkIndexer
+import edu.unh.cs980.language.GramStatType
 import edu.unh.cs980.language.KotlinAbstractAnalyzer
 import edu.unh.cs980.language.KotlinGramAnalyzer
 import info.debatty.java.stringsimilarity.Jaccard
@@ -93,7 +94,8 @@ fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 
 
 fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
-            gramAnalyzer: KotlinGramAnalyzer, alpha: Double): List<Double> {
+            gramAnalyzer: KotlinGramAnalyzer, alpha: Double,
+            gramType: GramStatType? = null): List<Double> {
     val tokens = createTokenSequence(query).toList()
     val cleanQuery = tokens.toList().joinToString(" ")
 
@@ -108,10 +110,17 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         val v1 = queryLikelihood.unigramLikelihood
         val v2 = queryLikelihood.bigramLikelihood
         val v3 = queryLikelihood.bigramWindowLikelihood
+
+        when (gramType) {
+            GramStatType.TYPE_UNIGRAM -> v1
+            GramStatType.TYPE_BIGRAM -> v2
+            GramStatType.TYPE_BIGRAM_WINDOW -> v3
+            else -> v1 + v2 + v3
+        }
 //        val v1 = queryLikelihood.unigramLikelihood.likelihood()
 //        val v2 = queryLikelihood.bigramLikelihood.likelihood()
 //        val v3 = queryLikelihood.bigramWindowLikelihood.likelihood()
-        v1 + v2 + v3
+//        v1 + v2 + v3
     }
 }
 
