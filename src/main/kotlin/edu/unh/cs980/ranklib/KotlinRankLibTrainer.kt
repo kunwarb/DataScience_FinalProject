@@ -198,29 +198,37 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
      * @see queryCombined
      */
     private fun trainCombined() {
-        formatter.addBM25(weight = 1.0, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            featAddStringDistanceFunction(query, tops, indexSearcher, Jaccard() )
-        }, normType = NormType.ZSCORE)
-        formatter.addFeature({query, tops, indexSearcher ->
-            featUseLucSim(query, tops, indexSearcher, LMDirichletSimilarity())
-        }, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            featSectionSplit(query, tops, indexSearcher, 1) }, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            featSectionSplit(query, tops, indexSearcher, 2) }, normType = NormType.ZSCORE)
-
         val gramIndexSearcher = getIndexSearcher(gramPath)
         val hLinker = HyperlinkIndexer(hyperlinkPath)
         val hGram = KotlinGramAnalyzer(gramIndexSearcher)
+        val abstractIndexer = getIndexSearcher(abstractPath)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
+
+        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE)
+
         formatter.addFeature({ query, tops, indexSearcher ->
-            featSDM(query, tops, indexSearcher, hGram, 0.5)
+            featStringSimilarityComponent(query, tops, indexSearcher)
         }, normType = NormType.ZSCORE)
+
+        formatter.addFeature({query, tops, indexSearcher ->
+            featUseLucSim(query, tops, indexSearcher, LMDirichletSimilarity())
+        }, normType = NormType.ZSCORE)
+
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSDM(query, tops, indexSearcher, hGram, 4.0)
+        }, normType = NormType.ZSCORE)
+
         formatter.addFeature({ query, tops, indexSearcher ->
             featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
 
-        //[(1, 0.37643456), (2, 0.06951797), (3, 0.21233706), (4, -0.11022807), (5, -0.03575336), (6, -0.06678948), (7, 0.12893948)]
-        //[(1, 0.27711892), (2, 0.04586862), (3, 0.24996234), (4, -0.21980639), (5, -0.100580536), (6, 0.008560385), (7, 0.09810279)]
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, 2.0)
+        }, normType = NormType.ZSCORE)
+
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAverageAbstractScoreByQueryRelevance(query, tops, indexSearcher, abstractAnalyzer)
+        }, normType = NormType.ZSCORE)
+
     }
 
 
@@ -365,16 +373,6 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
     }
 
-    private fun trainMercerAlpha() {
-        formatter.addBM25(normType = NormType.ZSCORE)
-//        val hLinker = HyperlinkIndexer(hyperlinkPath)
-        listOf(1.0f, 4.0f, 8.0f, 16.0f, 32.0f, 64.0f, 128.0f)
-            .forEach { alpha ->
-                formatter.addFeature({ query, tops, indexSearcher ->
-                    featUseLucSim(query, tops, indexSearcher, LMJelinekMercerSimilarity(alpha))
-                }, normType = NormType.ZSCORE)
-            }
-    }
 
 
     /**
@@ -389,7 +387,6 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "abstract_sdm_components" -> trainAbstractSDMComponents()
             "average_abstract" -> trainAverageAbstractScore()
             "sdm_alpha" -> trainDirichletAlpha()
-            "mercer_alpha" -> trainMercerAlpha()
             "sdm" -> trainSDM()
             "abstract_alpha" -> trainAbstractSDMAlpha()
             "section_path" -> trainSectionPath()
