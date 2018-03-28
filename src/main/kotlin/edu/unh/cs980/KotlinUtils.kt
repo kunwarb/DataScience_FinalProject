@@ -12,6 +12,7 @@ import org.apache.lucene.index.IndexWriter
 import org.apache.lucene.index.IndexWriterConfig
 import org.apache.lucene.search.IndexSearcher
 import org.apache.lucene.search.TopDocs
+import org.apache.lucene.search.similarities.BM25Similarity
 import org.apache.lucene.store.FSDirectory
 import java.nio.file.Paths
 import java.util.*
@@ -77,7 +78,7 @@ fun getIndexSearcher(indexLocation: String): IndexSearcher {
     val indexPath = Paths.get(indexLocation)
     val indexDir = FSDirectory.open(indexPath)
     val indexReader = DirectoryReader.open(indexDir)
-    return IndexSearcher(indexReader)
+    return IndexSearcher(indexReader).apply { setSimilarity(BM25Similarity()) }
 }
 
 fun getIndexWriter(indexLocation: String): IndexWriter {
@@ -93,8 +94,6 @@ fun getIndexWriter(indexLocation: String): IndexWriter {
 public const val PID: String = "paragraphid"
 public const val CONTENT = "text"
 
-// Functional interface for features
-typealias FeatureInterface = (String, TopDocs, IndexSearcher) -> List<Double>
 
 // I don't know why the hell they don't have an identity function..
 fun <A> identity(it: A): A = it
