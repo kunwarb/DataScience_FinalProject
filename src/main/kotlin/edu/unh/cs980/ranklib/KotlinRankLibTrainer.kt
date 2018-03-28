@@ -223,7 +223,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         formatter.addBM25(normType = NormType.ZSCORE)
         val abstractSearcher = getIndexSearcher(abstractPath)
         val abstractAnalyzer = KotlinAbstractAnalyzer(abstractSearcher)
-        listOf(2, 8, 16, 32, 64, 128).forEach { alpha ->
+        listOf(2, 8, 16, 32, 64, 128, 256, 512, 1024).forEach { alpha ->
             formatter.addFeature({ query, tops, indexSearcher ->
                 featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, alpha.toDouble())
             }, normType = NormType.ZSCORE)
