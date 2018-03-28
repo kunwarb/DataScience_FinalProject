@@ -60,7 +60,7 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
             .joinToString(" ")
         val booleanQuery = AnalyzerFunctions.createQuery(query, useFiltering = true)
 
-        val tops = gramAnalyzer.indexSearcher.search(booleanQuery, 20)
+        val tops = gramAnalyzer.indexSearcher.search(booleanQuery, 40)
         val numHits = tops.scoreDocs.size.toDouble()
         val queryModel = gramAnalyzer.getCorpusStatContainer(cleanedQuery)
 
