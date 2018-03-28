@@ -149,8 +149,8 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
                 "-train", featuresLoc,
                 "-ranker", "4",
                 "-metric2t", "map",
-//                "-i", "50",
-//                "-r", "10",
+                "-i", "20",
+                "-r", "10",
                 "-tvs", "0.3"
                 )
 
