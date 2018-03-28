@@ -122,7 +122,7 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
 
 
     fun runTest() {
-        val words = listOf("heavy water", "urbanization", "oxygen", "Environmental Justice Foundation")
+        val words = listOf("heavy_water", "urbanization", "oxygen", "environmental_justice_foundation")
         words.forEach { word ->
             val query = buildEntityNameQuery(word)
             val tops = indexSearcher.search(query, 10)
