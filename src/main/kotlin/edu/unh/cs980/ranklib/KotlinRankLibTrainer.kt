@@ -166,14 +166,14 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     }
 
     private fun querySDM() {
-//        val weights = listOf(0.49827237108, 0.23021207089, 0.1280351944, 0.143480363604666)
+        val weights = listOf(0.14059688887081667, 0.8594031111291832)
 //        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE, weight = weights[0])
         val gramSearcher = getIndexSearcher(gramPath)
-//        formatter.addBM25(normType = NormType.ZSCORE, weight = 1.0)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
         val hGram = KotlinGramAnalyzer(gramSearcher)
         formatter.addFeature({ query, tops, indexSearcher ->
             featSDM(query, tops, indexSearcher, hGram, 4.0)
-        }, normType = NormType.ZSCORE)
+        }, normType = NormType.ZSCORE, weight = weights[1])
     }
 
     // Runs associated query method
