@@ -26,24 +26,7 @@ import kotlin.coroutines.experimental.buildSequence
  * Desc: This class is responsible for extracting unigrams, bigrams, and windowed bigrams from the corpus.
  */
 class KotlinGram(filename: String) {
-//    val analyzer = EnglishAnalyzer()
     val indexWriter = getIndexWriter(filename)
-
-//    /**
-//     * Function: getFilteredtokens
-//     * Desc: Returns a sequence of (stemmed) tokens from the given text
-//     */
-//    fun getFilteredTokens(text: String): Sequence<String> {
-//        val tokenStream = analyzer.tokenStream("text", StringReader(text)).apply { reset() }
-//        return buildSequence<String>() {
-//            while (tokenStream.incrementToken()) {
-//                yield(tokenStream.getAttribute(CharTermAttribute::class.java).toString())
-//            }
-//            tokenStream.end()
-//            tokenStream.close()
-//        }
-//    }
-
 
     /**
      * Function: doIndex

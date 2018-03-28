@@ -138,24 +138,6 @@ class KotlinGramAnalyzer(val indexSearcher: IndexSearcher) {
     private fun getCorpusGram(gram: String, gramType: String): Long =
             indexSearcher.indexReader.totalTermFreq(Term(gramType, gram))
 
-
-//    /**
-//     * Func: createTokenSequence
-//     * Desc: Given a string, returns stemmed tokens.
-//     */
-//    private fun createTokenSequence(query: String): Sequence<String> {
-//        val tokenStream = analyzer.tokenStream("text", StringReader(query)).apply { reset() }
-//
-//        return buildSequence<String> {
-//            while (tokenStream.incrementToken()) {
-//                yield(tokenStream.getAttribute(CharTermAttribute::class.java).toString())
-//            }
-//            tokenStream.end()
-//            tokenStream.close()
-//        }
-//    }
-
-
     /**
      * Func: getLanguageStatContainer
      * Desc: Given text (such as a paragraph body), calculates -gram statistics and returns
@@ -229,7 +211,6 @@ class KotlinGramAnalyzer(val indexSearcher: IndexSearcher) {
      * Desc: Function used to count number of (stemmed) bigrams in text.
      */
     private fun countBigrams(text: String): Map<String, Int> {
-//        val terms = createTokenSequence(text).toList()
         val terms = AnalyzerFunctions.createTokenList(text, analyzerType = ANALYZER_ENGLISH).toList()
         val docBigramCounts = terms.windowed(2, 1)
             .map { window -> window.joinToString(separator = "") }
@@ -245,7 +226,6 @@ class KotlinGramAnalyzer(val indexSearcher: IndexSearcher) {
      * Desc: Function used to count number of (stemmed) windowed bigrams in text.
      */
     private fun countWindowedBigrams(text: String): Map<String, Int> {
-//        val terms = createTokenSequence(text).toList()
         val terms = AnalyzerFunctions.createTokenList(text, analyzerType = ANALYZER_ENGLISH)
         val docBigramWindowCounts = terms
             .windowed(8, 1, true)
@@ -266,7 +246,6 @@ class KotlinGramAnalyzer(val indexSearcher: IndexSearcher) {
      * Desc: Functions used to count number of (stemmed) unigrams in text.
      */
     private fun countUnigrams(text: String): Map<String, Int> {
-//        val terms = createTokenSequence(text).toList()
         val terms = AnalyzerFunctions.createTokenList(text, analyzerType = ANALYZER_ENGLISH)
 
         val docTermCounts = terms

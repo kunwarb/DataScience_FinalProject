@@ -26,7 +26,6 @@ data class RelevantEntity(val name: String, val content: String, val statContain
 class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
     constructor(indexLoc: String) : this(getIndexSearcher(indexLoc))
 
-//    val analyzer = StandardAnalyzer()
     val gramAnalyzer = KotlinGramAnalyzer(indexSearcher)
     val sim = Jaccard()
     private val memoizedAbstractDocs = ConcurrentHashMap<String, Document?>()

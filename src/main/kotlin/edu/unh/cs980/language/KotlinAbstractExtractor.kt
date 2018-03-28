@@ -85,26 +85,26 @@ class KotlinAbstractExtractor(filename: String) {
             doc.add(TextField("text", content, Field.Store.YES))
 
 
-//                val tokens = getFilteredTokens(content).toList()
-            val tokens = AnalyzerFunctions.createTokenList(content, ANALYZER_ENGLISH)
-//                val doc = Document()
-            val unigrams = ArrayList<String>()
-            val bigrams = ArrayList<String>()
-            val bigramWindows = ArrayList<String>()
-            (0 until tokens.size).forEach { i ->
-                unigrams.add(tokens[i])
-                if (i < tokens.size - 1) {
-                    bigrams.add(tokens[i] + tokens[i + 1])
-                }
-
-                ( i + 1 until min(i + 9, tokens.size)).forEach { j ->
-                    bigramWindows.add(tokens[i] + tokens[j])
-                    bigramWindows.add(tokens[j] + tokens[i])
-                }
-            }
-            doc.add(TextField("unigram", unigrams.joinToString(separator = " "), Field.Store.YES))
-            doc.add(TextField("bigrams", bigrams.joinToString(separator = " "), Field.Store.YES))
-            doc.add(TextField("bigram_windows", bigrams.joinToString(separator = " "), Field.Store.YES))
+////                val tokens = getFilteredTokens(content).toList()
+//            val tokens = AnalyzerFunctions.createTokenList(content, ANALYZER_ENGLISH)
+////                val doc = Document()
+//            val unigrams = ArrayList<String>()
+//            val bigrams = ArrayList<String>()
+//            val bigramWindows = ArrayList<String>()
+//            (0 until tokens.size).forEach { i ->
+//                unigrams.add(tokens[i])
+//                if (i < tokens.size - 1) {
+//                    bigrams.add(tokens[i] + tokens[i + 1])
+//                }
+//
+//                ( i + 1 until min(i + 9, tokens.size)).forEach { j ->
+//                    bigramWindows.add(tokens[i] + tokens[j])
+//                    bigramWindows.add(tokens[j] + tokens[i])
+//                }
+//            }
+//            doc.add(TextField("unigram", unigrams.joinToString(separator = " "), Field.Store.YES))
+//            doc.add(TextField("bigrams", bigrams.joinToString(separator = " "), Field.Store.YES))
+//            doc.add(TextField("bigram_windows", bigrams.joinToString(separator = " "), Field.Store.YES))
 
 
             indexWriter.addDocument(doc)
