@@ -34,39 +34,41 @@ class KotlinAbstractExtractor(filename: String) {
 //        }
 //    }
 
-    private fun iterWrapper(f: BufferedInputStream): Iterable<Pair<String, String>> {
-        val iter = DeserializeData.iterableAnnotations(f).iterator()
-        val iterWrapper = buildIterator<Pair<String, String>>() {
-            while (iter.hasNext()) {
-                val nextPage = iter.next()
-
-                val name = nextPage.pageName.toLowerCase().replace(" ", "_")
-                val content = nextPage.flatSectionPathsParagraphs()
-                    .take(4)
-                    .map { psection -> psection.paragraph.textOnly }
-                    .joinToString(" ")
-
-                yield(Pair(name, content))
-            }
-        }
-        return Iterable { iterWrapper }
-    }
+//    private fun iterWrapper(f: BufferedInputStream): Iterable<Pair<String, String>> {
+//        val iter = DeserializeData.iterableAnnotations(f).iterator()
+//        val iterWrapper = buildIterator<Pair<String, String>>() {
+//            while (iter.hasNext()) {
+//                val nextPage = iter.next()
+//
+//                val name = nextPage.pageName.toLowerCase().replace(" ", "_")
+//                val content = nextPage.flatSectionPathsParagraphs()
+//                    .take(4)
+//                    .map { psection -> psection.paragraph.textOnly }
+//                    .joinToString(" ")
+//
+//                yield(Pair(name, content))
+//            }
+//        }
+//        return Iterable { iterWrapper }
+//    }
 
 
     fun getAbstracts(filename: String) {
         val f = File(filename).inputStream().buffered(16 * 1024)
         val counter = AtomicInteger()
 
-        iterWrapper(f)
-            .forEachParallelRestricted(10) { (name, content) ->
+//        iterWrapper(f)
+//            .forEachParallelRestricted(10) { (name, content) ->
+        DeserializeData.iterableAnnotations(f) .forEachParallelRestricted(10) { page ->
 
-                // This is just to keep track of how many pages we've parsed
-                counter.incrementAndGet().let {
-                    if (it % 100000 == 0) {
-                        println(it)
-                        indexWriter.commit()
-                    }
+
+            // This is just to keep track of how many pages we've parsed
+            counter.incrementAndGet().let {
+                if (it % 100000 == 0) {
+                    println(it)
+                    indexWriter.commit()
                 }
+            }
 
 //                val name = page.pageName.toLowerCase().replace(" ", "_")
 //                val content = page.flatSectionPathsParagraphs()
@@ -74,35 +76,40 @@ class KotlinAbstractExtractor(filename: String) {
 //                    .map { psection -> psection.paragraph.textOnly }
 //                    .joinToString(" ")
 
-                val doc = Document()
-                doc.add(TextField("name", name, Field.Store.YES))
-                doc.add(TextField("text", content, Field.Store.YES))
+            val doc = Document()
+            val name = page.pageName.toLowerCase().replace(" ", "_")
+            val content = page.flatSectionPathsParagraphs()
+                .take(4)
+                .map { psection -> psection.paragraph.textOnly }
+                .joinToString(" ")
+            doc.add(TextField("name", name, Field.Store.YES))
+            doc.add(TextField("text", content, Field.Store.YES))
 
 
 //                val tokens = getFilteredTokens(content).toList()
-                val tokens = AnalyzerFunctions.createTokenList(content, ANALYZER_ENGLISH)
+            val tokens = AnalyzerFunctions.createTokenList(content, ANALYZER_ENGLISH)
 //                val doc = Document()
-                val unigrams = ArrayList<String>()
-                val bigrams = ArrayList<String>()
-                val bigramWindows = ArrayList<String>()
-                (0 until tokens.size).forEach { i ->
-                    unigrams.add(tokens[i])
-                    if (i < tokens.size - 1) {
-                        bigrams.add(tokens[i] + tokens[i + 1])
-                    }
-
-                    ( i + 1 until min(i + 9, tokens.size)).forEach { j ->
-                        bigramWindows.add(tokens[i] + tokens[j])
-                        bigramWindows.add(tokens[j] + tokens[i])
-                    }
+            val unigrams = ArrayList<String>()
+            val bigrams = ArrayList<String>()
+            val bigramWindows = ArrayList<String>()
+            (0 until tokens.size).forEach { i ->
+                unigrams.add(tokens[i])
+                if (i < tokens.size - 1) {
+                    bigrams.add(tokens[i] + tokens[i + 1])
                 }
-                doc.add(TextField("unigram", unigrams.joinToString(separator = " "), Field.Store.YES))
-                doc.add(TextField("bigrams", bigrams.joinToString(separator = " "), Field.Store.YES))
-                doc.add(TextField("bigram_windows", bigrams.joinToString(separator = " "), Field.Store.YES))
 
-
-                indexWriter.addDocument(doc)
+                ( i + 1 until min(i + 9, tokens.size)).forEach { j ->
+                    bigramWindows.add(tokens[i] + tokens[j])
+                    bigramWindows.add(tokens[j] + tokens[i])
+                }
             }
+            doc.add(TextField("unigram", unigrams.joinToString(separator = " "), Field.Store.YES))
+            doc.add(TextField("bigrams", bigrams.joinToString(separator = " "), Field.Store.YES))
+            doc.add(TextField("bigram_windows", bigrams.joinToString(separator = " "), Field.Store.YES))
+
+
+            indexWriter.addDocument(doc)
+        }
 
         indexWriter.close()
     }

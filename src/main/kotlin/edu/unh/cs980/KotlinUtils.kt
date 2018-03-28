@@ -6,6 +6,7 @@ import kotlinx.coroutines.experimental.async
 import kotlinx.coroutines.experimental.newFixedThreadPoolContext
 import kotlinx.coroutines.experimental.runBlocking
 import org.apache.lucene.analysis.en.EnglishAnalyzer
+import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.index.DirectoryReader
 import org.apache.lucene.index.IndexWriter
 import org.apache.lucene.index.IndexWriterConfig
@@ -82,7 +83,7 @@ fun getIndexSearcher(indexLocation: String): IndexSearcher {
 fun getIndexWriter(indexLocation: String): IndexWriter {
     val indexPath = Paths.get(indexLocation)
     val indexDir = FSDirectory.open(indexPath)
-    val conf = IndexWriterConfig(EnglishAnalyzer())
+    val conf = IndexWriterConfig(StandardAnalyzer())
         .apply { openMode = IndexWriterConfig.OpenMode.CREATE }
     return IndexWriter(indexDir, conf)
 }
