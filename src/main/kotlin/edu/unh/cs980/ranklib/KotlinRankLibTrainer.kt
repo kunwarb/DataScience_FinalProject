@@ -165,7 +165,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     }
 
     private fun querySectionComponent() {
-        val weights = listOf(1.0, 1.0)
+        val weights = listOf(0.0, 1.0)
         formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
         formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE, weight = weights[1])
     }
