@@ -1,5 +1,8 @@
 package edu.unh.cs980;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -7,13 +10,18 @@ import java.util.function.Consumer;
 
 import edu.unh.cs980.ranklib.KotlinRankLibTrainer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.BM25Similarity;
 
 import co.nstant.in.cbor.CborException;
+import edu.unh.cs.treccar_v2.Data;
+import edu.unh.cs.treccar_v2.read_data.DeserializeData;
 import edu.unh.cs980.WordEmbedding.Lucene_Query_Creator;
+import edu.unh.cs980.WordEmbedding.ParagraphSimilarity;
+import edu.unh.cs980.WordEmbedding.TFIDFSimilarity;
 import edu.unh.cs980.ranklib.KotlinRanklibFormatter;
 import edu.unh.cs980.ranklib.NormType;
 import edu.unh.cs980.utils.ProjectUtils;
@@ -42,6 +50,33 @@ public class Main {
 		void run(Namespace params) {
 			func.accept(params);
 		}
+	}
+
+	/****
+	 * @Function:getAllPageFromPath
+	 * @param indexLocation
+	 * @param queryLocation
+	 * @param rankingOutputLocation
+	 * @return pagelist
+	 */
+
+	private static ArrayList<Data.Page> getAllPageFromPath(String indexLocation, String queryLocation,
+			String rankingOutputLocation) {
+		ArrayList<Data.Page> pageList = new ArrayList<Data.Page>();
+
+		try {
+
+			FileInputStream fis = new FileInputStream(new File(queryLocation));
+			for (Data.Page page : DeserializeData.iterableAnnotations(fis)) {
+
+				pageList.add(page);
+
+			}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return pageList;
 	}
 
 	public static ArgumentParser createArgParser() {
@@ -81,6 +116,34 @@ public class Main {
 													// query_results.txt
 				.help("The name of the trec_eval compatible run file to write. (default: query_results.run)");
 
+		// Argument parser for Paragraph Similarity (Added By Bindu)
+
+		Subparser paragraphSimilarityParser = subparsers.addParser("Paragraph Similarity")
+				.setDefault("func", new Exec(Main::runParagraphSimilarity)).help("Queries Lucene database.");
+
+		paragraphSimilarityParser.addArgument("index").help("Location of Lucene index directory.");
+		paragraphSimilarityParser.addArgument("query_file").help("Location of the query file (.cbor)");
+		paragraphSimilarityParser.addArgument("--out") // -- means it's not
+														// positional
+				.setDefault("query_results.run") // If no --out is supplied,
+													// defaults to
+													// query_results.txt
+				.help("The name of the trec_eval compatible run file to write. (default: query_results.run)");
+
+		// Argument parser for TFIDF Similarity (Added By Bindu)
+
+		Subparser TFIDFSimilarityParser = subparsers.addParser("Paragraph Similarity")
+				.setDefault("func", new Exec(Main::runTFIDFSimilarity)).help("Queries Lucene database.");
+
+		TFIDFSimilarityParser.addArgument("index").help("Location of Lucene index directory.");
+		TFIDFSimilarityParser.addArgument("query_file").help("Location of the query file (.cbor)");
+		TFIDFSimilarityParser.addArgument("--out") // -- means it's not
+													// positional
+				.setDefault("query_results.run") // If no --out is supplied,
+													// defaults to
+													// query_results.txt
+				.help("The name of the trec_eval compatible run file to write. (default: query_results.run)");
+
 		// Argument parser for Query Expansion
 		Subparser queryExpansionParser = subparsers.addParser("query_expansion")
 				.setDefault("func", new Exec(Main::runQueryExpansion)).help("Use Query Expansion");
@@ -108,33 +171,28 @@ public class Main {
 				// query_results.txt
 				.help("The name of the trec_eval compatible run file to write. (default: query_results.run)");
 
-
 		// Graph Builder
 		Subparser graphBuilderParser = subparsers.addParser("graph_builder")
 				.setDefault("func", new Exec(Main::runGraphBuilder))
-				.help("Creates bipartite graph between entities and paragraphs, stored in a MapDB file:" +
-						"graph_database.db");
+				.help("Creates bipartite graph between entities and paragraphs, stored in a MapDB file:"
+						+ "graph_database.db");
 
-		graphBuilderParser.addArgument("index")
-				.help("Location of the Lucene index directory");
+		graphBuilderParser.addArgument("index").help("Location of the Lucene index directory");
 
 		// Ranklib Query
 		Subparser ranklibQueryParser = subparsers.addParser("ranklib_query")
 				.setDefault("func", new Exec(Main::runRanklibQuery))
 				.help("Runs queries using weighted combinations of features trained by RankLib.");
 
-		ranklibQueryParser.addArgument("method")
-				.help("The type of method to use when querying (see readme).")
-				.choices("entity_similarity", "average_query", "split_sections", "mixtures", "combined",
-						"lm_mercer", "lm_dirichlet");
+		ranklibQueryParser.addArgument("method").help("The type of method to use when querying (see readme).").choices(
+				"entity_similarity", "average_query", "split_sections", "mixtures", "combined", "lm_mercer",
+				"lm_dirichlet");
 
 		ranklibQueryParser.addArgument("index").help("Location of Lucene index directory.");
 		ranklibQueryParser.addArgument("query").help("Location of query file (.cbor)");
-		ranklibQueryParser.addArgument("--out")
-				.setDefault("query_results.run")
+		ranklibQueryParser.addArgument("--out").setDefault("query_results.run")
 				.help("Specifies the output name of the run file.");
-		ranklibQueryParser.addArgument("--graph_database")
-				.setDefault("")
+		ranklibQueryParser.addArgument("--graph_database").setDefault("")
 				.help("(only used for mixtures method): Location of graph_database.db file.");
 
 		// Ranklib Trainer
@@ -142,20 +200,16 @@ public class Main {
 				.setDefault("func", new Exec(Main::runRanklibTrainer))
 				.help("Scores using methods and writes features to a RankLib compatible file for use with training.");
 
-		ranklibTrainerParser.addArgument("method")
-				.help("The type of method to use when training (see readme).")
-				.choices("entity_similarity", "average_query", "split_sections", "mixtures", "combined",
-						"lm_mercer", "lm_dirichlet");
+		ranklibTrainerParser.addArgument("method").help("The type of method to use when training (see readme).")
+				.choices("entity_similarity", "average_query", "split_sections", "mixtures", "combined", "lm_mercer",
+						"lm_dirichlet");
 		ranklibTrainerParser.addArgument("index").help("Location of the Lucene index directory");
 		ranklibTrainerParser.addArgument("query").help("Location of query file (.cbor)");
 		ranklibTrainerParser.addArgument("qrel").help("Locations of matching qrel file.");
-		ranklibTrainerParser.addArgument("--out")
-				.setDefault("ranklib_features.txt")
+		ranklibTrainerParser.addArgument("--out").setDefault("ranklib_features.txt")
 				.help("Output name for the RankLib compatible feature file.");
-		ranklibTrainerParser.addArgument("--graph_database")
-				.setDefault("")
+		ranklibTrainerParser.addArgument("--graph_database").setDefault("")
 				.help("(only used for mixtures method): Location of graph_database.db file.");
-
 
 		return parser;
 	}
@@ -189,6 +243,52 @@ public class Main {
 			qCreator.writeRankings(queryFile, out);
 		} catch (IOException e) {
 			e.printStackTrace();
+		}
+	}
+
+	// Runs Bindu Paragraph Similarity Variation
+	private static void runParagraphSimilarity(Namespace params) throws IOException, ParseException, IOException {
+		try {
+			String indexLocation = params.getString("index");// Paragraph Corpus
+																// indexing
+			String queryLocation = params.getString("Outlinecborfile"); // outlines-cbor
+																		// file
+			String rankingOutputLocation = params.getString("OutputLocationFile"); // where
+																					// Tf-IDF
+																					// output
+																					// should
+																					// be
+			ArrayList<Data.Page> pagelist = getAllPageFromPath(indexLocation, queryLocation, rankingOutputLocation);
+
+			ParagraphSimilarity ps = new ParagraphSimilarity(pagelist, 100, indexLocation);
+			ps.writeParagraphScore(rankingOutputLocation + "\\ParagraphSimilarity.run");
+
+		} catch (ArrayIndexOutOfBoundsException e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	// Runs Bindu TFIDF SImilarity Variation
+
+	private static void runTFIDFSimilarity(Namespace params) throws IOException, ParseException, IOException {
+		try {
+			String indexLocation = params.getString("index"); // Paragraph
+																// Corpus
+																// indexing
+			String queryLocation = params.getString("Outlinecborfile");
+			String rankingOutputLocation = params.getString("OutputLocationFile"); // where
+																					// Tf-IDF
+																					// output
+																					// should
+																					// be
+			ArrayList<Data.Page> pagelist = getAllPageFromPath(indexLocation, queryLocation, rankingOutputLocation);
+
+			TFIDFSimilarity tfidf = new TFIDFSimilarity(pagelist, 100, indexLocation);
+			tfidf.writeTFIDFScoresTo(rankingOutputLocation + "\\Similarity_TFIDF.run");
+		} catch (ArrayIndexOutOfBoundsException e) {
+			e.printStackTrace();
+
 		}
 	}
 
@@ -258,7 +358,6 @@ public class Main {
 		graphBuilder.run();
 	}
 
-
 	// Runs Jordan's Ranklib Trainer
 	private static void runRanklibTrainer(Namespace namespace) {
 		String indexLocation = namespace.getString("index");
@@ -267,11 +366,10 @@ public class Main {
 		String graphLocation = namespace.getString("graph_database");
 		String out = namespace.getString("out");
 		String method = namespace.getString("method");
-		KotlinRankLibTrainer kotTrainer =
-				new KotlinRankLibTrainer(indexLocation, queryLocation, qrelLocation, graphLocation);
+		KotlinRankLibTrainer kotTrainer = new KotlinRankLibTrainer(indexLocation, queryLocation, qrelLocation,
+				graphLocation);
 		kotTrainer.train(method, out);
 	}
-
 
 	// Runs Jordan's Ranklib Query
 	private static void runRanklibQuery(Namespace namespace) {
@@ -280,8 +378,7 @@ public class Main {
 		String graphLocation = namespace.getString("graph_database");
 		String method = namespace.getString("method");
 		String out = namespace.getString("out");
-		KotlinRankLibTrainer kotTrainer =
-				new KotlinRankLibTrainer(indexLocation, queryLocation, "", graphLocation);
+		KotlinRankLibTrainer kotTrainer = new KotlinRankLibTrainer(indexLocation, queryLocation, "", graphLocation);
 		kotTrainer.runRanklibQuery(method, out);
 	}
 

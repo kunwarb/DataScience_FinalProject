@@ -34,7 +34,7 @@ public class TFIDFSimilarity {
 																	// for that
 																	// query
 
-	TFIDFSimilarity(ArrayList<Data.Page> pl, int n, String index) throws ParseException, IOException {
+	public TFIDFSimilarity(ArrayList<Data.Page> pl, int n, String index) throws ParseException, IOException {
 		String INDEX_DIRECTORY = index;
 		numDocs = n;
 		pageList = pl;

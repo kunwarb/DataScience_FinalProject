@@ -71,7 +71,7 @@ public class ParagraphSimilarity{
 																	// for that
 																	// query
 
-	ParagraphSimilarity(ArrayList<Data.Page> pl, int n, String index) throws ParseException, IOException {
+	public ParagraphSimilarity(ArrayList<Data.Page> pl, int n, String index) throws ParseException, IOException {
 		String INDEX_DIRECTORY = index;
 		numDocs = n; 
 		pageList = pl; 
