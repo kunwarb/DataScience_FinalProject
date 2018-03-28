@@ -138,9 +138,16 @@ public class Main {
 		ranklibQueryParser.addArgument("--out")
 				.setDefault("query_results.run")
 				.help("Specifies the output name of the run file.");
-		ranklibQueryParser.addArgument("--graph_database")
-				.setDefault("")
-				.help("(only used for mixtures method): Location of graph_database.db file.");
+		ranklibQueryParser.addArgument("--hyperlink_database")
+				.setDefault("entity_mentions.db")
+				.help("Location to MapDB indexed by Hyperlink Indexer (default: entity_mentions.db)");
+		ranklibQueryParser.addArgument("--abstract_index")
+				.setDefault("abstract")
+				.help("Location of Lucene index for entity abstracts (default: abstract/)");
+		ranklibQueryParser.addArgument("--gram_index")
+				.setDefault("gram")
+				.help("Location of Lucene index for -grams used in SDM (default: gram/");
+
 
 		// Ranklib Trainer
 		Subparser ranklibTrainerParser = subparsers.addParser("ranklib_trainer")
@@ -341,11 +348,13 @@ public class Main {
 		String indexLocation = namespace.getString("index");
 		String qrelLocation = namespace.getString("qrel");
 		String queryLocation = namespace.getString("query");
-		String graphLocation = namespace.getString("graph_database");
+		String hyperLoc = namespace.getString("hyperlink_database");
+		String gramLoc = namespace.getString("gram_index");
+		String abstractLoc = namespace.getString("abstract_index");
 		String out = namespace.getString("out");
 		String method = namespace.getString("method");
 		KotlinRankLibTrainer kotTrainer =
-				new KotlinRankLibTrainer(indexLocation, queryLocation, qrelLocation, graphLocation);
+				new KotlinRankLibTrainer(indexLocation, queryLocation, qrelLocation, hyperLoc, abstractLoc, gramLoc);
 		kotTrainer.train(method, out);
 	}
 
@@ -353,12 +362,16 @@ public class Main {
 	// Runs Jordan's Ranklib Query
 	private static void runRanklibQuery(Namespace namespace) {
 		String indexLocation = namespace.getString("index");
+		String qrelLocation = namespace.getString("qrel");
 		String queryLocation = namespace.getString("query");
-		String graphLocation = namespace.getString("graph_database");
-		String method = namespace.getString("method");
+		String hyperLoc = namespace.getString("hyperlink_database");
+		String gramLoc = namespace.getString("gram_index");
+		String abstractLoc = namespace.getString("abstract_index");
 		String out = namespace.getString("out");
+		String method = namespace.getString("method");
 		KotlinRankLibTrainer kotTrainer =
-				new KotlinRankLibTrainer(indexLocation, queryLocation, "", graphLocation);
+				new KotlinRankLibTrainer(indexLocation, queryLocation, qrelLocation, hyperLoc, abstractLoc, gramLoc);
+		kotTrainer.train(method, out);
 		kotTrainer.runRanklibQuery(method, out);
 	}
 

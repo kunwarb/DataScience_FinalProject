@@ -29,11 +29,12 @@ import kotlin.math.abs
  * Description: This is used to encapsulate my different query methods, and the training methods I used to
  *              learn their weights.
  */
-class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: String, graphPath: String) {
+class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: String,
+                           val hyperlinkPath: String, val abstractPath: String, val gramPath: String ) {
 
-    val db = if (graphPath == "") null else KotlinDatabase(graphPath)
+//    val db = if (graphPath == "") null else KotlinDatabase(graphPath)
     val formatter = KotlinRanklibFormatter(queryPath, qrelPath, indexPath)
-    val graphAnalyzer = if (graphPath == "") null else KotlinGraphAnalyzer(formatter.indexSearcher, db!!)
+//    val graphAnalyzer = if (graphPath == "") null else KotlinGraphAnalyzer(formatter.indexSearcher, db!!)
 
 
 
@@ -65,8 +66,8 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         formatter.addFeature({ query, tops, indexSearcher ->
             featSectionSplit(query, tops, indexSearcher, 2) }, weight = weights[4], normType = NormType.ZSCORE)
 
-        val gramIndexSearcher = getIndexSearcher("gram")
-        val hLinker = HyperlinkIndexer("entity_mentions.db")
+        val gramIndexSearcher = getIndexSearcher(gramPath)
+        val hLinker = HyperlinkIndexer(hyperlinkPath)
         val hGram = KotlinGramAnalyzer(gramIndexSearcher)
         formatter.addFeature({ query, tops, indexSearcher ->
             featSDM(query, tops, indexSearcher, hGram, 0.5)
@@ -78,16 +79,16 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     private fun queryHyperlinkLikelihood() {
         val weights = listOf(0.8821131679, -0.11788632077)
         formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
-        val hLinker = HyperlinkIndexer("entity_mentions.db")
+        val hLinker = HyperlinkIndexer(hyperlinkPath)
         formatter.addFeature({ query, tops, indexSearcher ->
             featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)},
                 normType = NormType.ZSCORE, weight = weights[1])
     }
 
     private fun queryAbstractSim() {
-        val abstractSearcher = getIndexSearcher("abstract")
+        val abstractSearcher = getIndexSearcher(abstractPath)
         formatter.addBM25(weight = 0.86553535, normType = NormType.ZSCORE)
-        val abstractIndexer = getIndexSearcher("abstract")
+        val abstractIndexer = getIndexSearcher(abstractPath)
         val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
         formatter.addFeature({ query, tops, indexSearcher ->
             featEntitySDM2(query, tops, indexSearcher, abstractAnalyzer)
@@ -114,7 +115,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     private fun queryAbstract() {
         val weights = listOf(0.49827237108, 0.23021207089, 0.1280351944, 0.143480363604666)
         formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE, weight = weights[0])
-        val gramSearcher = getIndexSearcher("gram")
+        val gramSearcher = getIndexSearcher(gramPath)
 //        formatter.addBM25(normType = NormType.ZSCORE, weight = 1.0)
         val hGram = KotlinGramAnalyzer(gramSearcher)
         formatter.addFeature({ query, tops, indexSearcher ->
@@ -137,7 +138,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 
     private fun querySDMComponents() {
         formatter.addBM25(normType = NormType.ZSCORE, weight = 0.381845239)
-        val gramSearcher = getIndexSearcher("gram")
+        val gramSearcher = getIndexSearcher(gramPath)
         val hGram = KotlinGramAnalyzer(gramSearcher)
         formatter.addFeature({ query, tops, indexSearcher ->
             featSDM(query, tops, indexSearcher, hGram, 4.0, GramStatType.TYPE_UNIGRAM)
@@ -188,8 +189,8 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         formatter.addFeature({ query, tops, indexSearcher ->
             featSectionSplit(query, tops, indexSearcher, 2) }, normType = NormType.ZSCORE)
 
-        val gramIndexSearcher = getIndexSearcher("gram")
-        val hLinker = HyperlinkIndexer("entity_mentions.db")
+        val gramIndexSearcher = getIndexSearcher(gramPath)
+        val hLinker = HyperlinkIndexer(hyperlinkPath)
         val hGram = KotlinGramAnalyzer(gramIndexSearcher)
         formatter.addFeature({ query, tops, indexSearcher ->
             featSDM(query, tops, indexSearcher, hGram, 0.5)
@@ -204,7 +205,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 
     private fun trainDirichletAlpha() {
         formatter.addBM25(normType = NormType.ZSCORE)
-        val gramIndexSearcher = getIndexSearcher("gram")
+        val gramIndexSearcher = getIndexSearcher(gramPath)
         val hGram = KotlinGramAnalyzer(gramIndexSearcher)
         listOf(2, 8, 16, 32, 64, 128).forEach { alpha ->
             formatter.addFeature({ query, tops, indexSearcher ->
@@ -215,7 +216,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     }
 
     private fun trainSDMComponents() {
-        val gramIndexSearcher = getIndexSearcher("gram")
+        val gramIndexSearcher = getIndexSearcher(gramPath)
         val hGram = KotlinGramAnalyzer(gramIndexSearcher)
         val grams = listOf(GramStatType.TYPE_UNIGRAM, GramStatType.TYPE_BIGRAM, GramStatType.TYPE_BIGRAM_WINDOW)
         grams.forEach { gram ->
@@ -226,7 +227,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     }
 
     private fun trainEntitySDMComponents() {
-        val abstractSearcher = getIndexSearcher("abstract")
+        val abstractSearcher = getIndexSearcher(abstractPath)
         val abstractAnalyzer = KotlinAbstractAnalyzer(abstractSearcher)
         val grams = listOf(GramStatType.TYPE_UNIGRAM, GramStatType.TYPE_BIGRAM, GramStatType.TYPE_BIGRAM_WINDOW)
         grams.forEach { gram ->
@@ -238,7 +239,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 
     private fun trainAbstractSDM() {
         formatter.addBM25(normType = NormType.ZSCORE)
-        val abstractIndexer = getIndexSearcher("abstract")
+        val abstractIndexer = getIndexSearcher(abstractPath)
         val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
         formatter.addFeature({ query, tops, indexSearcher ->
             featEntitySDM2(query, tops, indexSearcher, abstractAnalyzer)
@@ -249,7 +250,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 
         val grams = GramStatType.values()
         println(grams)
-        val abstractIndexer = getIndexSearcher("abstract")
+        val abstractIndexer = getIndexSearcher(abstractPath)
         val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
         grams.forEach { gram ->
             formatter.addFeature({ query, tops, indexSearcher ->
@@ -305,7 +306,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     private fun trainAbstractScore() {
 //        formatter.addBM25(normType = NormType.ZSCORE)
         formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE)
-        val gramIndexSearcher = getIndexSearcher("gram")
+        val gramIndexSearcher = getIndexSearcher(gramPath)
 //        val hLinker = HyperlinkIndexer("entity_mentions.db")
         val hGram = KotlinGramAnalyzer(gramIndexSearcher)
         formatter.addFeature({ query, tops, indexSearcher ->
@@ -317,13 +318,13 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 
     private fun trainHyperlinkLikelihood() {
         formatter.addBM25(normType = NormType.ZSCORE)
-        val hLinker = HyperlinkIndexer("entity_mentions.db")
+        val hLinker = HyperlinkIndexer(hyperlinkPath)
         formatter.addFeature({ query, tops, indexSearcher ->
             featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
     }
 
     private fun trainAbstractSim() {
-        val abstractSearcher = getIndexSearcher("abstract")
+        val abstractSearcher = getIndexSearcher(abstractPath)
         val abstractAnalyzer = KotlinAbstractAnalyzer(abstractSearcher)
 //        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE)
         formatter.addBM25(normType = NormType.ZSCORE)
