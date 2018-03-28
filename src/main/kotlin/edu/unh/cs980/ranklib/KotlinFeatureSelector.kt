@@ -94,7 +94,7 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
                 val result = tryAddingFeature(curBestFeatures, feature)
                 val improvement = result - baseline
                 if (improvement > 0 && result > bestBaseline ) {
-                    bestBaseline = improvement
+                    bestBaseline = result
                     bestFeature = feature
                 }
             }
@@ -121,28 +121,32 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
     private fun tryAddingFeature(curBestFeature: ArrayList<Int>, featureToAdd: Int): Double {
         val flist = curBestFeature.toList() + listOf(featureToAdd)
         writeFeatures(flist)
-        runRankLib(useFeatures = true)
+        runRankLib(useFeatures = true, useKcv = false)
         return getAveragePerformance()
     }
 
-    private fun runRankLib(useFeatures: Boolean = false) {
+    private fun runRankLib(useFeatures: Boolean = false, useKcv: Boolean = true) {
         createModelDirectory()
 
         val commands = arrayListOf(
                 "java", "-jar", rankLibLoc,
                 "-train", featuresLoc,
-//                "-feature", "features.txt",
                 "-ranker", "4",
                 "-metric2t", "map",
-                "-kcv", "5",
 //                "-i", "50",
 //                "-r", "10",
-                "-tvs", "0.3",
-                "-kcvmd", "models/"
+                "-tvs", "0.3"
                 )
 
         if (useFeatures) {
             commands.addAll(listOf("-feature", "features.txt"))
+        }
+
+        if (useKcv) {
+            commands.addAll(listOf("-kcv", "5"))
+            commands.addAll(listOf("-kcvmd", "models/"))
+        } else {
+            commands.addAll(listOf("-save", "model.txt"))
         }
 
         val log = File("log_rank.log")
