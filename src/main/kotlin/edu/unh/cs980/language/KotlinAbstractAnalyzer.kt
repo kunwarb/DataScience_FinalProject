@@ -5,6 +5,7 @@ import edu.unh.cs.treccar_v2.read_data.DeserializeData
 import edu.unh.cs980.getIndexSearcher
 import edu.unh.cs980.misc.AnalyzerFunctions
 import info.debatty.java.stringsimilarity.Jaccard
+import info.debatty.java.stringsimilarity.NormalizedLevenshtein
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.document.Document
@@ -27,7 +28,7 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
     constructor(indexLoc: String) : this(getIndexSearcher(indexLoc))
 
     val gramAnalyzer = KotlinGramAnalyzer(indexSearcher)
-    val sim = Jaccard()
+    val sim = NormalizedLevenshtein()
     private val memoizedAbstractDocs = ConcurrentHashMap<String, Document?>()
     private val memoizedAbstractStats = ConcurrentHashMap<String, LanguageStatContainer?>()
 
