@@ -190,7 +190,8 @@ fun featEntitySDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                   gramType: GramStatType? = null): List<Double> {
     val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
     val cleanQuery = tokens.toList().joinToString(" ")
-    val weights = listOf(0.6830338975799, -0.31628449221678, 0.00006816)
+//    val weights = listOf(0.6830338975799, -0.31628449221678, 0.00006816)
+    val weights = listOf(1.0, 1.0, 1.0)
 
     val queryCorpus = abstractAnalyzer.gramAnalyzer.getCorpusStatContainer(cleanQuery)
     return tops.scoreDocs.map { scoreDoc ->
@@ -227,13 +228,13 @@ fun featEntitySDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 
 fun featAbstractSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                    abstractAnalyzer: KotlinAbstractAnalyzer,
-                   gramType: GramStatType? = null): List<Double> {
+                   alpha: Double, gramType: GramStatType? = null): List<Double> {
     val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
     val cleanQuery = tokens.toList().joinToString(" ")
     val weights = listOf(0.0486185, 0.9318018089, 0.01957)
 
 //    val queryCorpus = abstractAnalyzer.gramAnalyzer.getCorpusStatContainer(cleanQuery)
-    val relevantEntities = abstractAnalyzer.getRelevantEntities(cleanQuery)
+    val relevantEntities = abstractAnalyzer.getRelevantEntities(cleanQuery, alpha)
 
     return tops.scoreDocs.map { scoreDoc ->
         val doc = indexSearcher.doc(scoreDoc.doc)

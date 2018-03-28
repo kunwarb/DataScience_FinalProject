@@ -99,7 +99,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         val abstractIndexer = getIndexSearcher(abstractPath)
         val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
         formatter.addFeature({ query, tops, indexSearcher ->
-            featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer)
+            featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, 1.0)
         }, normType = NormType.ZSCORE, weight = 0.1344646)
     }
 
@@ -219,6 +219,18 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 
     }
 
+    private fun trainAbstractSDMAlpha() {
+        formatter.addBM25(normType = NormType.ZSCORE)
+        val abstractSearcher = getIndexSearcher(abstractPath)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractSearcher)
+        listOf(2, 8, 16, 32, 64, 128).forEach { alpha ->
+            formatter.addFeature({ query, tops, indexSearcher ->
+                featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, alpha.toDouble())
+            }, normType = NormType.ZSCORE)
+        }
+
+    }
+
     private fun trainSDMComponents() {
         val gramIndexSearcher = getIndexSearcher(gramPath)
         val hGram = KotlinGramAnalyzer(gramIndexSearcher)
@@ -246,7 +258,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         val abstractIndexer = getIndexSearcher(abstractPath)
         val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
         formatter.addFeature({ query, tops, indexSearcher ->
-            featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer)
+            featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, 1.0)
         }, normType = NormType.ZSCORE)
     }
 
@@ -256,7 +268,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
         grams.forEach { gram ->
             formatter.addFeature({ query, tops, indexSearcher ->
-                featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, gramType = gram)
+                featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, gramType = gram, alpha = 1.0)
             }, normType = NormType.NONE)
         }
     }
@@ -343,6 +355,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "abstract_sdm_components" -> trainAbstractSDMComponents()
             "average_abstract" -> trainAverageAbstractScore()
             "train_alpha" -> trainDirichletAlpha()
+            "abstract_alpha" -> trainAbstractSDMAlpha()
             "section_path" -> trainSectionPath()
             "train_sdm_components" -> trainSDMComponents()
             "string_similarity_components" -> trainSimilarityComponents()

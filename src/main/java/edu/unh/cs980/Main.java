@@ -10,6 +10,7 @@ import edu.unh.cs980.language.KotlinAbstractAnalyzer;
 import edu.unh.cs980.language.KotlinAbstractExtractor;
 import edu.unh.cs980.language.KotlinGram;
 import edu.unh.cs980.language.KotlinGramAnalyzer;
+import edu.unh.cs980.ranklib.KotlinFeatureSelector;
 import edu.unh.cs980.ranklib.KotlinRankLibTrainer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.search.IndexSearcher;
@@ -158,7 +159,8 @@ public class Main {
 				.help("The type of method to use when training (see readme).")
 				.choices("combined", "abstract_sdm", "train_alpha", "train_sdm_components",
 						"train_entity_sdm_components", "section_path", "string_similarity_components",
-						"similarity_section", "average_abstract", "abstract_sdm_components", "hyperlink");
+						"similarity_section", "average_abstract", "abstract_sdm_components", "hyperlink",
+						"abstract_alpha");
 		ranklibTrainerParser.addArgument("index").help("Location of the Lucene index directory");
 		ranklibTrainerParser.addArgument("query").help("Location of query file (.cbor)");
 		ranklibTrainerParser.addArgument("qrel").help("Locations of matching qrel file.");
@@ -176,7 +178,7 @@ public class Main {
 				.help("Location of Lucene index for -grams used in SDM (default: gram/");
 
 		// Gram
-		Subparser gramParser = subparsers.addParser("gram")
+		Subparser gramParser = subparsers.addParser("gram_indexer")
 				.setDefault("func", new Exec(Main::runGram))
 				.help("");
 
@@ -187,28 +189,45 @@ public class Main {
 				.setDefault("gram")
 				.help("");
 
-        // Abstract
-        Subparser abstractParser = subparsers.addParser("abstract")
+        // Abstract Indexer
+        Subparser abstractParser = subparsers.addParser("abstract_indexer")
                 .setDefault("func", new Exec(Main::runAbstract))
                 .help("");
         abstractParser.addArgument("corpus")
                 .help("Location of paragraph corpus to index.");
 
-        // Abstract Analyzer
-		Subparser abstractAnalyzerParser = subparsers.addParser("abstract_analyzer")
-				.setDefault("func", new Exec(Main::runAbstractAnalyzer))
+		// FeatureSelection
+		Subparser featureParser = subparsers.addParser("feature_selection")
+				.setDefault("func", new Exec(Main::runGram))
 				.help("");
-		abstractAnalyzerParser.addArgument("index")
-				.help("Location of abstract index.");
 
-		// Gram Analyzer
-		Subparser gramAnalyzerParser = subparsers.addParser("gram_analyzer")
-				.setDefault("func", new Exec(Main::runGramAnalyzer))
-				.help("");
-		gramAnalyzerParser.addArgument("index")
-				.help("Location of abstract index.");
+		featureParser.addArgument("ranklib_jar")
+				.help("Location of RankLib jar file.");
 
-		// Gram Analyzer
+		featureParser.addArgument("method")
+				.choices("select_alpha", "subset_select")
+				.help("Method for feature selection / training");
+
+		featureParser.addArgument("--features")
+				.setDefault("ranklib_features.txt")
+				.help("Location of ranklib features file (default: ranklib_features.txt");
+
+
+//        // Abstract Analyzer
+//		Subparser abstractAnalyzerParser = subparsers.addParser("abstract_analyzer")
+//				.setDefault("func", new Exec(Main::runAbstractAnalyzer))
+//				.help("");
+//		abstractAnalyzerParser.addArgument("index")
+//				.help("Location of abstract index.");
+//
+//		// Gram Analyzer
+//		Subparser gramAnalyzerParser = subparsers.addParser("gram_analyzer")
+//				.setDefault("func", new Exec(Main::runGramAnalyzer))
+//				.help("");
+//		gramAnalyzerParser.addArgument("index")
+//				.help("Location of abstract index.");
+
+		// Hyperlink Indexer
 		Subparser hyperlinkIndexerParser = subparsers.addParser("hyperlink_indexer")
 				.setDefault("func", new Exec(Main::runHyperlinkIndexer))
 				.help("");
@@ -256,6 +275,14 @@ public class Main {
 		String corpusFile = params.getString("corpus");
 		KotlinAbstractExtractor extractor = new KotlinAbstractExtractor("abstract");
 		extractor.getAbstracts(corpusFile);
+	}
+
+	private static void runFeatureSelection(Namespace params) {
+		String ranklibLoc = params.getString("ranklib_jar");
+		String method = params.getString("method");
+		String featureLoc = params.getString("features");
+		KotlinFeatureSelector featureSelector = new KotlinFeatureSelector(ranklibLoc, featureLoc);
+		featureSelector.runMethod(method);
 	}
 
 	private static void runAbstractAnalyzer(Namespace params) {

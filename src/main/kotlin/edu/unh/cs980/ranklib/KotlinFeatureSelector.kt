@@ -1,10 +1,11 @@
+@file:JvmName("KotFeatureSelector")
 package edu.unh.cs980.ranklib
 
 import edu.unh.cs980.applyIf
 import java.io.File
 
 
-class RankLauncher(val rankLibLoc: String, val featuresLoc: String) {
+class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
 
     private fun runFeatureTraining() {
 
@@ -24,12 +25,12 @@ class RankLauncher(val rankLibLoc: String, val featuresLoc: String) {
             }
 
 
-    fun writeFeatures(featList: List<Int>) =
+    private fun writeFeatures(featList: List<Int>) =
         File("features.txt")
             .writeText(featList.joinToString("\n"))
 
 
-    fun countFeatures(): Int =
+    private fun countFeatures(): Int =
             File(featuresLoc)
                 .bufferedReader()
                 .readLine()
@@ -37,14 +38,14 @@ class RankLauncher(val rankLibLoc: String, val featuresLoc: String) {
                 .size - 2
 
 
-    fun printLogResults() {
+    private fun printLogResults() {
         File("log_rank.log")
             .readLines()
             .filter { it.startsWith("Fold ") || it.startsWith("MAP on") }
             .onEach(::println)
     }
 
-    fun extractLogResults() =
+    private fun extractLogResults() =
         File("log_rank.log")
             .readLines()
             .filter { line -> line.startsWith("MAP on") }
@@ -53,7 +54,7 @@ class RankLauncher(val rankLibLoc: String, val featuresLoc: String) {
             .mapIndexed { index, chunk -> index + 1 to chunk.average() }
 
 
-    fun getBestModel() =
+    private fun getBestModel() =
             extractLogResults()
                 .maxBy { it.second }
                 .let { result ->
@@ -61,29 +62,24 @@ class RankLauncher(val rankLibLoc: String, val featuresLoc: String) {
                     println(weights)
                 }
 
-    fun getAveragePerformance() =
+    private fun getAveragePerformance() =
             extractLogResults()
                 .run { sumByDouble { it.second } / size }
 
 
-    fun tryAblation() {
+    private fun alphaSelection() {
         val nFeatures = countFeatures()
-        println(nFeatures)
         val features = (2 .. nFeatures)
-        val results = ArrayList<Pair<Int, Double>>()
 
         features.forEach { feature ->
             writeFeatures(listOf(1, feature))
             runRankLib(true)
             val result = feature to getAveragePerformance()
-            println(result)
-            results.add(feature to getAveragePerformance())
+            println("Result for $feature : $result")
         }
-
-        println(features)
     }
 
-    fun runRankLib(useFeatures: Boolean = false) {
+    private fun runRankLib(useFeatures: Boolean = false) {
         createModelDirectory()
 
         val commands = arrayListOf(
@@ -114,11 +110,18 @@ class RankLauncher(val rankLibLoc: String, val featuresLoc: String) {
         process.waitFor()
     }
 
+    fun runMethod(method: String) {
+        when (method) {
+            "alpha_selection" -> alphaSelection()
+            else -> println("Unknown method!")
+        }
+    }
+
 }
 
 fun main(args: Array<String>) {
-    val runner = RankLauncher("RankLib-2.1-patched.jar", "ranklib_features.txt")
-    runner.tryAblation()
+    val runner = KotlinFeatureSelector("RankLib-2.1-patched.jar", "ranklib_features.txt")
+    runner.runMethod("alpha_selection")
 //    runner.runRankLib()
 //    runner.printLogResults()
 //    runner.getBestModel()

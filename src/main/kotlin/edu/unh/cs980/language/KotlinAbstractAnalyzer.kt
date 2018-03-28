@@ -54,7 +54,7 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
                 .build()
 
 
-    fun getRelevantEntities(query: String): List<RelevantEntity> {
+    fun getRelevantEntities(query: String, alpha: Double = 1.0): List<RelevantEntity> {
         val cleanedQuery = AnalyzerFunctions
             .createTokenList(query, useFiltering = true)
             .joinToString(" ")
@@ -71,13 +71,7 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
                 val name = doc.get("name")
                 val content = doc.get("text")
                 val stat = gramAnalyzer.getLanguageStatContainer(content)
-//                val tempContainer = LanguageStatContainer(unigramStat = stat.unigramStat.corpusDoc,
-//                                                        bigramStat = stat.bigramStat.corpusDoc,
-//                                                        bigramWindowStat = stat.bigramWindowStat.corpusDoc)
-
-                // Crappy workaround... should have derived these classes instead
-//                val likelihood = tempContainer.getLikelihoodGivenQuery(queryModel)
-                val likelihood = stat.getLikelihoodGivenQuery(queryModel)
+                val likelihood = stat.getLikelihoodGivenQuery(queryModel, alpha = alpha)
                 RelevantEntity(name = name,
                         content = content,
                         statContainer = stat,
