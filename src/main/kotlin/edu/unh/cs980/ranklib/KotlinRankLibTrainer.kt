@@ -155,6 +155,16 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         }, normType = NormType.ZSCORE, weight = 0.217530662)
     }
 
+    private fun queryAbstractSDM() {
+        val weights = listOf(0.86553535, 0.134464695)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
+        val abstractIndexer = getIndexSearcher(abstractPath)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, 2.0)
+        }, normType = NormType.ZSCORE, weight = weights[1])
+    }
+
     // Runs associated query method
     fun runRanklibQuery(method: String, out: String) {
         when (method) {
@@ -163,6 +173,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "sdm_components" -> querySDMComponents()
             "abstract_sim" -> queryAbstractSim()
             "section_path" -> querySectionPath()
+            "abstract_sdm" -> queryAbstractSDM()
             "combined" -> queryCombined()
             else -> println("Unknown method!")
         }
@@ -248,7 +259,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         val abstractIndexer = getIndexSearcher(abstractPath)
         val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
         formatter.addFeature({ query, tops, indexSearcher ->
-            featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, 1.0)
+            featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, 2.0)
         }, normType = NormType.ZSCORE)
     }
 

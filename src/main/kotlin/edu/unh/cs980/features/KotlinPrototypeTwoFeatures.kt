@@ -185,46 +185,6 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 }
 
 
-fun featEntitySDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
-                  abstractAnalyzer: KotlinAbstractAnalyzer,
-                  gramType: GramStatType? = null): List<Double> {
-    val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
-    val cleanQuery = tokens.toList().joinToString(" ")
-//    val weights = listOf(0.6830338975799, -0.31628449221678, 0.00006816)
-    val weights = listOf(1.0, 1.0, 1.0)
-
-    val queryCorpus = abstractAnalyzer.gramAnalyzer.getCorpusStatContainer(cleanQuery)
-    return tops.scoreDocs.map { scoreDoc ->
-        val doc = indexSearcher.doc(scoreDoc.doc)
-        val entities = doc.getValues("spotlight")
-            .groupingBy(::identity)
-            .eachCount()
-            .entries
-            .sortedByDescending { entry -> entry.value }
-            .take(3)
-            .map { entry -> entry.key }
-
-//        entities.mapNotNull { entity -> abstractAnalyzer.retrieveEntityDoc(entity) }
-        entities
-            .mapNotNull(abstractAnalyzer::retrieveEntityStatContainer)
-//            .map { entityDoc -> entityDoc.get("text")  }
-//            .map(abstractAnalyzer.gramAnalyzer::getLanguageStatContainer)
-            .map { stat -> stat.getLikelihoodGivenQuery(queryCorpus, 4.0)}
-            .map { queryLikelihood ->
-                val v1 = queryLikelihood.unigramLikelihood
-                val v2 = queryLikelihood.bigramLikelihood
-                val v3 = queryLikelihood.bigramWindowLikelihood
-//                println("$v1 $v2 $v3")
-                when (gramType) {
-                    GramStatType.TYPE_UNIGRAM -> v1
-                    GramStatType.TYPE_BIGRAM -> v2
-                    GramStatType.TYPE_BIGRAM_WINDOW -> v3
-                    else -> weights[0] * v1 + weights[1] * v2 + weights[2] * v3
-                }}
-            .let { result -> if  (result.isEmpty()) 0.0 else result.average() }
-    }
-}
-
 
 fun featAbstractSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                    abstractAnalyzer: KotlinAbstractAnalyzer,
