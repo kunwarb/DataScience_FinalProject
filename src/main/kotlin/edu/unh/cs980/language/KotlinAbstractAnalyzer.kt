@@ -135,7 +135,7 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
         }
 
         termSeq.forEach { term ->
-            if (term.toLowerCase().startsWith("envir")) {
+            if (term.toLowerCase().startsWith("heavy")) {
                 println(term)
             }
         }
