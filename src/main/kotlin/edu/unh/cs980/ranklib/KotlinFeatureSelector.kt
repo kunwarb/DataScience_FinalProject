@@ -79,14 +79,16 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
     private fun alphaSelection() {
         val nFeatures = countFeatures()
         val features = (2 .. nFeatures)
-
-        features.forEach { feature ->
+        val results = features.map { feature ->
             val featLog = "feature_$feature"
             writeFeatures(listOf(1, feature), featLog)
             runRankLib(featLog, useFeatures = true, useKcv = false)
-            val result = feature to getAveragePerformance(featLog)
-            println("Result for $feature : $result")
+            val result = getAveragePerformance(featLog)
+            feature to result
         }
+
+        results.sortedBy { result -> result.first }
+            .forEach { (feature, score) -> println("$feature: $score") }
     }
 
     private fun subsetSelection() {
@@ -147,8 +149,8 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
                 "-train", featuresLoc,
                 "-ranker", "4",
                 "-metric2t", "map",
-                "-i", "50",
-                "-r", "10",
+//                "-i", "50",
+//                "-r", "10",
                 "-tvs", "0.3"
                 )
 
