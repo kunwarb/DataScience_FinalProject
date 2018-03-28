@@ -225,7 +225,7 @@ fun featEntitySDM2(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                    gramType: GramStatType? = null): List<Double> {
     val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
     val cleanQuery = tokens.toList().joinToString(" ")
-    val weights = listOf(-0.0570148831, -0.9365, 0.00646)
+    val weights = listOf(0.0486185, 0.9318018089, 0.01957)
 
 //    val queryCorpus = abstractAnalyzer.gramAnalyzer.getCorpusStatContainer(cleanQuery)
     val relevantEntities = abstractAnalyzer.getRelevantEntities(cleanQuery)
