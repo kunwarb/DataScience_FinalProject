@@ -87,7 +87,7 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
         var baseline = tryAddingFeature(arrayListOf(), 1)
         println("Baseline: $baseline")
 
-        for (i in 0 until 3) {
+        for (i in 0 until nFeatures - 1) {
             var bestBaseline = 0.0
             var bestFeature = 0
 
@@ -100,7 +100,7 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
                 }
             }
 
-            if (bestFeature != 0) {
+            if (bestFeature != 0 || bestBaseline - baseline < 0.01) {
                 println("Adding feature $bestFeature to $curBestFeatures")
                 println("Previous / New Baseline: $baseline / $bestBaseline")
                 baseline = bestBaseline
