@@ -75,6 +75,15 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         formatter.addFeature({ query, tops, indexSearcher ->
             featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
     }
+    private fun queryAverageAbstractScore() {
+        val weights = listOf(1.0, 1.0)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
+        val abstractIndexer = getIndexSearcher(abstractPath)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAverageAbstractScoreByQueryRelevance(query, tops, indexSearcher, abstractAnalyzer)
+        }, normType = NormType.ZSCORE, weight = weights[1])
+    }
 
     private fun queryHyperlinkLikelihood() {
         val weights = listOf(0.8821131679, -0.11788632077)
@@ -154,7 +163,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     // Runs associated query method
     fun runRanklibQuery(method: String, out: String) {
         when (method) {
-            "abstract_score" -> queryAbstract()
+            "average_abstract" -> queryAverageAbstractScore()
             "hyperlink" -> queryHyperlinkLikelihood()
             "sdm_components" -> querySDMComponents()
             "abstract_sim" -> queryAbstractSim()
@@ -303,17 +312,23 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 //        val weights = listOf(0.13506566, -0.49940691, 0.21757824, 0.14794917259)
     }
 
-    private fun trainAbstractScore() {
-//        formatter.addBM25(normType = NormType.ZSCORE)
-        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE)
-        val gramIndexSearcher = getIndexSearcher(gramPath)
-//        val hLinker = HyperlinkIndexer("entity_mentions.db")
-        val hGram = KotlinGramAnalyzer(gramIndexSearcher)
+    private fun trainAverageAbstractScore() {
+        formatter.addBM25(normType = NormType.ZSCORE)
+        val abstractIndexer = getIndexSearcher(abstractPath)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
         formatter.addFeature({ query, tops, indexSearcher ->
-            featSDM(query, tops, indexSearcher, hGram, 4.0)
+            featAverageAbstractScoreByQueryRelevance(query, tops, indexSearcher, abstractAnalyzer)
         }, normType = NormType.ZSCORE)
 
-        formatter.addFeature(::featStringSimilarityComponent, normType = NormType.ZSCORE)
+//        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE)
+//        val gramIndexSearcher = getIndexSearcher(gramPath)
+//        val hLinker = HyperlinkIndexer("entity_mentions.db")
+//        val hGram = KotlinGramAnalyzer(gramIndexSearcher)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featSDM(query, tops, indexSearcher, hGram, 4.0)
+//        }, normType = NormType.ZSCORE)
+
+//        formatter.addFeature(::featStringSimilarityComponent, normType = NormType.ZSCORE)
     }
 
     private fun trainHyperlinkLikelihood() {
@@ -323,18 +338,6 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
     }
 
-    private fun trainAbstractSim() {
-        val abstractSearcher = getIndexSearcher(abstractPath)
-        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractSearcher)
-//        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE)
-        formatter.addBM25(normType = NormType.ZSCORE)
-//        formatter.addFeature({ query, tops, indexSearcher ->
-//            featAbstractSim(query, tops, indexSearcher, abstractSearcher, BM25Similarity())
-//        }, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            featEntitySim3(query, tops, indexSearcher, abstractAnalyzer)
-        }, normType = NormType.ZSCORE)
-    }
 
     /**
      * Function: train
@@ -343,11 +346,10 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
      */
     fun train(method: String, out: String) {
         when (method) {
-            "abstract_score" -> trainAbstractScore()
             "hyperlink" -> trainHyperlinkLikelihood()
             "abstract_sdm" -> trainAbstractSDM()
             "abstract_sdm_components" -> trainAbstractSDMComponents()
-            "abstract_sim" -> trainAbstractSim()
+            "average_abstract" -> trainAverageAbstractScore()
             "train_alpha" -> trainDirichletAlpha()
             "section_path" -> trainSectionPath()
             "train_sdm_components" -> trainSDMComponents()

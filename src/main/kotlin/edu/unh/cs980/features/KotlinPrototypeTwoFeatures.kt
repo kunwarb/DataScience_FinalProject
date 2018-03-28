@@ -286,14 +286,13 @@ fun featEntitySDM2(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         }.apply { matches.forEach { (entity, value) -> println("$entity : $value")   }}
     }
 
-fun featEntitySim3(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
+fun featAverageAbstractScoreByQueryRelevance(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                    abstractAnalyzer: KotlinAbstractAnalyzer): List<Double> {
     val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
     val cleanQuery = tokens.toList().joinToString(" ")
 
 //    val queryCorpus = abstractAnalyzer.gramAnalyzer.getCorpusStatContainer(cleanQuery)
     val relevantEntities = abstractAnalyzer.getRelevantEntities(cleanQuery)
-    val matches = HashMap<String, Pair<Int, Double>>()
 
     return tops.scoreDocs.map { scoreDoc ->
         val doc = indexSearcher.doc(scoreDoc.doc)
@@ -302,7 +301,9 @@ fun featEntitySim3(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
             abstractAnalyzer.getMostSimilarRelevantEntity(entity.toLowerCase(), relevantEntities)
         }
 
-        rels.map { (sim, relEntity) -> sim * relEntity.score }.average().defaultWhenNotFinite(0.0)
+        rels.map { (sim, relEntity) -> sim * relEntity.score }
+            .average()
+            .defaultWhenNotFinite(0.0)
     }
 }
 
