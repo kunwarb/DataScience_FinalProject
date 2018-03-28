@@ -2,6 +2,7 @@
 package edu.unh.cs980.ranklib
 
 import edu.unh.cs980.applyIf
+import edu.unh.cs980.pmap
 import java.io.File
 
 
@@ -14,6 +15,12 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
     private fun createModelDirectory() =
             File("models/").applyIf({!exists()}) { mkdir() }
 
+    private fun createLogDirectory() =
+            File("ranklib_logs/").applyIf({!exists()}) { mkdir() }
+
+    private fun createFeatureSubsetsDirectory() =
+            File("ranklib_subsets/").applyIf({!exists()}) { mkdir() }
+
     private fun retrieveWeights(fileLoc: String) =
         File(fileLoc)
             .readLines()
@@ -25,8 +32,8 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
             }
 
 
-    private fun writeFeatures(featList: List<Int>) =
-        File("features.txt")
+    private fun writeFeatures(featList: List<Int>, logLoc: String) =
+        File("ranklib_subsets/${logLoc}.txt")
             .writeText(featList.joinToString("\n"))
 
 
@@ -45,8 +52,8 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
             .onEach(::println)
     }
 
-    private fun extractLogResults() =
-        File("log_rank.log")
+    private fun extractLogResults(logLoc: String) =
+        File("ranklib_logs/${logLoc}.log")
             .readLines()
             .filter { line -> line.startsWith("MAP on") }
             .map { line -> line.split(":")[1].toDouble() }
@@ -54,16 +61,16 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
             .mapIndexed { index, chunk -> index + 1 to chunk.average() }
 
 
-    private fun getBestModel() =
-            extractLogResults()
+    private fun getBestModel(logLoc: String) =
+            extractLogResults(logLoc)
                 .maxBy { it.second }
                 .let { result ->
                     val weights = retrieveWeights("models/f${result!!.first}.default")
                     println(weights)
                 }
 
-    private fun getAveragePerformance() =
-            extractLogResults()
+    private fun getAveragePerformance(logLoc: String) =
+            extractLogResults(logLoc)
                 .run { sumByDouble { it.second } / size }
 
 
@@ -72,9 +79,10 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
         val features = (2 .. nFeatures)
 
         features.forEach { feature ->
-            writeFeatures(listOf(1, feature))
-            runRankLib(true)
-            val result = feature to getAveragePerformance()
+            val featLog = "feature_$feature"
+            writeFeatures(listOf(1, feature), featLog)
+            runRankLib(featLog, useFeatures = true, useKcv = false)
+            val result = feature to getAveragePerformance(featLog)
             println("Result for $feature : $result")
         }
     }
@@ -84,21 +92,26 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
         var features = (2 .. nFeatures).toList()
         val curBestFeatures = arrayListOf(1)
 
-        var baseline = tryAddingFeature(arrayListOf(), 1)
+        var baseline = tryAddingFeature(arrayListOf(), 1, "feat")
         println("Baseline: $baseline")
 
         for (i in 0 until nFeatures - 1) {
             var bestBaseline = 0.0
             var bestFeature = 0
 
-            features.forEach { feature ->
-                val result = tryAddingFeature(curBestFeatures, feature)
+            val results = features.pmap { feature ->
+                val featLog = "feature_$feature"
+                feature to tryAddingFeature(curBestFeatures, feature, featLog)
+            }
+
+            results.forEach { (feature, result) ->
                 val improvement = result - baseline
                 if (improvement > 0 && result > bestBaseline ) {
                     bestBaseline = result
                     bestFeature = feature
                 }
             }
+
 
             if (bestFeature != 0 || bestBaseline - baseline < 0.01) {
                 println("Adding feature $bestFeature to $curBestFeatures")
@@ -113,21 +126,23 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
         }
 
         println("Training final model")
-        writeFeatures(curBestFeatures)
-        runRankLib(useFeatures = true)
+        writeFeatures(curBestFeatures, "final")
+        runRankLib("final", useFeatures = true)
         println("Best Model:")
-        getBestModel()
+        getBestModel("final")
     }
 
-    private fun tryAddingFeature(curBestFeature: ArrayList<Int>, featureToAdd: Int): Double {
+    private fun tryAddingFeature(curBestFeature: ArrayList<Int>, featureToAdd: Int, logLoc: String): Double {
         val flist = curBestFeature.toList() + listOf(featureToAdd)
-        writeFeatures(flist)
-        runRankLib(useFeatures = true, useKcv = false)
-        return getAveragePerformance()
+        writeFeatures(flist, logLoc)
+        runRankLib(logLoc, useFeatures = true, useKcv = false)
+        return getAveragePerformance(logLoc)
     }
 
-    private fun runRankLib(useFeatures: Boolean = false, useKcv: Boolean = true) {
+    private fun runRankLib(logLoc: String, useFeatures: Boolean = false, useKcv: Boolean = true) {
         createModelDirectory()
+        createLogDirectory()
+        createFeatureSubsetsDirectory()
 
         val commands = arrayListOf(
                 "java", "-jar", rankLibLoc,
@@ -140,7 +155,7 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
                 )
 
         if (useFeatures) {
-            commands.addAll(listOf("-feature", "features.txt"))
+            commands.addAll(listOf("-feature", "ranklib_subsets/${logLoc}.txt"))
         }
 
         if (useKcv) {
@@ -150,7 +165,7 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
             commands.addAll(listOf("-save", "model.txt"))
         }
 
-        val log = File("log_rank.log")
+        val log = File("ranklib_logs/${logLoc}.loc")
 
 
         val processBuilder = ProcessBuilder(commands)
