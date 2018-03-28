@@ -87,7 +87,7 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
     }
 
     fun getMostSimilarRelevantEntity(entity: String, rels: List<RelevantEntity>): Pair<Double, RelevantEntity>? =
-        rels.map { relevantEntity -> sim.distance(entity, relevantEntity.name) to relevantEntity  }
+        rels.map { relevantEntity -> 1.0 - sim.distance(entity, relevantEntity.name) to relevantEntity  }
             .maxBy { (similarity, _) -> similarity }
             ?.let { (similarity, relevantEntity) ->
                 if (similarity < 0.7) null
