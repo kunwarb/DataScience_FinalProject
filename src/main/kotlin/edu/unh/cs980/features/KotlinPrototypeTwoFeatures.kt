@@ -23,6 +23,9 @@ import org.apache.lucene.search.similarities.Similarity
 import java.io.StringReader
 import java.lang.Double.max
 import kotlin.coroutines.experimental.buildSequence
+import kotlin.math.ln
+import kotlin.math.log
+import kotlin.math.log10
 import kotlin.math.max
 
 //private val analyzer = StandardAnalyzer()
@@ -99,10 +102,12 @@ fun featLikehoodOfQueryGivenEntityMention(query: String, tops: TopDocs, indexSea
         queryTokens
             .map    { queryToken ->
                          entities
-                            .map { entity -> hIndexer.getMentionLikelihood(queryToken, entity) }
+                            .map { entity ->
+                                val like = hIndexer.getMentionLikelihood(queryToken.toLowerCase(), entity.toLowerCase())
+                                ln(like).defaultWhenNotFinite(0.0)
+                            }
                             .sum()
-                    }.sum()
-//            .fold(1.0, {acc, likelihood -> acc * max(likelihood, 0.001)})
+                    }.average().defaultWhenNotFinite(0.0)
     }.toList()
 }
 

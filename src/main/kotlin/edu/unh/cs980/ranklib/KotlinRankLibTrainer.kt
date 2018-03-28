@@ -75,6 +75,15 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
     }
 
+    private fun queryHyperlinkLikelihood() {
+        val weights = listOf(1.0, 1.0)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
+        val hLinker = HyperlinkIndexer("entity_mentions.db")
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)},
+                normType = NormType.ZSCORE, weight = weights[1])
+    }
+
     private fun queryAbstractSim() {
         val abstractSearcher = getIndexSearcher("abstract")
         formatter.addBM25(weight = 0.86553535, normType = NormType.ZSCORE)
@@ -145,6 +154,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     fun runRanklibQuery(method: String, out: String) {
         when (method) {
             "abstract_score" -> queryAbstract()
+            "hyperlink" -> queryHyperlinkLikelihood()
             "sdm_components" -> querySDMComponents()
             "abstract_sim" -> queryAbstractSim()
             "section_path" -> querySectionPath()
@@ -305,6 +315,13 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         formatter.addFeature(::featStringSimilarityComponent, normType = NormType.ZSCORE)
     }
 
+    private fun trainHyperlinkLikelihood() {
+        formatter.addBM25(normType = NormType.ZSCORE)
+        val hLinker = HyperlinkIndexer("entity_mentions.db")
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
+    }
+
     private fun trainAbstractSim() {
         val abstractSearcher = getIndexSearcher("abstract")
         val abstractAnalyzer = KotlinAbstractAnalyzer(abstractSearcher)
@@ -326,6 +343,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     fun train(method: String, out: String) {
         when (method) {
             "abstract_score" -> trainAbstractScore()
+            "hyperlink" -> trainHyperlinkLikelihood()
             "abstract_sdm" -> trainAbstractSDM()
             "abstract_sdm_components" -> trainAbstractSDMComponents()
             "abstract_sim" -> trainAbstractSim()
