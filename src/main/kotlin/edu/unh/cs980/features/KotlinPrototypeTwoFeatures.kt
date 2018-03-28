@@ -295,7 +295,7 @@ fun featEntitySim3(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         val entities = doc.getValues("spotlight")
         val rels = entities.mapNotNull { entity ->
             val result = abstractAnalyzer.getMostSimilarRelevantEntity(entity, relevantEntities)
-            result?.let { println("$entity : $result") }
+            result?.let { println("$entity : ${result.second.name}") }
             result
         }
         rels.size.toDouble() / (max(entities.size, 1))
