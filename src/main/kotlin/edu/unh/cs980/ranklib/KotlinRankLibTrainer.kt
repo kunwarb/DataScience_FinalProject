@@ -76,7 +76,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     }
 
     private fun queryHyperlinkLikelihood() {
-        val weights = listOf(1.0, 1.0)
+        val weights = listOf(0.8821131679, -0.11788632077)
         formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
         val hLinker = HyperlinkIndexer("entity_mentions.db")
         formatter.addFeature({ query, tops, indexSearcher ->
