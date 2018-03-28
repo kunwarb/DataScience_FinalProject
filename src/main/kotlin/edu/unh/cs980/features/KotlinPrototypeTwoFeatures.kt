@@ -225,7 +225,7 @@ fun featEntitySDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 }
 
 
-fun featEntitySDM2(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
+fun featAbstractSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                    abstractAnalyzer: KotlinAbstractAnalyzer,
                    gramType: GramStatType? = null): List<Double> {
     val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
@@ -259,32 +259,6 @@ fun featEntitySDM2(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
     }
 }
 
-    fun featEntitySim2(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
-                       abstractAnalyzer: KotlinAbstractAnalyzer): List<Double> {
-        val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
-        val cleanQuery = tokens.toList().joinToString(" ")
-
-//    val queryCorpus = abstractAnalyzer.gramAnalyzer.getCorpusStatContainer(cleanQuery)
-        val relevantEntities = abstractAnalyzer.getRelevantEntities(cleanQuery)
-        val matches = HashMap<String, Pair<Int, Double>>()
-
-        return tops.scoreDocs.map { scoreDoc ->
-            val doc = indexSearcher.doc(scoreDoc.doc)
-            val entities = doc.getValues("spotlight")
-            val rels = entities.mapNotNull { entity ->
-                abstractAnalyzer.getMostSimilarRelevantEntity(entity, relevantEntities)
-            }
-
-            rels.forEach { (sim, entity) ->
-                matches.merge(entity.name, 1 to sim) { old, new ->
-                    old.first + new.first to old.second
-                }
-            }
-
-            rels.map { (similarity, relEntity) -> similarity * relEntity.rank }
-                .average().defaultWhenNotFinite(0.0)
-        }.apply { matches.forEach { (entity, value) -> println("$entity : $value")   }}
-    }
 
 fun featAverageAbstractScoreByQueryRelevance(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                    abstractAnalyzer: KotlinAbstractAnalyzer): List<Double> {
