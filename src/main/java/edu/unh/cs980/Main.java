@@ -198,7 +198,7 @@ public class Main {
 
 		// FeatureSelection
 		Subparser featureParser = subparsers.addParser("feature_selection")
-				.setDefault("func", new Exec(Main::runGram))
+				.setDefault("func", new Exec(Main::runFeatureSelection))
 				.help("");
 
 		featureParser.addArgument("ranklib_jar")
