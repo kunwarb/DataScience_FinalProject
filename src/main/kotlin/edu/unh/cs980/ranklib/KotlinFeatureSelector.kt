@@ -7,10 +7,12 @@ import java.io.File
 
 
 class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
-
-    private fun runFeatureTraining() {
-
+    init {
+        createFeatureSubsetsDirectory()
+        createLogDirectory()
+        createModelDirectory()
     }
+
 
     private fun createModelDirectory() =
             File("models/").applyIf({!exists()}) { mkdir() }
@@ -92,7 +94,7 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
         var features = (2 .. nFeatures).toList()
         val curBestFeatures = arrayListOf(1)
 
-        var baseline = tryAddingFeature(arrayListOf(), 1, "feat")
+        var baseline = tryAddingFeature(arrayListOf(), 1, "initial")
         println("Baseline: $baseline")
 
         for (i in 0 until nFeatures - 1) {
@@ -140,10 +142,6 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
     }
 
     private fun runRankLib(logLoc: String, useFeatures: Boolean = false, useKcv: Boolean = true) {
-        createModelDirectory()
-        createLogDirectory()
-        createFeatureSubsetsDirectory()
-
         val commands = arrayListOf(
                 "java", "-jar", rankLibLoc,
                 "-train", featuresLoc,
