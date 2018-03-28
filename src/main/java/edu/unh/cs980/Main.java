@@ -165,9 +165,15 @@ public class Main {
 		ranklibTrainerParser.addArgument("--out")
 				.setDefault("ranklib_features.txt")
 				.help("Output name for the RankLib compatible feature file.");
-		ranklibTrainerParser.addArgument("--graph_database")
-				.setDefault("")
-				.help("(only used for mixtures method): Location of graph_database.db file.");
+		ranklibTrainerParser.addArgument("--hyperlink_database")
+				.setDefault("entity_mentions.db")
+				.help("Location to MapDB indexed by Hyperlink Indexer (default: entity_mentions.db)");
+		ranklibTrainerParser.addArgument("--abstract_index")
+				.setDefault("abstract")
+				.help("Location of Lucene index for entity abstracts (default: abstract/)");
+		ranklibTrainerParser.addArgument("--gram_index")
+				.setDefault("gram")
+				.help("Location of Lucene index for -grams used in SDM (default: gram/");
 
 		// Gram
 		Subparser gramParser = subparsers.addParser("gram")
