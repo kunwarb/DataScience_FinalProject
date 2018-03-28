@@ -294,11 +294,10 @@ fun featEntitySim3(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         val doc = indexSearcher.doc(scoreDoc.doc)
         val entities = doc.getValues("spotlight")
         val rels = entities.mapNotNull { entity ->
-            val result = abstractAnalyzer.getMostSimilarRelevantEntity(entity.toLowerCase(), relevantEntities)
-//            result?.let { println("$entity : ${result.second.name}") }
-            result
+            abstractAnalyzer.getMostSimilarRelevantEntity(entity.toLowerCase(), relevantEntities)
         }
-        rels.size.toDouble() / (max(entities.size, 1))
+
+        rels.map { (sim, relEntity) -> sim * relEntity.rank }.average().defaultWhenNotFinite(0.0)
     }
 }
 
