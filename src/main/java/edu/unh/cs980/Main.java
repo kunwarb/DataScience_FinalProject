@@ -368,25 +368,24 @@ public class Main {
 	// Runs Jordan's Ranklib Query
 	private static void runRanklibQuery(Namespace namespace) {
 		String indexLocation = namespace.getString("index");
-		String qrelLocation = namespace.getString("qrel");
 		String queryLocation = namespace.getString("query");
 		String hyperLoc = namespace.getString("hyperlink_database");
 		String gramLoc = namespace.getString("gram_index");
 		String abstractLoc = namespace.getString("abstract_index");
 		String out = namespace.getString("out");
 		String method = namespace.getString("method");
-		System.out.println(indexLocation);
-		System.out.println(qrelLocation);
-		System.out.println(queryLocation);
-		System.out.println(hyperLoc);
-		System.out.println(gramLoc);
-		System.out.println(abstractLoc);
-		System.out.println(out);
-		System.out.println(method);
+//		System.out.println(indexLocation);
+//		System.out.println(qrelLocation);
+//		System.out.println(queryLocation);
+//		System.out.println(hyperLoc);
+//		System.out.println(gramLoc);
+//		System.out.println(abstractLoc);
+//		System.out.println(out);
+//		System.out.println(method);
 
 
 		KotlinRankLibTrainer kotTrainer =
-				new KotlinRankLibTrainer(indexLocation, queryLocation, qrelLocation, hyperLoc, abstractLoc, gramLoc);
+				new KotlinRankLibTrainer(indexLocation, queryLocation, "", hyperLoc, abstractLoc, gramLoc);
 		kotTrainer.train(method, out);
 		kotTrainer.runRanklibQuery(method, out);
 	}
