@@ -159,6 +159,7 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
     fun runMethod(method: String) {
         when (method) {
             "alpha_selection" -> alphaSelection()
+            "subset_selection" -> subsetSelection()
             else -> println("Unknown method!")
         }
     }
