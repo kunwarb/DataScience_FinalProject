@@ -7,6 +7,7 @@ import info.debatty.java.stringsimilarity.Jaccard
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.document.Document
+import org.apache.lucene.index.MultiFields
 import org.apache.lucene.index.Term
 import org.apache.lucene.search.BooleanClause
 import org.apache.lucene.search.BooleanQuery
@@ -47,7 +48,7 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
 
     fun buildEntityNameQuery(entity: String): BooleanQuery =
             BooleanQuery.Builder()
-                .apply { add(FuzzyQuery(Term("name", entity), 8, 4), BooleanClause.Occur.SHOULD) }
+                .apply { add(FuzzyQuery(Term("name", entity), 2, 4), BooleanClause.Occur.SHOULD) }
                 .build()
 
 
@@ -122,18 +123,35 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
 
 
     fun runTest() {
-        val words = listOf("heavy_water", "urbanization", "oxygen", "environmental_justice_foundation")
-        words.forEach { word ->
-            val query = buildEntityNameQuery(word)
-            val tops = indexSearcher.search(query, 10)
-            println("For $word")
-            tops.scoreDocs.forEach { scoreDoc ->
-                val doc = indexSearcher.doc(scoreDoc.doc)
-                println(doc.get("name"))
+        val fields = MultiFields.getFields(indexSearcher.indexReader)
+        val nameTerms = fields.terms("name")
+        val termIterator = nameTerms.iterator()
+        // Build a sequence that lets us iterate over terms in chunks and run them in parallel
+        val termSeq = buildSequence<String> {
+            while (true) {
+                val bytesRef = termIterator.next() ?: break
+                yield(bytesRef.utf8ToString())
             }
-            println()
-
         }
+
+        termSeq.forEach { term ->
+            if (term.toLowerCase().startsWith("envir")) {
+                println(term)
+            }
+        }
+
+//        val words = listOf("heavy_water", "urbanization", "oxygen", "environmental_justice_foundation")
+//        words.forEach { word ->
+//            val query = buildEntityNameQuery(word)
+//            val tops = indexSearcher.search(query, 10)
+//            println("For $word")
+//            tops.scoreDocs.forEach { scoreDoc ->
+//                val doc = indexSearcher.doc(scoreDoc.doc)
+//                println(doc.get("name"))
+//            }
+//            println()
+//
+//        }
 
     }
 
