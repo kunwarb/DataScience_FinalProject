@@ -117,7 +117,7 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
             }
 
 
-            if (bestFeature != 0 && (bestBaseline - baseline) > 0.01) {
+            if (bestFeature != 0 && (bestBaseline - baseline) > 0.005) {
                 println("Adding feature $bestFeature to $curBestFeatures")
                 println("Previous / New Baseline: $baseline / $bestBaseline")
                 baseline = bestBaseline
