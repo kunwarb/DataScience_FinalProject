@@ -266,6 +266,8 @@ fun featEntitySDM2(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                 abstractAnalyzer.getMostSimilarRelevantEntity(entity, relevantEntities)
             }
 
+            rels.forEach { (sim, entity) -> println("${entity.name} : $sim") }
+
             rels.map { (similarity, relEntity) -> similarity * relEntity.rank }
                 .average().defaultWhenNotFinite(0.0)
         }

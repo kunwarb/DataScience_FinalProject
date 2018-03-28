@@ -78,7 +78,7 @@ fun getIndexSearcher(indexLocation: String): IndexSearcher {
     val indexPath = Paths.get(indexLocation)
     val indexDir = FSDirectory.open(indexPath)
     val indexReader = DirectoryReader.open(indexDir)
-    return IndexSearcher(indexReader).apply { setSimilarity(BM25Similarity()) }
+    return IndexSearcher(indexReader)
 }
 
 fun getIndexWriter(indexLocation: String): IndexWriter {
