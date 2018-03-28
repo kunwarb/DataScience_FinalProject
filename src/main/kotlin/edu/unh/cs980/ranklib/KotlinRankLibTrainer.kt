@@ -103,18 +103,6 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         }, normType = NormType.ZSCORE, weight = 0.1344646)
     }
 
-    private fun querySectionPath() {
-        val weights = listOf(0.200983, 0.099785, 0.223777, 0.4754529531)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            featSectionSplit(query, tops, indexSearcher, 0) }, normType = NormType.NONE, weight = weights[0])
-        formatter.addFeature({ query, tops, indexSearcher ->
-            featSectionSplit(query, tops, indexSearcher, 1) }, normType = NormType.NONE, weight = weights[1])
-        formatter.addFeature({ query, tops, indexSearcher ->
-            featSectionSplit(query, tops, indexSearcher, 2) }, normType = NormType.NONE, weight = weights[2])
-        formatter.addFeature({ query, tops, indexSearcher ->
-            featSectionSplit(query, tops, indexSearcher, 3) }, normType = NormType.NONE, weight = weights[3])
-
-    }
 
     private fun queryAbstract() {
         val weights = listOf(0.49827237108, 0.23021207089, 0.1280351944, 0.143480363604666)
@@ -176,6 +164,12 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         }, normType = NormType.ZSCORE, weight = weights[1])
     }
 
+    private fun querySectionComponent() {
+        val weights = listOf(1.0, 1.0)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
+        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE, weight = weights[1])
+    }
+
     // Runs associated query method
     fun runRanklibQuery(method: String, out: String) {
         when (method) {
@@ -183,7 +177,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "hyperlink" -> queryHyperlinkLikelihood()
             "sdm_components" -> querySDMComponents()
             "abstract_sim" -> queryAbstractSim()
-            "section_path" -> querySectionPath()
+            "section_component" -> querySectionComponent()
             "abstract_sdm" -> queryAbstractSDM()
             "sdm" -> querySDM()
             "combined" -> queryCombined()
@@ -308,6 +302,11 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             featSectionSplit(query, tops, indexSearcher, 3) }, normType = NormType.NONE)
     }
 
+    private fun trainSectionComponent() {
+        formatter.addBM25(normType = NormType.ZSCORE)
+        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE)
+    }
+
     private fun trainSimilarityComponents() {
         formatter.addFeature({ query, tops, indexSearcher ->
             featAddStringDistanceFunction(query, tops, indexSearcher, Jaccard() )
@@ -382,6 +381,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "sdm" -> trainSDM()
             "abstract_alpha" -> trainAbstractSDMAlpha()
             "section_path" -> trainSectionPath()
+            "section_component" -> trainSectionComponent()
             "sdm_components" -> trainSDMComponents()
             "string_similarity_components" -> trainSimilarityComponents()
             "similarity_section" -> trainSimilaritySection()

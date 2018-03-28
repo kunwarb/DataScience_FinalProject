@@ -112,49 +112,6 @@ fun featLikehoodOfQueryGivenEntityMention(query: String, tops: TopDocs, indexSea
 }
 
 
-fun featAbstractSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
-                                          abstractSearcher: IndexSearcher, sim: Similarity): List<Double> {
-
-    val booleanQuery = AnalyzerFunctions.createQuery(query, useFiltering = true)
-    val jac = Jaccard()
-
-    abstractSearcher.setSimilarity(sim)
-    val relevantEntities = abstractSearcher.search(booleanQuery, 300)
-
-//    val entityScores = relevantEntities.scoreDocs.mapIndexed { index, scoreDoc ->
-//        val doc = abstractSearcher.doc(scoreDoc.doc)
-//        val entity = doc.get("name")
-//        entity.toLowerCase().replace(" ", "_") to scoreDoc.score.toDouble()
-//    }.toList()
-
-    val entityScores = relevantEntities.scoreDocs.map { scoreDoc ->
-        val doc = abstractSearcher.doc(scoreDoc.doc)
-        val entity = doc.get("name")
-        entity.toLowerCase().replace(" ", "_") to scoreDoc.score.toDouble()
-    }.toList()
-
-    val entityRanks = entityScores
-        .sortedByDescending { (entity, score) -> score }
-        .mapIndexed{ index, (entity, score) -> entity to (entityScores.size - index) / entityScores.size.toDouble() }
-
-    val retrieveMostSimilarEntity = { candidateEntity: String ->
-        entityRanks
-            .map { (targetEntity, score) -> Triple(targetEntity, score, jac.distance(candidateEntity, targetEntity)) }
-            .maxBy { (targetEntity, score, similarity) -> similarity }
-    }
-
-    return tops.scoreDocs.map { scoreDoc ->
-        val doc = indexSearcher.doc(scoreDoc.doc)
-        val entities = doc.getValues("spotlight").toList()
-        entities
-            .mapNotNull { candidateEntity ->
-                val (_, bestScore, bestSimilarity) = retrieveMostSimilarEntity(candidateEntity) ?:
-                        Triple("", 0.0, 0.0)
-                if (bestSimilarity < 0.9) 0.0 else bestScore}
-            .let { result -> if (result.isEmpty()) 0.0 else result.average()  }
-    }.toList()
-}
-
 
 
 fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
