@@ -79,6 +79,52 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
         }
     }
 
+    private fun subsetSelection() {
+        val nFeatures = countFeatures()
+        var features = (2 .. nFeatures).toList()
+        val curBestFeatures = arrayListOf(1)
+
+        var baseline = tryAddingFeature(arrayListOf(), 1)
+
+        for (i in 0 until 3) {
+            var bestBaseline = 0.0
+            var bestFeature = 0
+
+            features.forEach { feature ->
+                val result = tryAddingFeature(curBestFeatures, feature)
+                val improvement = result - baseline
+                if (improvement > 0 && result > bestBaseline ) {
+                    bestBaseline = improvement
+                    bestFeature = feature
+                }
+            }
+
+            if (bestFeature != 0) {
+                println("Adding feature $bestFeature to $curBestFeatures")
+                println("Previous / New Baseline: $baseline / $bestBaseline")
+                baseline = bestBaseline
+                curBestFeatures += bestFeature
+                features = features.filter { it != bestFeature }.toList()
+            } else {
+                println("Can do no further improvements")
+                break
+            }
+        }
+
+        println("Training final model")
+        writeFeatures(curBestFeatures)
+        runRankLib(useFeatures = true)
+        println("Best Model:")
+        getBestModel()
+    }
+
+    private fun tryAddingFeature(curBestFeature: ArrayList<Int>, featureToAdd: Int): Double {
+        val flist = curBestFeature.toList() + listOf(featureToAdd)
+        writeFeatures(flist)
+        runRankLib(useFeatures = true)
+        return getAveragePerformance()
+    }
+
     private fun runRankLib(useFeatures: Boolean = false) {
         createModelDirectory()
 
