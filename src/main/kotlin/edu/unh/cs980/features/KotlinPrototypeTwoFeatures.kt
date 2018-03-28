@@ -234,7 +234,7 @@ fun featEntitySDM2(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         val doc = indexSearcher.doc(scoreDoc.doc)
         val entities = doc.getValues("spotlight")
         val rels = entities.mapNotNull { entity ->
-            abstractAnalyzer.getMostSimilarRelevantEntity(entity, relevantEntities)
+            abstractAnalyzer.getMostSimilarRelevantEntity(entity.toLowerCase(), relevantEntities)
         }
 
         val results = rels.map { (_, relEntity) ->
@@ -297,7 +297,7 @@ fun featEntitySim3(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
             abstractAnalyzer.getMostSimilarRelevantEntity(entity.toLowerCase(), relevantEntities)
         }
 
-        rels.map { (sim, relEntity) -> sim * relEntity.rank }.average().defaultWhenNotFinite(0.0)
+        rels.map { (sim, relEntity) -> sim * relEntity.score }.average().defaultWhenNotFinite(0.0)
     }
 }
 
