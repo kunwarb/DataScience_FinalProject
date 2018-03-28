@@ -124,29 +124,24 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
 
 
     fun runTest() {
-        val f = File("/trec_data/unprocessedAllButBenchmark/unprocessedAllButBenchmark.cbor").inputStream().buffered(16 * 1024)
-        val iter = DeserializeData.iterableAnnotations(f)
-        iter.forEach { page ->
-            println(page.pageName)
+
+
+        val fields = MultiFields.getFields(indexSearcher.indexReader)
+        val nameTerms = fields.terms("name")
+        val termIterator = nameTerms.iterator()
+        // Build a sequence that lets us iterate over terms in chunks and run them in parallel
+        val termSeq = buildSequence<String> {
+            while (true) {
+                val bytesRef = termIterator.next() ?: break
+                yield(bytesRef.utf8ToString())
+            }
         }
-
-
-//        val fields = MultiFields.getFields(indexSearcher.indexReader)
-//        val nameTerms = fields.terms("name")
-//        val termIterator = nameTerms.iterator()
-//        // Build a sequence that lets us iterate over terms in chunks and run them in parallel
-//        val termSeq = buildSequence<String> {
-//            while (true) {
-//                val bytesRef = termIterator.next() ?: break
-//                yield(bytesRef.utf8ToString())
-//            }
-//        }
 //
-//        termSeq.forEach { term ->
-//            if (term.toLowerCase().startsWith("heavy")) {
-//                println(term)
-//            }
-//        }
+        termSeq.forEach { term ->
+            if (term.toLowerCase().startsWith("heavy")) {
+                println(term)
+            }
+        }
 
 //        val words = listOf("heavy_water", "urbanization", "oxygen", "environmental_justice_foundation")
 //        words.forEach { word ->
