@@ -1,6 +1,7 @@
 package edu.unh.cs980.features
 
 import edu.unh.cs980.CONTENT
+import edu.unh.cs980.PID
 import edu.unh.cs980.context.HyperlinkIndexer
 import edu.unh.cs980.defaultWhenNotFinite
 import edu.unh.cs980.identity
@@ -288,6 +289,11 @@ fun featEntitySim3(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 //    val queryCorpus = abstractAnalyzer.gramAnalyzer.getCorpusStatContainer(cleanQuery)
     val relevantEntities = abstractAnalyzer.getRelevantEntities(cleanQuery)
     val matches = HashMap<String, Pair<Int, Double>>()
+    tops.scoreDocs.map { scoreDoc -> indexSearcher.doc(scoreDoc.doc).get(PID) }
+        .groupingBy(::identity)
+        .eachCount()
+        .filter { it.value == 1 }
+        .forEach { (k,v) -> println("Warning: $k : $v ") }
 
     return tops.scoreDocs.map { scoreDoc ->
         val doc = indexSearcher.doc(scoreDoc.doc)
