@@ -60,11 +60,11 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 
         formatter.addFeature({ query, tops, indexSearcher ->
             featStringSimilarityComponent(query, tops, indexSearcher)
-        }, normType = NormType.ZSCORE)
+        }, normType = NormType.ZSCORE, weight = weights[1])
 
         formatter.addFeature({query, tops, indexSearcher ->
             featUseLucSim(query, tops, indexSearcher, LMDirichletSimilarity())
-        }, normType = NormType.ZSCORE)
+        }, normType = NormType.ZSCORE, weight = weights[2])
 
         formatter.addFeature({ query, tops, indexSearcher ->
             featSDM(query, tops, indexSearcher, hGram, 4.0)
