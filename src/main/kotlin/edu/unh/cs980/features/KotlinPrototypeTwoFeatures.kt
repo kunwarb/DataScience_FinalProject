@@ -292,7 +292,7 @@ fun featEntitySim3(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
     tops.scoreDocs.map { scoreDoc -> indexSearcher.doc(scoreDoc.doc).get(PID) }
         .groupingBy(::identity)
         .eachCount()
-        .filter { it.value == 1 }
+        .filter { it.value > 1 }
         .forEach { (k,v) -> println("Warning: $k : $v ") }
 
     return tops.scoreDocs.map { scoreDoc ->
