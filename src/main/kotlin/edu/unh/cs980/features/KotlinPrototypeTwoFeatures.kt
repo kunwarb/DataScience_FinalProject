@@ -258,6 +258,7 @@ fun featEntitySDM2(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 
 //    val queryCorpus = abstractAnalyzer.gramAnalyzer.getCorpusStatContainer(cleanQuery)
         val relevantEntities = abstractAnalyzer.getRelevantEntities(cleanQuery)
+        val matches = HashMap<String, Pair<Int, Double>>()
 
         return tops.scoreDocs.map { scoreDoc ->
             val doc = indexSearcher.doc(scoreDoc.doc)
@@ -266,10 +267,14 @@ fun featEntitySDM2(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                 abstractAnalyzer.getMostSimilarRelevantEntity(entity, relevantEntities)
             }
 
-            rels.forEach { (sim, entity) -> println("${entity.name} : $sim") }
+            rels.forEach { (sim, entity) ->
+                matches.merge(entity.name, 1 to sim) { old, new ->
+                    old.first + new.first to old.second
+                }
+            }
 
             rels.map { (similarity, relEntity) -> similarity * relEntity.rank }
                 .average().defaultWhenNotFinite(0.0)
-        }
+        }.apply { matches.forEach { (entity, value) -> println("$entity : $value")   }}
     }
 
