@@ -12,6 +12,10 @@ import java.io.*
 import java.util.concurrent.atomic.AtomicInteger
 
 
+/**
+ * Class: HyperlinkIndexer
+ * Desc: Given AllButBenchmark corpus, extracts anchor text and links and builds a mention likelihood model.
+ */
 class HyperlinkIndexer(filename: String) {
     // Database used to store anchor text / candidate entities
     val db = DBMaker
