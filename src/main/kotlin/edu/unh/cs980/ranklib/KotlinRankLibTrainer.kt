@@ -76,7 +76,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
     }
     private fun queryAverageAbstractScore() {
-        val weights = listOf(1.0, 1.0)
+        val weights = listOf(0.8974292632642049, -0.10257073673579509)
         formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
         val abstractIndexer = getIndexSearcher(abstractPath)
         val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
