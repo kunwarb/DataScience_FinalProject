@@ -84,7 +84,7 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
                         queryLikelihood = likelihood)}
     }
 
-    fun getClosestRelevantEntity(entity: String, rels: List<RelevantEntity>): Pair<Double, RelevantEntity>? =
+    fun getMostSimilarRelevantEntity(entity: String, rels: List<RelevantEntity>): Pair<Double, RelevantEntity>? =
         rels.map { relevantEntity -> sim.distance(entity, relevantEntity.name) to relevantEntity  }
             .maxBy { (similarity, _) -> similarity }
             ?.let { (similarity, relevantEntity) ->

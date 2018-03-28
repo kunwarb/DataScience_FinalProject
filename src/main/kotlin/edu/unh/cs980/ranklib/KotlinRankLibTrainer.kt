@@ -224,7 +224,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         val abstractIndexer = getIndexSearcher("abstract")
         val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
         formatter.addFeature({ query, tops, indexSearcher ->
-            featEntitySDM(query, tops, indexSearcher, abstractAnalyzer)
+            featEntitySDM2(query, tops, indexSearcher, abstractAnalyzer)
         }, normType = NormType.ZSCORE)
 
 

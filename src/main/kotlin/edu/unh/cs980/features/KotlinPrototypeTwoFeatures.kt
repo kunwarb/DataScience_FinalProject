@@ -2,6 +2,7 @@ package edu.unh.cs980.features
 
 import edu.unh.cs980.CONTENT
 import edu.unh.cs980.context.HyperlinkIndexer
+import edu.unh.cs980.defaultWhenNotFinite
 import edu.unh.cs980.identity
 import edu.unh.cs980.language.GramStatType
 import edu.unh.cs980.language.KotlinAbstractAnalyzer
@@ -217,40 +218,36 @@ fun featEntitySDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 
 
 fun featEntitySDM2(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
-                  abstractAnalyzer: KotlinAbstractAnalyzer,
-                  gramType: GramStatType? = null): List<Double> {
+                   abstractAnalyzer: KotlinAbstractAnalyzer,
+                   gramType: GramStatType? = null): List<Double> {
     val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
     val cleanQuery = tokens.toList().joinToString(" ")
     val weights = listOf(0.6830338975799, -0.31628449221678, 0.00006816)
 
-    val queryCorpus = abstractAnalyzer.gramAnalyzer.getCorpusStatContainer(cleanQuery)
+//    val queryCorpus = abstractAnalyzer.gramAnalyzer.getCorpusStatContainer(cleanQuery)
+    val relevantEntities = abstractAnalyzer.getRelevantEntities(cleanQuery)
+
     return tops.scoreDocs.map { scoreDoc ->
         val doc = indexSearcher.doc(scoreDoc.doc)
         val entities = doc.getValues("spotlight")
-            .groupingBy(::identity)
-            .eachCount()
-            .entries
-            .sortedByDescending { entry -> entry.value }
-            .take(3)
-            .map { entry -> entry.key }
+        val rels = entities.mapNotNull { entity ->
+            abstractAnalyzer.getMostSimilarRelevantEntity(entity, relevantEntities)
+        }
 
-//        entities.mapNotNull { entity -> abstractAnalyzer.retrieveEntityDoc(entity) }
-        entities
-            .mapNotNull(abstractAnalyzer::retrieveEntityStatContainer)
-//            .map { entityDoc -> entityDoc.get("text")  }
-//            .map(abstractAnalyzer.gramAnalyzer::getLanguageStatContainer)
-            .map { stat -> stat.getLikelihoodGivenQuery(queryCorpus, 4.0)}
-            .map { queryLikelihood ->
-                val v1 = queryLikelihood.unigramLikelihood
-                val v2 = queryLikelihood.bigramLikelihood
-                val v3 = queryLikelihood.bigramWindowLikelihood
-//                println("$v1 $v2 $v3")
-                when (gramType) {
-                    GramStatType.TYPE_UNIGRAM -> v1
-                    GramStatType.TYPE_BIGRAM -> v2
-                    GramStatType.TYPE_BIGRAM_WINDOW -> v3
-                    else -> weights[0] * v1 + weights[1] * v2 + weights[2] * v3
-                }}
-            .let { result -> if  (result.isEmpty()) 0.0 else result.average() }
+        val results = rels.map { (_, relEntity) ->
+            val v1 = relEntity.queryLikelihood.unigramLikelihood
+            val v2 = relEntity.queryLikelihood.bigramLikelihood
+            val v3 = relEntity.queryLikelihood.bigramWindowLikelihood
+
+            when (gramType) {
+                GramStatType.TYPE_UNIGRAM       -> v1
+                GramStatType.TYPE_BIGRAM        -> v2
+                GramStatType.TYPE_BIGRAM_WINDOW -> v3
+                else                            -> weights[0] * v1 + weights[1] * v2 + weights[2] * v3
+            }
+        }
+
+        results.average().defaultWhenNotFinite(0.0)
     }
+
 }
