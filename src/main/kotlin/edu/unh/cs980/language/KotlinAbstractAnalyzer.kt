@@ -68,7 +68,7 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
             .sortedByDescending { pair -> pair.second }
             .mapIndexed { index, (doc, score) ->
                 val name = doc.get("name")
-                val content = doc.get("content")
+                val content = doc.get("text")
                 val stat = gramAnalyzer.getCorpusStatContainer(content)
                 val tempContainer = LanguageStatContainer(unigramStat = stat.unigramStat.corpusDoc,
                                                         bigramStat = stat.bigramStat.corpusDoc,
