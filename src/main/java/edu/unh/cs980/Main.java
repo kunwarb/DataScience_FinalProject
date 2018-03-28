@@ -374,19 +374,10 @@ public class Main {
 		String abstractLoc = namespace.getString("abstract_index");
 		String out = namespace.getString("out");
 		String method = namespace.getString("method");
-//		System.out.println(indexLocation);
-//		System.out.println(qrelLocation);
-//		System.out.println(queryLocation);
-//		System.out.println(hyperLoc);
-//		System.out.println(gramLoc);
-//		System.out.println(abstractLoc);
-//		System.out.println(out);
-//		System.out.println(method);
 
 
 		KotlinRankLibTrainer kotTrainer =
 				new KotlinRankLibTrainer(indexLocation, queryLocation, "", hyperLoc, abstractLoc, gramLoc);
-		kotTrainer.train(method, out);
 		kotTrainer.runRanklibQuery(method, out);
 	}
 
