@@ -365,6 +365,17 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
     }
 
+    private fun trainMercerAlpha() {
+        formatter.addBM25(normType = NormType.ZSCORE)
+//        val hLinker = HyperlinkIndexer(hyperlinkPath)
+        listOf(1.0f, 4.0f, 8.0f, 16.0f, 32.0f, 64.0f, 128.0f)
+            .forEach { alpha ->
+                formatter.addFeature({ query, tops, indexSearcher ->
+                    featUseLucSim(query, tops, indexSearcher, LMJelinekMercerSimilarity(alpha))
+                }, normType = NormType.ZSCORE)
+            }
+    }
+
 
     /**
      * Function: train
@@ -378,6 +389,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "abstract_sdm_components" -> trainAbstractSDMComponents()
             "average_abstract" -> trainAverageAbstractScore()
             "sdm_alpha" -> trainDirichletAlpha()
+            "mercer_alpha" -> trainMercerAlpha()
             "sdm" -> trainSDM()
             "abstract_alpha" -> trainAbstractSDMAlpha()
             "section_path" -> trainSectionPath()

@@ -76,7 +76,7 @@ fun featSectionComponent(query: String, tops: TopDocs, indexSearcher: IndexSearc
 }
 
 fun featStringSimilarityComponent(query: String, tops: TopDocs, indexSearcher: IndexSearcher): List<Double> {
-    val weights = listOf(-0.52902088057, 0.009563578, -0.10055384, 0.3608616989)
+    val weights = listOf(0.540756, 0.0, 0.0605, -0.3986067)
     val sims = listOf<StringDistance>(Jaccard(), JaroWinkler(), NormalizedLevenshtein(), SorensenDice())
     val simTrials = weights.zip(sims)
 
