@@ -61,7 +61,6 @@ class KotlinAbstractExtractor(filename: String) {
 //            .forEachParallelRestricted(10) { (name, content) ->
         DeserializeData.iterableAnnotations(f) .forEachParallelRestricted(10) { page ->
 
-
             // This is just to keep track of how many pages we've parsed
             counter.incrementAndGet().let {
                 if (it % 100000 == 0) {
