@@ -21,6 +21,7 @@ import org.apache.lucene.search.*
 import org.apache.lucene.search.similarities.*
 import java.lang.Double.sum
 import java.util.*
+import kotlin.math.abs
 
 
 /**
@@ -300,9 +301,15 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 
     private fun trainAbstractSim() {
         val abstractSearcher = getIndexSearcher("abstract")
-        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractSearcher)
+//        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE)
+        formatter.addBM25(normType = NormType.ZSCORE)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featAbstractSim(query, tops, indexSearcher, abstractSearcher, BM25Similarity())
+//        }, normType = NormType.ZSCORE)
         formatter.addFeature({ query, tops, indexSearcher ->
-            featAbstractSim(query, tops, indexSearcher, abstractSearcher, BM25Similarity())}, normType = NormType.ZSCORE)
+            featEntitySim2(query, tops, indexSearcher, abstractAnalyzer)
+        }, normType = NormType.ZSCORE)
     }
 
     /**

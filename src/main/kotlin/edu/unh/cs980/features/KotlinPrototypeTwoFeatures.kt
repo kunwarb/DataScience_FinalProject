@@ -222,7 +222,7 @@ fun featEntitySDM2(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                    gramType: GramStatType? = null): List<Double> {
     val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
     val cleanQuery = tokens.toList().joinToString(" ")
-    val weights = listOf(0.6830338975799, -0.31628449221678, 0.00006816)
+    val weights = listOf(-0.0570148831, -0.9365, 0.00646)
 
 //    val queryCorpus = abstractAnalyzer.gramAnalyzer.getCorpusStatContainer(cleanQuery)
     val relevantEntities = abstractAnalyzer.getRelevantEntities(cleanQuery)
@@ -249,6 +249,25 @@ fun featEntitySDM2(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 
         results.average().defaultWhenNotFinite(0.0)
     }
-//    return (0 until tops.scoreDocs.size).map { 0.0 }
-
 }
+
+    fun featEntitySim2(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
+                       abstractAnalyzer: KotlinAbstractAnalyzer): List<Double> {
+        val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
+        val cleanQuery = tokens.toList().joinToString(" ")
+
+//    val queryCorpus = abstractAnalyzer.gramAnalyzer.getCorpusStatContainer(cleanQuery)
+        val relevantEntities = abstractAnalyzer.getRelevantEntities(cleanQuery)
+
+        return tops.scoreDocs.map { scoreDoc ->
+            val doc = indexSearcher.doc(scoreDoc.doc)
+            val entities = doc.getValues("spotlight")
+            val rels = entities.mapNotNull { entity ->
+                abstractAnalyzer.getMostSimilarRelevantEntity(entity, relevantEntities)
+            }
+
+            rels.map { (similarity, relEntity) -> similarity * relEntity.rank }
+                .average().defaultWhenNotFinite(0.0)
+        }
+    }
+
