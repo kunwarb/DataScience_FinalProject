@@ -34,32 +34,32 @@ class KotlinAbstractExtractor(filename: String) {
 //        }
 //    }
 
-//    private fun iterWrapper(f: BufferedInputStream): Iterable<Pair<String, String>> {
-//        val iter = DeserializeData.iterableAnnotations(f).iterator()
-//        val iterWrapper = buildIterator<Pair<String, String>>() {
-//            while (iter.hasNext()) {
-//                val nextPage = iter.next()
-//
-//                val name = nextPage.pageName.toLowerCase().replace(" ", "_")
-//                val content = nextPage.flatSectionPathsParagraphs()
-//                    .take(4)
-//                    .map { psection -> psection.paragraph.textOnly }
-//                    .joinToString(" ")
-//
-//                yield(Pair(name, content))
-//            }
-//        }
-//        return Iterable { iterWrapper }
-//    }
+    private fun iterWrapper(f: BufferedInputStream): Iterable<Pair<String, String>> {
+        val iter = DeserializeData.iterableAnnotations(f).iterator()
+        val iterWrapper = buildIterator<Pair<String, String>>() {
+            while (iter.hasNext()) {
+                val nextPage = iter.next()
+
+                val name = nextPage.pageName.toLowerCase().replace(" ", "_")
+                val content = nextPage.flatSectionPathsParagraphs()
+                    .take(4)
+                    .map { psection -> psection.paragraph.textOnly }
+                    .joinToString(" ")
+
+                yield(Pair(name, content))
+            }
+        }
+        return Iterable { iterWrapper }
+    }
 
 
     fun getAbstracts(filename: String) {
         val f = File(filename).inputStream().buffered(16 * 1024)
         val counter = AtomicInteger()
 
-//        iterWrapper(f)
-//            .forEachParallelRestricted(10) { (name, content) ->
-        DeserializeData.iterableAnnotations(f) .forEachParallelRestricted(10) { page ->
+//        DeserializeData.iterableAnnotations(f) .forEachParallelRestricted(10) { page ->
+        iterWrapper(f)
+            .forEachParallelRestricted(10) { (name, content) ->
 
             // This is just to keep track of how many pages we've parsed
             counter.incrementAndGet().let {
@@ -76,11 +76,11 @@ class KotlinAbstractExtractor(filename: String) {
 //                    .joinToString(" ")
 
             val doc = Document()
-            val name = page.pageName.toLowerCase().replace(" ", "_")
-            val content = page.flatSectionPathsParagraphs()
-                .take(4)
-                .map { psection -> psection.paragraph.textOnly }
-                .joinToString(" ")
+//            val name = page.pageName.toLowerCase().replace(" ", "_")
+//            val content = page.flatSectionPathsParagraphs()
+//                .take(4)
+//                .map { psection -> psection.paragraph.textOnly }
+//                .joinToString(" ")
             doc.add(TextField("name", name, Field.Store.YES))
             doc.add(TextField("text", content, Field.Store.YES))
 
