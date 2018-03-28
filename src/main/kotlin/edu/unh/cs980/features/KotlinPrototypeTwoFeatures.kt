@@ -227,28 +227,28 @@ fun featEntitySDM2(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 //    val queryCorpus = abstractAnalyzer.gramAnalyzer.getCorpusStatContainer(cleanQuery)
     val relevantEntities = abstractAnalyzer.getRelevantEntities(cleanQuery)
 
-//    return tops.scoreDocs.map { scoreDoc ->
-//        val doc = indexSearcher.doc(scoreDoc.doc)
-//        val entities = doc.getValues("spotlight")
-//        val rels = entities.mapNotNull { entity ->
-//            abstractAnalyzer.getMostSimilarRelevantEntity(entity, relevantEntities)
-//        }
-//
-//        val results = rels.map { (_, relEntity) ->
-//            val v1 = relEntity.queryLikelihood.unigramLikelihood
-//            val v2 = relEntity.queryLikelihood.bigramLikelihood
-//            val v3 = relEntity.queryLikelihood.bigramWindowLikelihood
-//
-//            when (gramType) {
-//                GramStatType.TYPE_UNIGRAM       -> v1
-//                GramStatType.TYPE_BIGRAM        -> v2
-//                GramStatType.TYPE_BIGRAM_WINDOW -> v3
-//                else                            -> weights[0] * v1 + weights[1] * v2 + weights[2] * v3
-//            }
-//        }
-//
-//        results.average().defaultWhenNotFinite(0.0)
-//    }
+    return tops.scoreDocs.map { scoreDoc ->
+        val doc = indexSearcher.doc(scoreDoc.doc)
+        val entities = doc.getValues("spotlight")
+        val rels = entities.mapNotNull { entity ->
+            abstractAnalyzer.getMostSimilarRelevantEntity(entity, relevantEntities)
+        }
+
+        val results = rels.map { (_, relEntity) ->
+            val v1 = relEntity.queryLikelihood.unigramLikelihood
+            val v2 = relEntity.queryLikelihood.bigramLikelihood
+            val v3 = relEntity.queryLikelihood.bigramWindowLikelihood
+
+            when (gramType) {
+                GramStatType.TYPE_UNIGRAM       -> v1
+                GramStatType.TYPE_BIGRAM        -> v2
+                GramStatType.TYPE_BIGRAM_WINDOW -> v3
+                else                            -> weights[0] * v1 + weights[1] * v2 + weights[2] * v3
+            }
+        }
+
+        results.average().defaultWhenNotFinite(0.0)
+    }
     return (0 until tops.scoreDocs.size).map { 0.0 }
 
 }

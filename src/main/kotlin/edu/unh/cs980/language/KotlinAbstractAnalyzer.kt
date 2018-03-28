@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.experimental.buildSequence
 
 
-data class RelevantEntity(val name: String, val content: String, val statContainer: CorpusStatContainer,
+data class RelevantEntity(val name: String, val content: String, val statContainer: LanguageStatContainer,
                           val score: Double, val rank: Double, val queryLikelihood: LikelihoodContainer)
 
 class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
@@ -53,7 +53,7 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
                 .build()
 
 
-    fun getRelevantEntities(query: String): List<RelevantEntity>? {
+    fun getRelevantEntities(query: String): List<RelevantEntity> {
         val cleanedQuery = AnalyzerFunctions
             .createTokenList(query, useFiltering = true)
             .joinToString(" ")
@@ -62,27 +62,27 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
         val tops = gramAnalyzer.indexSearcher.search(booleanQuery, 20)
         val numHits = tops.scoreDocs.size.toDouble()
         val queryModel = gramAnalyzer.getCorpusStatContainer(cleanedQuery)
-        return null
 
-//        return tops.scoreDocs
-//            .map { scoreDoc -> gramAnalyzer.indexSearcher.doc(scoreDoc.doc) to scoreDoc.score.toDouble()}
-//            .sortedByDescending { pair -> pair.second }
-//            .mapIndexed { index, (doc, score) ->
-//                val name = doc.get("name")
-//                val content = doc.get("text")
-//                val stat = gramAnalyzer.getCorpusStatContainer(content)
+        return tops.scoreDocs
+            .map { scoreDoc -> gramAnalyzer.indexSearcher.doc(scoreDoc.doc) to scoreDoc.score.toDouble()}
+            .sortedByDescending { pair -> pair.second }
+            .mapIndexed { index, (doc, score) ->
+                val name = doc.get("name")
+                val content = doc.get("text")
+                val stat = gramAnalyzer.getLanguageStatContainer(content)
 //                val tempContainer = LanguageStatContainer(unigramStat = stat.unigramStat.corpusDoc,
 //                                                        bigramStat = stat.bigramStat.corpusDoc,
 //                                                        bigramWindowStat = stat.bigramWindowStat.corpusDoc)
-//
-//                // Crappy workaround... should have derived these classes instead
+
+                // Crappy workaround... should have derived these classes instead
 //                val likelihood = tempContainer.getLikelihoodGivenQuery(queryModel)
-//                RelevantEntity(name = name,
-//                        content = content,
-//                        statContainer = stat,
-//                        score = score,
-//                        rank = (numHits - index) / numHits,
-//                        queryLikelihood = likelihood)}
+                val likelihood = stat.getLikelihoodGivenQuery(queryModel)
+                RelevantEntity(name = name,
+                        content = content,
+                        statContainer = stat,
+                        score = score,
+                        rank = (numHits - index) / numHits,
+                        queryLikelihood = likelihood)}
     }
 
     fun getMostSimilarRelevantEntity(entity: String, rels: List<RelevantEntity>): Pair<Double, RelevantEntity>? =
