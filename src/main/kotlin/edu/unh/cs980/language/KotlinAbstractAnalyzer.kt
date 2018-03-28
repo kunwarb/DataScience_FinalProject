@@ -1,6 +1,7 @@
 @file:JvmName("KotlinAbstractAnalyzer")
 package edu.unh.cs980.language
 
+import edu.unh.cs.treccar_v2.read_data.DeserializeData
 import edu.unh.cs980.getIndexSearcher
 import edu.unh.cs980.misc.AnalyzerFunctions
 import info.debatty.java.stringsimilarity.Jaccard
@@ -13,6 +14,7 @@ import org.apache.lucene.search.BooleanClause
 import org.apache.lucene.search.BooleanQuery
 import org.apache.lucene.search.FuzzyQuery
 import org.apache.lucene.search.IndexSearcher
+import java.io.File
 import java.io.StringReader
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.experimental.buildSequence
@@ -123,22 +125,29 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
 
 
     fun runTest() {
-        val fields = MultiFields.getFields(indexSearcher.indexReader)
-        val nameTerms = fields.terms("name")
-        val termIterator = nameTerms.iterator()
-        // Build a sequence that lets us iterate over terms in chunks and run them in parallel
-        val termSeq = buildSequence<String> {
-            while (true) {
-                val bytesRef = termIterator.next() ?: break
-                yield(bytesRef.utf8ToString())
-            }
+        val f = File("/trec_data/unprocessedAllButBenchmark/unprocessedAllButBenchmark.cbor").inputStream().buffered(16 * 1024)
+        val iter = DeserializeData.iterableAnnotations(f)
+        iter.forEach { page ->
+            println(page.pageName)
         }
 
-        termSeq.forEach { term ->
-            if (term.toLowerCase().startsWith("heavy")) {
-                println(term)
-            }
-        }
+
+//        val fields = MultiFields.getFields(indexSearcher.indexReader)
+//        val nameTerms = fields.terms("name")
+//        val termIterator = nameTerms.iterator()
+//        // Build a sequence that lets us iterate over terms in chunks and run them in parallel
+//        val termSeq = buildSequence<String> {
+//            while (true) {
+//                val bytesRef = termIterator.next() ?: break
+//                yield(bytesRef.utf8ToString())
+//            }
+//        }
+//
+//        termSeq.forEach { term ->
+//            if (term.toLowerCase().startsWith("heavy")) {
+//                println(term)
+//            }
+//        }
 
 //        val words = listOf("heavy_water", "urbanization", "oxygen", "environmental_justice_foundation")
 //        words.forEach { word ->
