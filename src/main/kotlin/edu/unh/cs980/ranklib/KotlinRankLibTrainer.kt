@@ -383,7 +383,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "section_path" -> trainSectionPath()
             "section_component" -> trainSectionComponent()
             "sdm_components" -> trainSDMComponents()
-            "string_similarity_components" -> trainSimilarityComponents()
+            "string_similarities" -> trainSimilarityComponents()
             "similarity_section" -> trainSimilaritySection()
             "combined" -> trainCombined()
             else -> println("Unknown method!")

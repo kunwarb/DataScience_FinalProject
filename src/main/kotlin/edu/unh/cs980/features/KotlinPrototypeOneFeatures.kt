@@ -1,6 +1,7 @@
 package edu.unh.cs980.features
 
 import edu.unh.cs980.KotlinGraphAnalyzer
+import edu.unh.cs980.defaultWhenNotFinite
 import edu.unh.cs980.misc.AnalyzerFunctions
 import info.debatty.java.stringsimilarity.interfaces.StringDistance
 import org.apache.lucene.search.IndexSearcher
@@ -27,7 +28,9 @@ fun featAddStringDistanceFunction(query: String, tops: TopDocs, indexSearcher: I
             val entities = doc.getValues("spotlight").map { it.replace("_", " ") }
             if (entities.isEmpty()) 0.0 else
             // This is the actual part where I average the results using the distance function
-                tokens.flatMap { q -> entities.map { e -> dist.distance(q, e)  } }.average()
+                tokens.flatMap { q -> entities.map { e -> 1 - dist.distance(q, e)  } }
+                    .average()
+                    .defaultWhenNotFinite(0.0)
         }
 }
 

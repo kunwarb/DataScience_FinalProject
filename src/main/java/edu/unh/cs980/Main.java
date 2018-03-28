@@ -158,7 +158,7 @@ public class Main {
 		ranklibTrainerParser.addArgument("method")
 				.help("The type of method to use when training (see readme).")
 				.choices("combined", "abstract_sdm", "sdm_alpha", "sdm_components",
-						"section_path", "string_similarity_components",
+						"section_path", "string_similarities",
 						"similarity_section", "average_abstract", "abstract_sdm_components", "hyperlink",
 						"abstract_alpha", "sdm", "section_component");
 		ranklibTrainerParser.addArgument("index").help("Location of the Lucene index directory");
