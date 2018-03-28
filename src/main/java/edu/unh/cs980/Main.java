@@ -151,7 +151,7 @@ public class Main {
 				.help("The type of method to use when training (see readme).")
 				.choices("abstract_score", "combined", "abstract_sdm", "train_alpha", "train_sdm_components",
 						"train_entity_sdm_components", "section_path", "string_similarity_components",
-						"similarity_section", "abstract_sim");
+						"similarity_section", "abstract_sim", "abstract_sdm_components");
 		ranklibTrainerParser.addArgument("index").help("Location of the Lucene index directory");
 		ranklibTrainerParser.addArgument("query").help("Location of query file (.cbor)");
 		ranklibTrainerParser.addArgument("qrel").help("Locations of matching qrel file.");

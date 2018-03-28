@@ -226,7 +226,19 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         formatter.addFeature({ query, tops, indexSearcher ->
             featEntitySDM2(query, tops, indexSearcher, abstractAnalyzer)
         }, normType = NormType.ZSCORE)
+    }
 
+    private fun trainAbstractSDMComponents() {
+
+        val grams = GramStatType.values()
+        println(grams)
+        val abstractIndexer = getIndexSearcher("abstract")
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
+        grams.forEach { gram ->
+            formatter.addFeature({ query, tops, indexSearcher ->
+                featEntitySDM2(query, tops, indexSearcher, abstractAnalyzer, gramType = gram)
+            }, normType = NormType.NONE)
+        }
 
     }
 
@@ -302,6 +314,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         when (method) {
             "abstract_score" -> trainAbstractScore()
             "abstract_sdm" -> trainAbstractSDM()
+            "abstract_sdm_components" -> trainAbstractSDMComponents()
             "abstract_sim" -> trainAbstractSim()
             "train_alpha" -> trainDirichletAlpha()
             "section_path" -> trainSectionPath()

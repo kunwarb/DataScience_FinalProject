@@ -249,6 +249,6 @@ fun featEntitySDM2(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 
         results.average().defaultWhenNotFinite(0.0)
     }
-    return (0 until tops.scoreDocs.size).map { 0.0 }
+//    return (0 until tops.scoreDocs.size).map { 0.0 }
 
 }
