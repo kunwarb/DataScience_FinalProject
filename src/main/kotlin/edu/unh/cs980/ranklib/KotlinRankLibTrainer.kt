@@ -242,16 +242,6 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         }
     }
 
-    private fun trainEntitySDMComponents() {
-        val abstractSearcher = getIndexSearcher(abstractPath)
-        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractSearcher)
-        val grams = listOf(GramStatType.TYPE_UNIGRAM, GramStatType.TYPE_BIGRAM, GramStatType.TYPE_BIGRAM_WINDOW)
-        grams.forEach { gram ->
-            formatter.addFeature({ query, tops, indexSearcher ->
-                featEntitySDM(query, tops, indexSearcher, abstractAnalyzer, gramType = gram)
-            }, normType = NormType.NONE)
-        }
-    }
 
     private fun trainAbstractSDM() {
         formatter.addBM25(normType = NormType.ZSCORE)
@@ -268,7 +258,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
         grams.forEach { gram ->
             formatter.addFeature({ query, tops, indexSearcher ->
-                featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, gramType = gram, alpha = 1.0)
+                featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, gramType = gram, alpha = 2.0)
             }, normType = NormType.NONE)
         }
     }
@@ -360,7 +350,6 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "train_sdm_components" -> trainSDMComponents()
             "string_similarity_components" -> trainSimilarityComponents()
             "similarity_section" -> trainSimilaritySection()
-            "train_entity_sdm_components" -> trainEntitySDMComponents()
             "combined" -> trainCombined()
             else -> println("Unknown method!")
         }
