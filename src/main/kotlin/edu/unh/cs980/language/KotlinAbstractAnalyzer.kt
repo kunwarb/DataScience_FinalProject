@@ -47,7 +47,7 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
 
     fun buildEntityNameQuery(entity: String): BooleanQuery =
             BooleanQuery.Builder()
-                .apply { add(FuzzyQuery(Term("name", entity)), BooleanClause.Occur.SHOULD) }
+                .apply { add(FuzzyQuery(Term("name", entity), 8, 4), BooleanClause.Occur.SHOULD) }
                 .build()
 
 
