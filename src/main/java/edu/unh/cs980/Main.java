@@ -205,7 +205,7 @@ public class Main {
 				.help("Location of RankLib jar file.");
 
 		featureParser.addArgument("method")
-				.choices("select_alpha", "subset_select")
+				.choices("alpha_selection", "subset_selection")
 				.help("Method for feature selection / training");
 
 		featureParser.addArgument("--features")
