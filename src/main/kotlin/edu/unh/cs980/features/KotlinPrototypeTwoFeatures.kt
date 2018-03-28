@@ -20,7 +20,9 @@ import org.apache.lucene.index.Term
 import org.apache.lucene.search.*
 import org.apache.lucene.search.similarities.Similarity
 import java.io.StringReader
+import java.lang.Double.max
 import kotlin.coroutines.experimental.buildSequence
+import kotlin.math.max
 
 //private val analyzer = StandardAnalyzer()
 
@@ -293,7 +295,7 @@ fun featEntitySim3(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         val rels = entities.mapNotNull { entity ->
             abstractAnalyzer.getMostSimilarRelevantEntity(entity, relevantEntities)
         }
-        rels.size.toDouble() / entities.size
+        rels.size.toDouble() / (max(entities.size, 1))
     }
 }
 
