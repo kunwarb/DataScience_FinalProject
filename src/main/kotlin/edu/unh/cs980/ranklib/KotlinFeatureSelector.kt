@@ -163,7 +163,7 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
             commands.addAll(listOf("-save", "model.txt"))
         }
 
-        val log = File("ranklib_logs/${logLoc}.loc")
+        val log = File("ranklib_logs/${logLoc}.log")
 
 
         val processBuilder = ProcessBuilder(commands)
