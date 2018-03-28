@@ -115,7 +115,7 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
             }
 
 
-            if (bestFeature != 0 || bestBaseline - baseline < 0.01) {
+            if (bestFeature != 0 && (bestBaseline - baseline) > 0.01) {
                 println("Adding feature $bestFeature to $curBestFeatures")
                 println("Previous / New Baseline: $baseline / $bestBaseline")
                 baseline = bestBaseline
@@ -147,8 +147,8 @@ class KotlinFeatureSelector(val rankLibLoc: String, val featuresLoc: String) {
                 "-train", featuresLoc,
                 "-ranker", "4",
                 "-metric2t", "map",
-//                "-i", "50",
-//                "-r", "10",
+                "-i", "50",
+                "-r", "10",
                 "-tvs", "0.3"
                 )
 
