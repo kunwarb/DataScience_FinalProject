@@ -129,7 +129,7 @@ public class Main {
 
 		// Argument parser for Paragraph Similarity (Added By Bindu)
 
-		Subparser paragraphSimilarityParser = subparsers.addParser("Paragraph Similarity")
+		Subparser paragraphSimilarityParser = subparsers.addParser("paragraph_similarity")
 				.setDefault("func", new Exec(Main::runParagraphSimilarity)).help("Queries Lucene database.");
 
 		paragraphSimilarityParser.addArgument("index").help("Location of Lucene index directory.");
@@ -143,7 +143,7 @@ public class Main {
 
 		// Argument parser for TFIDF Similarity (Added By Bindu)
 
-		Subparser TFIDFSimilarityParser = subparsers.addParser("Paragraph Similarity")
+		Subparser TFIDFSimilarityParser = subparsers.addParser("tfidf_similarity")
 				.setDefault("func", new Exec(Main::runTFIDFSimilarity)).help("Queries Lucene database.");
 
 		TFIDFSimilarityParser.addArgument("index").help("Location of Lucene index directory.");
@@ -203,7 +203,7 @@ public class Main {
 				.help("The name of the trec_eval compatible run file to write. (default: query_rm_qe_results.run)");
 
 		// Argument parser for Doc RM Query Expansion
-		Subparser doc_RM_QE_Parser = subparsers.addParser("query_expansion")
+		Subparser doc_RM_QE_Parser = subparsers.addParser("query_expansion_entity")
 				.setDefault("func", new Exec(Main::runDoc_RM_QE))
 				.help("Use Document Entity Relevance Model +Query Expansion");
 		doc_RM_QE_Parser.addArgument("query_type").choices("page", "section")
@@ -241,13 +241,13 @@ public class Main {
 				.setDefault("query_results.run")
 				.help("Specifies the output name of the run file.");
 		ranklibQueryParser.addArgument("--hyperlink_database")
-				.setDefault("entity_mentions.db")
+				.setDefault("/trec_data/team_1/entity_mentions.db")
 				.help("Location to MapDB indexed by Hyperlink Indexer (default: entity_mentions.db)");
 		ranklibQueryParser.addArgument("--abstract_index")
-				.setDefault("abstract")
+				.setDefault("/trec_data/team_1/abstract")
 				.help("Location of Lucene index for entity abstracts (default: abstract/)");
 		ranklibQueryParser.addArgument("--gram_index")
-				.setDefault("gram")
+				.setDefault("/trec_data/team_1/gram")
 				.help("Location of Lucene index for -grams used in SDM (default: gram/");
 
 
@@ -269,13 +269,13 @@ public class Main {
 				.setDefault("ranklib_features.txt")
 				.help("Output name for the RankLib compatible feature file.");
 		ranklibTrainerParser.addArgument("--hyperlink_database")
-				.setDefault("entity_mentions.db")
+				.setDefault("/trec_data/team_1/entity_mentions.db")
 				.help("Location to MapDB indexed by Hyperlink Indexer (default: entity_mentions.db)");
 		ranklibTrainerParser.addArgument("--abstract_index")
-				.setDefault("abstract")
+				.setDefault("/trec_data/team_1/abstract")
 				.help("Location of Lucene index for entity abstracts (default: abstract/)");
 		ranklibTrainerParser.addArgument("--gram_index")
-				.setDefault("gram")
+				.setDefault("/trec_data/team_1/gram")
 				.help("Location of Lucene index for -grams used in SDM (default: gram/");
 
 		// Gram
@@ -368,7 +368,7 @@ public class Main {
 
 	private static void runHyperlinkIndexer(Namespace params) {
 		String corpus = params.getString("corpus");
-		HyperlinkIndexer hyperlinkIndexer = new HyperlinkIndexer("entity_mentions.db");
+		HyperlinkIndexer hyperlinkIndexer = new HyperlinkIndexer("entity_mentions.db", false);
 		hyperlinkIndexer.indexHyperlinks(corpus);
 	}
 

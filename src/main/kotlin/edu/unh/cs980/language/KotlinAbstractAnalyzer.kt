@@ -21,6 +21,16 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.experimental.buildSequence
 
 
+/**
+ * Class: RelevantEntity
+ * Desc: Represents a top20 entity retrieved from the abstract database.
+ * @param name: Name of the entity (should be Wikipedia page)
+ * @param content: Abstract paragraph associated with page.
+ * @param statContainer: Language model of abstract.
+ * @param score: Score according to BM25 from query to abstract index.
+ * @param rank: Linearized score (according to distance from the top result)
+ * @param queryLikelihood: Likelihood model given the query (bigram + unigram + windowed)
+ */
 data class RelevantEntity(val name: String, val content: String, val statContainer: LanguageStatContainer,
                           val score: Double, val rank: Double, val queryLikelihood: LikelihoodContainer)
 
@@ -29,16 +39,26 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
 
     val gramAnalyzer = KotlinGramAnalyzer(indexSearcher)
     val sim = NormalizedLevenshtein()
+
+    // Searching the database is slow, so the documents and language models are stored in case they need to be used
+    // again in a different query
     private val memoizedAbstractDocs = ConcurrentHashMap<String, Document?>()
     private val memoizedAbstractStats = ConcurrentHashMap<String, LanguageStatContainer?>()
 
-
+    /**
+     * Func: retrieveEntityStatContainer
+     * Desc: Given entity, searches abstract database, retrieves paragraph, and returns language model.
+     */
     fun retrieveEntityStatContainer(entity: String): LanguageStatContainer? =
             memoizedAbstractStats.computeIfAbsent(entity, {key ->
                 val entityDoc = retrieveEntityDoc(key)
                 entityDoc?.let { doc -> gramAnalyzer.getLanguageStatContainer(doc.get("text")) }
             })
 
+    /**
+     * Func: retrieveEntityDoc
+     * Desc: Given an entity, returns associated document in abstract database if it exists
+     */
     fun retrieveEntityDoc(entity: String): Document? {
         //            memoizedAbstractDocs.computeIfAbsent(entity, {key ->
         val nameQuery = buildEntityNameQuery(entity)
@@ -48,18 +68,31 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
         return result
     }
 
+
+    /**
+     * Func: buildEntityNameQuery
+     * Desc: Given an entity, creates a fuzzy query for the "name" field in the abstract database.
+     *       Used to retrieved the associated document from the database.
+     */
     fun buildEntityNameQuery(entity: String): BooleanQuery =
             BooleanQuery.Builder()
                 .apply { add(FuzzyQuery(Term("name", entity), 2, 4), BooleanClause.Occur.SHOULD) }
                 .build()
 
 
+    /**
+     * Func: getRelevantEntities
+     * Desc: Given a query, searches the abstract database (using BM25) and considers the top 20 results as
+     *       "entities relevant to the query". Language models are generated for these entities according to their
+     *       abstracts and the results are returned as a list of relevant entities.
+     * @see RelevantEntity
+     */
     fun getRelevantEntities(query: String, alpha: Double = 1.0): List<RelevantEntity> {
         val cleanedQuery = AnalyzerFunctions
             .createTokenList(query, useFiltering = true)
             .joinToString(" ")
-        val booleanQuery = AnalyzerFunctions.createQuery(query, useFiltering = true)
 
+        val booleanQuery = AnalyzerFunctions.createQuery(query, useFiltering = true)
         val tops = gramAnalyzer.indexSearcher.search(booleanQuery, 20)
         val numHits = tops.scoreDocs.size.toDouble()
         val queryModel = gramAnalyzer.getCorpusStatContainer(cleanedQuery)
@@ -68,8 +101,11 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
             .map { scoreDoc -> gramAnalyzer.indexSearcher.doc(scoreDoc.doc) to scoreDoc.score.toDouble()}
             .sortedByDescending { pair -> pair.second }
             .mapIndexed { index, (doc, score) ->
+                // Retrieved document is from abstract lucene index. Retrieve name and abstract text.
                 val name = doc.get("name")
                 val content = doc.get("text")
+
+                // Generate statistical model given language model of query and of abstract text.
                 val stat = gramAnalyzer.getLanguageStatContainer(content)
                 val likelihood = stat.getLikelihoodGivenQuery(queryModel, alpha = alpha)
                 RelevantEntity(name = name,
@@ -80,6 +116,12 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
                         queryLikelihood = likelihood)}
     }
 
+    /**
+     * Func: getMostSimilarRelevantEntity
+     * Desc: Given a candidate entity, tries to find the most similar entity (from top20 search results) whose page
+     *       name most closely matches the entity. If they are not similar enough, return null. Otherwise, return
+     *       the associated RelevantEntity and the similarity of the candidate entity to the page name.
+     */
     fun getMostSimilarRelevantEntity(entity: String, rels: List<RelevantEntity>): Pair<Double, RelevantEntity>? =
         rels.map { relevantEntity -> 1.0 - sim.distance(entity, relevantEntity.name) to relevantEntity  }
             .maxBy { (similarity, _) -> similarity }
@@ -88,9 +130,16 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
                 else Pair(similarity, relevantEntity)
             }
 
+
+    // Retrieve term frequency for a particular term in the abstract text
     fun retrieveTermStats(term: String): Long =
         indexSearcher.indexReader.totalTermFreq(Term("text", term))
 
+    /**
+     * Func: getEntityTokens
+     * Desc: Searches for matching entity in abstract database and returns a tokenized instance of the
+     *       words in the entity's abstract text.
+     */
     fun getEntityTokens(entity: String): List<String>? {
         val cleanName = entity.toLowerCase().replace(" ", "_")
         val query = BooleanQuery
@@ -105,10 +154,13 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
 
         val entityDoc = indexSearcher.doc(topDocs.scoreDocs[0].doc)
         val content = entityDoc.get("text")
-//        return createTokenSequence(content).toList()
         return AnalyzerFunctions.createTokenList(content)
     }
 
+    /**
+     * Func: getTermStats
+     * Desc: Given a list of words, return term frequency for words given abstract index.
+     */
     fun getTermStats(terms: List<String>): List<Pair<String, Double>> {
         val totalTerms = indexSearcher.indexReader.getSumTotalTermFreq("text").toDouble()
         return terms.map { term ->
@@ -120,40 +172,7 @@ class KotlinAbstractAnalyzer(val indexSearcher: IndexSearcher) {
 
 
     fun runTest() {
-
-
-        val fields = MultiFields.getFields(indexSearcher.indexReader)
-        val nameTerms = fields.terms("name")
-        val termIterator = nameTerms.iterator()
-        // Build a sequence that lets us iterate over terms in chunks and run them in parallel
-        val termSeq = buildSequence<String> {
-            while (true) {
-                val bytesRef = termIterator.next() ?: break
-                yield(bytesRef.utf8ToString())
-            }
-        }
-//
-        termSeq.forEach { term ->
-            if (term.toLowerCase().startsWith("heavy")) {
-                println(term)
-            }
-        }
-
-//        val words = listOf("heavy_water", "urbanization", "oxygen", "environmental_justice_foundation")
-//        words.forEach { word ->
-//            val query = buildEntityNameQuery(word)
-//            val tops = indexSearcher.search(query, 10)
-//            println("For $word")
-//            tops.scoreDocs.forEach { scoreDoc ->
-//                val doc = indexSearcher.doc(scoreDoc.doc)
-//                println(doc.get("name"))
-//            }
-//            println()
-//
-//        }
-
     }
-
 }
 
 

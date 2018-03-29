@@ -51,14 +51,6 @@ data class CorpusStat(val corpusFrequency: Map<String, Double>, val corpusDoc: L
         get() = corpusDoc.type
 }
 
-//class CorpusStat(val corpusFrequency: Map<String, Double>,
-//                 docTermCounts: Map<String, Int>,
-//                 docTermFreqs: Map<String, Double>,
-//                 type: GramStatType) : LanguageStat(docTermCounts, docTermFreqs, type) {
-//    val type: GramStatType
-//        get() = corpusDoc.type
-//}
-
 
 /**
  * Class: CorpusStatContainer
