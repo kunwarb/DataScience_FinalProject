@@ -129,7 +129,7 @@ public class Main {
 
 		// Argument parser for Paragraph Similarity (Added By Bindu)
 
-		Subparser paragraphSimilarityParser = subparsers.addParser("Paragraph Similarity")
+		Subparser paragraphSimilarityParser = subparsers.addParser("paragraph_similarity")
 				.setDefault("func", new Exec(Main::runParagraphSimilarity)).help("Queries Lucene database.");
 
 		paragraphSimilarityParser.addArgument("index").help("Location of Lucene index directory.");
@@ -143,7 +143,7 @@ public class Main {
 
 		// Argument parser for TFIDF Similarity (Added By Bindu)
 
-		Subparser TFIDFSimilarityParser = subparsers.addParser("Paragraph Similarity")
+		Subparser TFIDFSimilarityParser = subparsers.addParser("tfidf_similarity")
 				.setDefault("func", new Exec(Main::runTFIDFSimilarity)).help("Queries Lucene database.");
 
 		TFIDFSimilarityParser.addArgument("index").help("Location of Lucene index directory.");
