@@ -1,280 +1,169 @@
 @file:JvmName("KotRankLibTrainer")
 package edu.unh.cs980.ranklib
 
+import edu.unh.cs980.CONTENT
+import edu.unh.cs980.KotlinDatabase
+import edu.unh.cs980.KotlinGraphAnalyzer
+import edu.unh.cs980.context.HyperlinkIndexer
+import edu.unh.cs980.features.*
+import edu.unh.cs980.getIndexSearcher
+import edu.unh.cs980.language.GramStatType
+import edu.unh.cs980.language.KotlinAbstractAnalyzer
+import edu.unh.cs980.language.KotlinGramAnalyzer
+import edu.unh.cs980.misc.AnalyzerFunctions
+import info.debatty.java.stringsimilarity.Jaccard
+import info.debatty.java.stringsimilarity.JaroWinkler
+import info.debatty.java.stringsimilarity.NormalizedLevenshtein
+import info.debatty.java.stringsimilarity.SorensenDice
+import info.debatty.java.stringsimilarity.interfaces.StringDistance
 import org.apache.lucene.index.Term
 import org.apache.lucene.search.*
-import edu.unh.cs980.*
+import org.apache.lucene.search.similarities.*
 import java.lang.Double.sum
 import java.util.*
-import info.debatty.java.stringsimilarity.*
-import info.debatty.java.stringsimilarity.interfaces.StringDistance
-import org.apache.lucene.search.similarities.*
-import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.abs
+
 
 /**
  * Function: KotlinRankLibTrainer
  * Description: This is used to encapsulate my different query methods, and the training methods I used to
  *              learn their weights.
  */
-class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: String, graphPath: String) {
+class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: String,
+                           val hyperlinkPath: String, val abstractPath: String, val gramPath: String ) {
 
-    val db = if (graphPath == "") null else KotlinDatabase(graphPath)
+//    val db = if (graphPath == "") null else KotlinDatabase(graphPath)
     val formatter = KotlinRanklibFormatter(queryPath, qrelPath, indexPath)
-    val graphAnalyzer = if (graphPath == "") null else KotlinGraphAnalyzer(formatter.indexSearcher, db!!)
+//    val graphAnalyzer = if (graphPath == "") null else KotlinGraphAnalyzer(formatter.indexSearcher, db!!)
 
-
-    /**
-     * Function: retrieveSequence
-     * Description: For qiven query string, filters out numbers (and enwiki) and retruns a list of tokens
-     */
-    fun retrieveSequence(query: String): List<String> {
-        val replaceNumbers = """(\d+|enwiki:)""".toRegex()
-        return query.replace(replaceNumbers, "")
-            .run { formatter.queryRetriever.createTokenSequence(this) }
-            .toList()
-    }
 
 
     /**
-     * Function: addStringDistanceFunction
-     * Description: In this method, I try to the distance (or similarity) between the terms (after splitting)
-     *              and the entities in each document.
-     * @params dist: StingDistance interface (from debatty stringsimilarity library)
-     */
-    fun addStringDistanceFunction(query: String, tops: TopDocs, dist: StringDistance): List<Double> {
-        val tokens = retrieveSequence(query)
-
-        // Map this over the score docs, taking the average similarity between query tokens and entities
-        return tops.scoreDocs
-            .map { scoreDoc ->
-                val doc = formatter.indexSearcher.doc(scoreDoc.doc)
-                val entities = doc.getValues("spotlight").map { it.replace("_", " ") }
-                if (entities.isEmpty()) 0.0 else
-                    // This is the actual part where I average the results using the distance function
-                tokens.flatMap { q -> entities.map { e -> dist.distance(q, e)  } }.average()
-            }
-    }
-
-    /**
-     * Function: addAverageQueryScore
-     * Description: In this method, I tokenize the query and treat each token as an individual query.
-     *              I then get the BM25 score of each query to each document and average the results.
-     */
-    fun addAverageQueryScore(query: String, tops: TopDocs, indexSearcher: IndexSearcher): List<Double> {
-        val termQueries = retrieveSequence(query)
-            .map { token -> TermQuery(Term(CONTENT, token))}
-            .map { termQuery -> BooleanQuery.Builder().add(termQuery, BooleanClause.Occur.SHOULD).build()}
-            .toList()
-
-        return tops.scoreDocs.map { scoreDoc ->
-                termQueries.map { booleanQuery ->
-                    indexSearcher.explain(booleanQuery, scoreDoc.doc).value.toDouble() }
-                    .average()
-            }
-    }
-
-
-    /**
-     * Function: addEntityQueries
-     * Description: This method is supposed to consider query only the
-     */
-    fun addEntityQueries(query: String, tops: TopDocs, indexSearcher: IndexSearcher): List<Double> {
-        val entityQuery = retrieveSequence(query)
-            .flatMap { token ->
-                listOf(TermQuery(Term("spotlight", token)), TermQuery(Term(CONTENT, token)))
-            }
-            .fold(BooleanQuery.Builder()) { builder, termQuery ->
-                builder.add(termQuery, BooleanClause.Occur.SHOULD) }
-            .build()
-
-
-        return tops.scoreDocs.map { scoreDoc ->
-                indexSearcher.explain(entityQuery, scoreDoc.doc).value.toDouble() }
-    }
-
-
-    /**
-     * Function: useLucSim
-     * Description: Takes a Lucene similarity function and uses it to rescore documents.
-     */
-    fun useLucSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher, sim: Similarity): List<Double> {
-        val entityQuery = retrieveSequence(query)
-            .map { token -> TermQuery(Term(CONTENT, token)) }
-            .fold(BooleanQuery.Builder()) { builder, termQuery ->
-                builder.add(termQuery, BooleanClause.Occur.SHOULD) }
-            .build()
-
-        val curSim = indexSearcher.getSimilarity(true)
-        indexSearcher.setSimilarity(sim)
-
-        return tops.scoreDocs.map { scoreDoc ->
-                                    indexSearcher.explain(entityQuery, scoreDoc.doc).value.toDouble() }
-            .apply { indexSearcher.setSimilarity(curSim) }  // Gotta remember to set the similarity back
-    }
-
-
-    /**
-     * Function: sectionSplit
-     * Description: Splits query up and only uses a particular section for scoring.
-     */
-    fun sectionSplit(query: String, tops: TopDocs, indexSearcher: IndexSearcher, secIndex: Int): List<Double> {
-        val termQueries = retrieveSequence(query)
-            .map { token -> TermQuery(Term(CONTENT, token))}
-            .map { termQuery -> BooleanQuery.Builder().add(termQuery, BooleanClause.Occur.SHOULD).build()}
-            .toList()
-
-        if (termQueries.size < secIndex + 1) {
-            return (0 until tops.scoreDocs.size).map { 0.0 }
-        }
-
-        val boolQuery = termQueries[secIndex]!!
-
-        return tops.scoreDocs
-            .map { scoreDoc ->
-                indexSearcher.explain(boolQuery, scoreDoc.doc).value.toDouble()
-            }
-    }
-
-
-    /**
-     * Function: addScoreMixtureSims
-     * Description: Uses Random Walk model over bipartite graph of entities and paragraphs to rescore paragraphs.
-     */
-    fun addScoreMixtureSims(query: String, tops:TopDocs, indexSearcher: IndexSearcher): List<Double> {
-        val sinks = HashMap<String, Double>()
-        val mixtures = graphAnalyzer!!.getMixtures(tops)
-
-        mixtures.forEach { pm ->
-            pm.mixture.forEach { entity, probability ->
-                sinks.merge(entity, probability * pm.score, ::sum)
-            }
-        }
-
-        val total = sinks.values.sum()
-        sinks.replaceAll { k, v -> v / total }
-
-        // The score of each paragraph depends on the total value of all scored paragraphs with respect to their
-        // distributions over entities.
-        return mixtures
-            .map { pm -> pm.mixture.entries.sumByDouble { (k, v) -> sinks[k]!! * v } }
-            .toList()
-    }
-
-
-    /**
-     * Function: querySimilarity
-     * Description: Score with weighted combination of BM25 and string similarity functions (trained using RankLib).
-     */
-    fun querySimilarity() {
-        formatter.addBM25(weight = 0.884669653, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, _ ->
-            addStringDistanceFunction(query, tops, JaroWinkler())}, weight = -0.001055, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, _ ->
-            addStringDistanceFunction(query, tops, Jaccard() )}, weight = 0.11427, normType = NormType.ZSCORE)
-    }
-
-
-    /**
-     * Function: querySimilarity
-     * Description: Score with weighted combination of BM25 and average_query (trained using RankLib).
-     */
-    private fun queryAverage() {
-        formatter.addBM25(weight = 0.5, normType = NormType.ZSCORE)
-        formatter.addFeature(this::addAverageQueryScore, weight = 0.5, normType = NormType.ZSCORE)
-    }
-
-
-    /**
-     * Function: querySplit
-     * Description: Score with weighted combination of BM25 and separate section scores (trained using RankLib).
-     */
-    private fun querySplit() {
-        formatter.addBM25(weight = 0.4824247, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 0) }, weight = 0.069, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 1) }, weight = -0.1845, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 2) }, weight = -0.25063, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 3) }, weight = 0.0134, normType = NormType.ZSCORE)
-    }
-
-
-    /**
-     * Function: queryMixtures
-     * Description: Score with weighted combination of BM25 and mixtures method (trained using RankLib).
-     */
-    private fun queryMixtures() {
-        if (graphAnalyzer == null) {
-            println("You must supply a --graph_database location for this method!")
-            return
-        }
-        formatter.addBM25(weight = 0.9703138257, normType = NormType.ZSCORE)
-        formatter.addFeature(this::addScoreMixtureSims, weight = 0.029686174, normType = NormType.ZSCORE)
-    }
-
-
-    /**
-     * Function: queryDirichlet
-     * Description: Score with weighted combination of BM25 and LM_Dirichlet method (trained using RankLib)
-     */
-    private fun queryDirichlet() {
-        formatter.addBM25(weight = 0.80067, normType = NormType.ZSCORE)
-        formatter.addFeature({query, tops, indexSearcher ->
-            useLucSim(query, tops, indexSearcher, LMDirichletSimilarity())}, weight = 0.19932975,
-                normType = NormType.ZSCORE)
-    }
-
-
-    /**
-     * Function: queryMercer
-     * Description: Score with weighted combination of BM25 and LM_Dirichlet method (trained using RankLib)
-     */
-    private fun queryMercer() {
-        formatter.addBM25(weight = 0.82, normType = NormType.ZSCORE)
-
-        formatter.addFeature({query, tops, indexSearcher ->
-            useLucSim(query, tops, indexSearcher, LMJelinekMercerSimilarity(LMSimilarity.DefaultCollectionModel(),
-                    0.5f))}, weight = 0.1798988, normType = NormType.ZSCORE)
-    }
-
-
-    /**
-     * Function: queryMercer
+     * Function: queryCombined
      * Description: Score with weighted combination of BM25, Jaccard string similarity, LM_Dirichlet, and second/third
      *              section headers (trained using RankLib).
      */
     private fun queryCombined() {
-        val weights = listOf(0.3106317698753524,-0.025891305471130843,
-                0.34751201103557083, -0.2358113441529167, -0.08015356975284649)
+//        val weights = listOf(0.3106317698753524,-0.025891305471130843,
+//                0.34751201103557083, -0.2358113441529167, -0.08015356975284649)
 
-        formatter.addBM25(weight = weights[0], normType = NormType.ZSCORE)
+//        val weights = listOf(0.27569142, 0.17437123, 0.20848581, 0.34145153, 0.0, 0.0, 0.0)
+//        val weights = listOf(0.61881053, 0.0, 0.0, 0.38118944)
+        val weights = listOf(0.5327952, 0.0, 0.18299106, 0.28421375)
 
-        formatter.addFeature({ query, tops, _ ->
-            addStringDistanceFunction(query, tops, Jaccard() )}, weight = weights[1], normType = NormType.ZSCORE)
+        val gramIndexSearcher = getIndexSearcher(gramPath)
+        val hLinker = HyperlinkIndexer(hyperlinkPath)
+        val hGram = KotlinGramAnalyzer(gramIndexSearcher)
+        val abstractIndexer = getIndexSearcher(abstractPath)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
+
+        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE, weight = weights[0])
+
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featStringSimilarityComponent(query, tops, indexSearcher)
+//        }, normType = NormType.ZSCORE, weight = weights[1])
 
         formatter.addFeature({query, tops, indexSearcher ->
-            useLucSim(query, tops, indexSearcher, LMDirichletSimilarity())}, weight = weights[2],
-                normType = NormType.ZSCORE)
+            featUseLucSim(query, tops, indexSearcher, LMDirichletSimilarity())
+        }, normType = NormType.ZSCORE, weight = weights[2])
 
         formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 1) }, weight = weights[3], normType = NormType.ZSCORE)
+            featSDM(query, tops, indexSearcher, hGram, 4.0)
+        }, normType = NormType.ZSCORE, weight = weights[3])
 
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
+//
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, 2.0)
+//        }, normType = NormType.ZSCORE)
+//
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featAverageAbstractScoreByQueryRelevance(query, tops, indexSearcher, abstractAnalyzer)
+//        }, normType = NormType.ZSCORE)
+    }
+    private fun queryAverageAbstractScore() {
+        val weights = listOf(0.8974292632642049, -0.10257073673579509)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
+        val abstractIndexer = getIndexSearcher(abstractPath)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
         formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 2) }, weight = weights[4], normType = NormType.ZSCORE)
+            featAverageAbstractScoreByQueryRelevance(query, tops, indexSearcher, abstractAnalyzer)
+        }, normType = NormType.ZSCORE, weight = weights[1])
     }
 
+    private fun queryHyperlinkLikelihood() {
+        val weights = listOf(0.8821131679, -0.11788632077)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
+        val hLinker = HyperlinkIndexer(hyperlinkPath)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)},
+                normType = NormType.ZSCORE, weight = weights[1])
+    }
+
+    private fun queryAbstractSim() {
+        formatter.addBM25(weight = 0.86553535, normType = NormType.ZSCORE)
+        val abstractIndexer = getIndexSearcher(abstractPath)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, 1.0)
+        }, normType = NormType.ZSCORE, weight = 0.1344646)
+    }
+
+
+
+    private fun querySDMComponents() {
+        formatter.addBM25(normType = NormType.ZSCORE, weight = 0.381845239)
+        val gramSearcher = getIndexSearcher(gramPath)
+        val hGram = KotlinGramAnalyzer(gramSearcher)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSDM(query, tops, indexSearcher, hGram, 4.0, GramStatType.TYPE_UNIGRAM)
+        }, normType = NormType.ZSCORE, weight = -0.385628901)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSDM(query, tops, indexSearcher, hGram, 4.0, GramStatType.TYPE_BIGRAM)
+        }, normType = NormType.ZSCORE, weight = 0.01499519)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSDM(query, tops, indexSearcher, hGram, 4.0, GramStatType.TYPE_BIGRAM_WINDOW)
+        }, normType = NormType.ZSCORE, weight = 0.217530662)
+    }
+
+    private fun queryAbstractSDM() {
+        val weights = listOf(0.86553535, 0.134464695)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
+        val abstractIndexer = getIndexSearcher(abstractPath)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, 2.0)
+        }, normType = NormType.ZSCORE, weight = weights[1])
+    }
+
+    private fun querySDM() {
+        val weights = listOf(0.14059688887081667, 0.8594031111291832)
+//        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE, weight = weights[0])
+        val gramSearcher = getIndexSearcher(gramPath)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
+        val hGram = KotlinGramAnalyzer(gramSearcher)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSDM(query, tops, indexSearcher, hGram, 4.0)
+        }, normType = NormType.ZSCORE, weight = weights[1])
+    }
+
+    private fun querySectionComponent() {
+        val weights = listOf(0.0, 1.0)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
+        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE, weight = weights[1])
+    }
 
     // Runs associated query method
     fun runRanklibQuery(method: String, out: String) {
         when (method) {
-            "entity_similarity" -> querySimilarity()
-            "average_query" -> queryAverage()
-            "split_sections" -> querySplit()
-            "mixtures" -> queryMixtures()
-            "lm_mercer" -> queryMercer()
-            "lm_dirichlet" -> queryDirichlet()
+            "average_abstract" -> queryAverageAbstractScore()
+            "hyperlink" -> queryHyperlinkLikelihood()
+            "sdm_components" -> querySDMComponents()
+            "abstract_sim" -> queryAbstractSim()
+            "section_component" -> querySectionComponent()
+            "abstract_sdm" -> queryAbstractSDM()
+            "sdm" -> querySDM()
             "combined" -> queryCombined()
             else -> println("Unknown method!")
         }
@@ -285,83 +174,6 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     }
 
 
-    /**
-     * Function: trainSimilarity
-     * Description: training for string_similarity method.
-     * @see querySimilarity
-     */
-    private fun trainSimilarity() {
-        formatter.addBM25(normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, _ ->
-            addStringDistanceFunction(query, tops, JaroWinkler())}, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, _ ->
-            addStringDistanceFunction(query, tops, Jaccard() )}, normType = NormType.ZSCORE)
-    }
-
-
-    /**
-     * Function: trainSplit
-     * Description: training for section_split method.
-     * @see sectionSplit
-     */
-    private fun trainSplit() {
-        formatter.addBM25(normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 0) }, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 1) }, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 2) }, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 3) }, normType = NormType.ZSCORE)
-    }
-
-
-    /**
-     * Function: trainMixtures
-     * Description: training for mixtures method.
-     * @see queryMixtures
-     */
-    private fun trainMixtures() {
-        formatter.addBM25(normType = NormType.ZSCORE)
-        formatter.addFeature(this::addScoreMixtureSims, normType = NormType.ZSCORE)
-    }
-
-
-    /**
-     * Function: trainAverageQuery
-     * Description: training for average_query method.
-     * @see queryAverage
-     */
-    private fun trainAverageQuery() {
-        formatter.addBM25(normType = NormType.ZSCORE)
-        formatter.addFeature(this::addAverageQueryScore, normType = NormType.ZSCORE)
-    }
-
-
-    /**
-     * Function: trainDirichSim
-     * Description: training for lm_dirichlet method.
-     * @see queryDirichlet
-     */
-    private fun trainDirichSim() {
-        formatter.addBM25(normType = NormType.ZSCORE)
-        formatter.addFeature({query, tops, indexSearcher ->
-            useLucSim(query, tops, indexSearcher, LMDirichletSimilarity())}, normType = NormType.ZSCORE)
-    }
-
-
-    /**
-     * Function: trainJelinekMercerSimilarity
-     * Description: training for lm_mercer method.
-     * @see queryMercer
-     */
-    private fun trainJelinekMercerSimilarity() {
-        formatter.addBM25(normType = NormType.ZSCORE)
-        formatter.addFeature({query, tops, indexSearcher ->
-            useLucSim(query, tops, indexSearcher, LMJelinekMercerSimilarity(LMSimilarity.DefaultCollectionModel(),
-                    0.5f))}, normType = NormType.ZSCORE)
-    }
 
 
     /**
@@ -370,16 +182,182 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
      * @see queryCombined
      */
     private fun trainCombined() {
-        formatter.addBM25(weight = 1.0, normType = NormType.ZSCORE)
-        formatter.addFeature({ query, tops, _ ->
-            addStringDistanceFunction(query, tops, Jaccard() )}, normType = NormType.ZSCORE)
+        val gramIndexSearcher = getIndexSearcher(gramPath)
+        val hLinker = HyperlinkIndexer(hyperlinkPath)
+        val hGram = KotlinGramAnalyzer(gramIndexSearcher)
+        val abstractIndexer = getIndexSearcher(abstractPath)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
+
+        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE)
+
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featStringSimilarityComponent(query, tops, indexSearcher)
+        }, normType = NormType.ZSCORE)
+
         formatter.addFeature({query, tops, indexSearcher ->
-            useLucSim(query, tops, indexSearcher, LMDirichletSimilarity())}, normType = NormType.ZSCORE)
+            featUseLucSim(query, tops, indexSearcher, LMDirichletSimilarity())
+        }, normType = NormType.ZSCORE)
+
         formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 1) }, normType = NormType.ZSCORE)
+            featSDM(query, tops, indexSearcher, hGram, 4.0)
+        }, normType = NormType.ZSCORE)
+
         formatter.addFeature({ query, tops, indexSearcher ->
-            sectionSplit(query, tops, indexSearcher, 2) }, normType = NormType.ZSCORE)
+            featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
+
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, 2.0)
+        }, normType = NormType.ZSCORE)
+
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAverageAbstractScoreByQueryRelevance(query, tops, indexSearcher, abstractAnalyzer)
+        }, normType = NormType.ZSCORE)
+
     }
+
+
+    private fun trainDirichletAlpha() {
+        formatter.addBM25(normType = NormType.ZSCORE)
+        val gramIndexSearcher = getIndexSearcher(gramPath)
+        val hGram = KotlinGramAnalyzer(gramIndexSearcher)
+        listOf(2, 8, 16, 32, 64, 128).forEach { alpha ->
+            formatter.addFeature({ query, tops, indexSearcher ->
+                featSDM(query, tops, indexSearcher, hGram, alpha.toDouble())
+            }, normType = NormType.ZSCORE)
+        }
+
+    }
+
+    private fun trainAbstractSDMAlpha() {
+        formatter.addBM25(normType = NormType.ZSCORE)
+        val abstractSearcher = getIndexSearcher(abstractPath)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractSearcher)
+        listOf(2, 8, 16, 32, 64, 128, 256, 512, 1024).forEach { alpha ->
+            formatter.addFeature({ query, tops, indexSearcher ->
+                featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, alpha.toDouble())
+            }, normType = NormType.ZSCORE)
+        }
+
+    }
+
+    private fun trainSDM() {
+//        val weights = listOf(0.49827237108, 0.23021207089, 0.1280351944, 0.143480363604666)
+//        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE, weight = weights[0])
+        formatter.addBM25(normType = NormType.ZSCORE)
+        val gramSearcher = getIndexSearcher(gramPath)
+        val hGram = KotlinGramAnalyzer(gramSearcher)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSDM(query, tops, indexSearcher, hGram, 4.0)
+        }, normType = NormType.ZSCORE)
+    }
+
+    private fun trainSDMComponents() {
+        val gramIndexSearcher = getIndexSearcher(gramPath)
+        val hGram = KotlinGramAnalyzer(gramIndexSearcher)
+        val grams = listOf(GramStatType.TYPE_UNIGRAM, GramStatType.TYPE_BIGRAM, GramStatType.TYPE_BIGRAM_WINDOW)
+        grams.forEach { gram ->
+            formatter.addFeature({ query, tops, indexSearcher ->
+                featSDM(query, tops, indexSearcher, hGram, 4.0, gramType = gram)
+            }, normType = NormType.NONE)
+        }
+    }
+
+
+    private fun trainAbstractSDM() {
+        formatter.addBM25(normType = NormType.ZSCORE)
+        val abstractIndexer = getIndexSearcher(abstractPath)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, 2.0)
+        }, normType = NormType.ZSCORE)
+    }
+
+    private fun trainAbstractSDMComponents() {
+        val grams = listOf(GramStatType.TYPE_UNIGRAM, GramStatType.TYPE_BIGRAM, GramStatType.TYPE_BIGRAM_WINDOW)
+        val abstractIndexer = getIndexSearcher(abstractPath)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
+        grams.forEach { gram ->
+            formatter.addFeature({ query, tops, indexSearcher ->
+                featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, gramType = gram, alpha = 2.0)
+            }, normType = NormType.NONE)
+        }
+    }
+
+    private fun trainSectionPath() {
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSectionSplit(query, tops, indexSearcher, 0) }, normType = NormType.NONE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSectionSplit(query, tops, indexSearcher, 1) }, normType = NormType.NONE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSectionSplit(query, tops, indexSearcher, 2) }, normType = NormType.NONE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSectionSplit(query, tops, indexSearcher, 3) }, normType = NormType.NONE)
+    }
+
+    private fun trainSectionComponent() {
+        formatter.addBM25(normType = NormType.ZSCORE)
+        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE)
+    }
+
+    private fun trainSimilarityComponents() {
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAddStringDistanceFunction(query, tops, indexSearcher, Jaccard() )
+        }, normType = NormType.NONE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAddStringDistanceFunction(query, tops, indexSearcher, JaroWinkler() )
+        }, normType = NormType.NONE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAddStringDistanceFunction(query, tops, indexSearcher, NormalizedLevenshtein() )
+        }, normType = NormType.NONE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAddStringDistanceFunction(query, tops, indexSearcher, SorensenDice() )
+        }, normType = NormType.NONE)
+    }
+
+    private fun trainSimilaritySection() {
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSplitSim(query, tops, indexSearcher, ::featStringSimilarityComponent,
+                    secWeights = listOf(1.0, 0.0, 0.0, 0.0))}, normType = NormType.NONE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSplitSim(query, tops, indexSearcher, ::featStringSimilarityComponent,
+                    secWeights = listOf(0.0, 1.0, 0.0, 0.0))}, normType = NormType.NONE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSplitSim(query, tops, indexSearcher, ::featStringSimilarityComponent,
+                    secWeights = listOf(0.0, 0.0, 1.0, 0.0))}, normType = NormType.NONE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSplitSim(query, tops, indexSearcher, ::featStringSimilarityComponent,
+                    secWeights = listOf(0.0, 0.0, 0.0, 1.0))}, normType = NormType.NONE)
+
+//        val weights = listOf(0.13506566, -0.49940691, 0.21757824, 0.14794917259)
+    }
+
+    private fun trainAverageAbstractScore() {
+        formatter.addBM25(normType = NormType.ZSCORE)
+        val abstractIndexer = getIndexSearcher(abstractPath)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAverageAbstractScoreByQueryRelevance(query, tops, indexSearcher, abstractAnalyzer)
+        }, normType = NormType.ZSCORE)
+
+//        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE)
+//        val gramIndexSearcher = getIndexSearcher(gramPath)
+//        val hLinker = HyperlinkIndexer("entity_mentions.db")
+//        val hGram = KotlinGramAnalyzer(gramIndexSearcher)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featSDM(query, tops, indexSearcher, hGram, 4.0)
+//        }, normType = NormType.ZSCORE)
+
+//        formatter.addFeature(::featStringSimilarityComponent, normType = NormType.ZSCORE)
+    }
+
+    private fun trainHyperlinkLikelihood() {
+        formatter.addBM25(normType = NormType.ZSCORE)
+        val hLinker = HyperlinkIndexer(hyperlinkPath)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
+    }
+
+
 
     /**
      * Function: train
@@ -388,13 +366,19 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
      */
     fun train(method: String, out: String) {
         when (method) {
-            "entity_similarity" -> trainSimilarity()
-            "average_query" -> trainAverageQuery()
-            "split_sections" -> trainSplit()
-            "mixtures" -> trainMixtures()
+            "hyperlink" -> trainHyperlinkLikelihood()
+            "abstract_sdm" -> trainAbstractSDM()
+            "abstract_sdm_components" -> trainAbstractSDMComponents()
+            "average_abstract" -> trainAverageAbstractScore()
+            "sdm_alpha" -> trainDirichletAlpha()
+            "sdm" -> trainSDM()
+            "abstract_alpha" -> trainAbstractSDMAlpha()
+            "section_path" -> trainSectionPath()
+            "section_component" -> trainSectionComponent()
+            "sdm_components" -> trainSDMComponents()
+            "string_similarities" -> trainSimilarityComponents()
+            "similarity_section" -> trainSimilaritySection()
             "combined" -> trainCombined()
-            "lm_dirichlet" -> trainDirichSim()
-            "lm_mercer" -> trainJelinekMercerSimilarity()
             else -> println("Unknown method!")
         }
         formatter.writeToRankLibFile(out)
