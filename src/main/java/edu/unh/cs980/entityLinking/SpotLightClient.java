@@ -37,16 +37,17 @@ public class SpotLightClient {
 
 			HttpResponse response = client.execute(request);
 
-			logger.debug("Response Code : " + response.getStatusLine().getStatusCode());
+			// logger.debug("Response Code : " +
+			// response.getStatusLine().getStatusCode());
 			BufferedReader rd = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
 			String line = "";
 			while ((line = rd.readLine()) != null) {
 				result.append(line);
 			}
 
-			logger.debug(result.toString());
+			// logger.debug(result.toString());
 		} catch (Exception e) {
-			logger.error("Can't get response from SpotLight API.");
+			// logger.error("Can't get response from SpotLight API.");
 		}
 
 		return result.toString();
