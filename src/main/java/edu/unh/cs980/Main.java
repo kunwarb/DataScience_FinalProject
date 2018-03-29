@@ -203,7 +203,7 @@ public class Main {
 				.help("The name of the trec_eval compatible run file to write. (default: query_rm_qe_results.run)");
 
 		// Argument parser for Doc RM Query Expansion
-		Subparser doc_RM_QE_Parser = subparsers.addParser("query_expansion")
+		Subparser doc_RM_QE_Parser = subparsers.addParser("query_expansion_entity")
 				.setDefault("func", new Exec(Main::runDoc_RM_QE))
 				.help("Use Document Entity Relevance Model +Query Expansion");
 		doc_RM_QE_Parser.addArgument("query_type").choices("page", "section")
