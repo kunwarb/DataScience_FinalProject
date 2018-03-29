@@ -37,7 +37,7 @@ public class Cosine extends ShingleBased implements
      * strings is the cosine of their respective vectors. Default k is 3.
      */
     public Cosine() {
-        //super();
+        super();
     }
 
     /**
