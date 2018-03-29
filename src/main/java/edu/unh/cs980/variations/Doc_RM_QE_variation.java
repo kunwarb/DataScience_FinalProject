@@ -71,7 +71,7 @@ public class Doc_RM_QE_variation {
 				int rank = i + 1;
 
 				String runStr = "enwiki:" + queryStr.replace(" ", "%20") + " Q0 " + paraId + " " + rank + " "
-						+ rankScore + " QueryExpansion";
+						+ rankScore + " Doc_RM_QE";
 				if (runFileStr.contains(runStr)) {
 					duplicate++;
 					// logger.debug("Found duplicate: " + runStr);
