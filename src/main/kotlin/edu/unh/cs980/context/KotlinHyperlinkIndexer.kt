@@ -16,13 +16,14 @@ import java.util.concurrent.atomic.AtomicInteger
  * Class: HyperlinkIndexer
  * Desc: Given AllButBenchmark corpus, extracts anchor text and links and builds a mention likelihood model.
  */
-class HyperlinkIndexer(filename: String) {
+class HyperlinkIndexer(filename: String, readOnly: Boolean = true) {
     // Database used to store anchor text / candidate entities
     val db = DBMaker
         .fileDB(filename)
         .fileMmapEnable()
         .closeOnJvmShutdown()
         .concurrencyScale(60)
+        .apply { if (readOnly) readOnly() }
         .make()
 
     // Key: (anchor text, linked entity)

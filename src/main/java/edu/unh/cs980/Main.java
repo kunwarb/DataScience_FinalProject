@@ -368,7 +368,7 @@ public class Main {
 
 	private static void runHyperlinkIndexer(Namespace params) {
 		String corpus = params.getString("corpus");
-		HyperlinkIndexer hyperlinkIndexer = new HyperlinkIndexer("entity_mentions.db");
+		HyperlinkIndexer hyperlinkIndexer = new HyperlinkIndexer("entity_mentions.db", false);
 		hyperlinkIndexer.indexHyperlinks(corpus);
 	}
 
