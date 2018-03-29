@@ -1,5 +1,8 @@
 package edu.unh.cs980.variations;
 
+import static edu.unh.cs980.KotUtils.CONTENT;
+import static edu.unh.cs980.KotUtils.PID;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
@@ -10,6 +13,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -27,18 +31,17 @@ import org.apache.lucene.store.FSDirectory;
 
 import edu.unh.cs980.utils.ProjectUtils;
 
-import static edu.unh.cs980.KotUtils.CONTENT;
-import static edu.unh.cs980.KotUtils.PID;
-
 public class QueryExpansion_variation {
 	private static int top_k_term = 5; // Include top k terms for QE
 	private static int top_k_doc = 10; // Initial top k documents for QE
 	private static int max_result = 100; // Max number for Lucene docs
 	private static QueryParser parser = new QueryParser(CONTENT, new StandardAnalyzer());
 
+	private static final Logger logger = Logger.getLogger(QueryExpansion_variation.class);
+
 	public static ArrayList<String> getSearchResult(ArrayList<String> queriesStr, String index_dir)
 			throws IOException, ParseException {
-		System.out.println("QueryExpansion ====> Retrieving results for " + queriesStr.size() + " queries...");
+		logger.info("QueryExpansion ====> Retrieving results for " + queriesStr.size() + " queries...");
 		ArrayList<String> runFileStr = new ArrayList<String>();
 
 		IndexSearcher searcher = new IndexSearcher(
@@ -77,8 +80,7 @@ public class QueryExpansion_variation {
 			}
 		}
 
-		System.out.println(
-				"QueryExpansion ====> Got " + runFileStr.size() + " results. Found " + duplicate + " duplicates.");
+		logger.info("QueryExpansion ====> Got " + runFileStr.size() + " results. Found " + duplicate + " duplicates.");
 
 		return runFileStr;
 	}
@@ -97,7 +99,7 @@ public class QueryExpansion_variation {
 			// Get single term list without stopwords
 			ArrayList<String> unigram_list = analyzeByUnigram(paraBody);
 			if (unigram_list.isEmpty()) {
-				System.out.println("Can't get terms list from : " + paraBody);
+				logger.warn("Can't get terms list from : " + paraBody);
 			}
 			int rank = i + 1;
 			// HashMap<String, Float> term_score;
