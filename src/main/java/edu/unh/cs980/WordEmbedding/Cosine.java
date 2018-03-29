@@ -36,9 +36,9 @@ public class Cosine extends ShingleBased implements
      * characters). In this n-dimensional space, the similarity between the two
      * strings is the cosine of their respective vectors. Default k is 3.
      */
-    public Cosine() {
-        super();
-    }
+//    public Cosine() { // Bindu, fix this
+////        super();
+//    }
 
     /**
      * Compute the cosine similarity between strings.

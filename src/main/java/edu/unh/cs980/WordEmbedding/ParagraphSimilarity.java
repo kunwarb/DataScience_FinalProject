@@ -95,7 +95,7 @@ public class ParagraphSimilarity{
 
 	/**
 	 *
-	 * @param The name of the run file output to
+	 * The name of the run file output to
 	 * @throws IOException,ParseException
 	 * 
 	 */
