@@ -30,10 +30,9 @@ class KotlinGram(filename: String) {
 
     /**
      * Function: doIndex
-     * Desc: Given the context of a paragraph, indexes unigrams, bigrams, and windowed bigrams.
+     * Desc: Given the content of a paragraph, indexes unigrams, bigrams, and windowed bigrams.
      */
     private fun doIndex(parText: String) {
-//        val tokens = getFilteredTokens(parText).toList()
         val tokens = AnalyzerFunctions.createTokenList(parText, ANALYZER_ENGLISH)
         val doc = Document()
         val unigrams = ArrayList<String>()
@@ -57,12 +56,21 @@ class KotlinGram(filename: String) {
 
     }
 
+    /**
+     * Func: iterWrapper
+     * Desc: A really annoying fix to some memory leaks I was seeing. For some reason why I parallelize adding documents,
+     *      from the paragraph corpus, the memory was not being freed up in time and everything grinds to a halt.
+     *      This function wraps around the iterParagraphs function.
+     *      Again, I don't know why this fixes the problem, but it does...
+     */
     private fun iterWrapper(f: BufferedInputStream): Iterable<String> {
         val iter = DeserializeData.iterParagraphs(f)
         var counter = 0
         val iterWrapper = buildIterator<String>() {
             while (iter.hasNext()) {
                 val nextPar = iter.next()
+
+                // Only using 30% of the available documents in paragraph corpus
                 if (counter % 3 == 0) {
                     yield(nextPar.textOnly)
                 }
@@ -75,13 +83,12 @@ class KotlinGram(filename: String) {
     /**
      * Class: indexGrams
      * Desc: Given a paragraph corpus, creates an index of grams, bigrams, and windowed bigrams.
-     *       Only 25% of the available corpus is used (to save space).
+     *       Only 30% of the available corpus is used (to save space).
      */
     fun indexGrams(filename: String) {
         val f = File(filename).inputStream().buffered(16 * 1024)
         val counter = AtomicInteger()
 
-//        DeserializeData.iterableParagraphs(f)
         iterWrapper(f)
             .forEachParallel { par ->
 
@@ -95,8 +102,6 @@ class KotlinGram(filename: String) {
 
                 // Extract all of the anchors/entities and add them to database
                 doIndex(par)
-//                if (ThreadLocalRandom.current().nextDouble() <= 0.25) {
-//                }
             }
 
         indexWriter.close()

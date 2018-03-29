@@ -28,8 +28,12 @@ import kotlin.math.log
 import kotlin.math.log10
 import kotlin.math.max
 
-//private val analyzer = StandardAnalyzer()
 
+/**
+ * Func: featSplitSim
+ * Desc: Given a feature that scores according to query and TopDocs, reweights score based
+ *       on section.
+ */
 fun featSplitSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                  func: (String, TopDocs, IndexSearcher) -> List<Double>,
                  secWeights: List<Double> = listOf(1.0, 1.0, 1.0, 1.0)): List<Double> {
@@ -50,6 +54,10 @@ fun featSplitSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
     return finalList
 }
 
+/**
+ * Func: featSectionComponent
+ * Desc: Reweights BM25 score of sections in query and returns a score that is a sum of these reweighted scores.
+ */
 fun featSectionComponent(query: String, tops: TopDocs, indexSearcher: IndexSearcher): List<Double> {
     val termQueries = query.split("/")
         .map { section -> AnalyzerFunctions
@@ -61,12 +69,6 @@ fun featSectionComponent(query: String, tops: TopDocs, indexSearcher: IndexSearc
     val weights = listOf(0.200983, 0.099785, 0.223777, 0.4754529531)
     val validQueries = weights.zip(termQueries)
 
-//    if (termQueries.size < secIndex + 1) {
-//        return (0 until tops.scoreDocs.size).map { 0.0 }
-//    }
-
-//    val boolQuery = termQueries[secIndex]
-
     return tops.scoreDocs
         .map { scoreDoc ->
             validQueries.map { (weight, boolQuery) ->
@@ -75,6 +77,12 @@ fun featSectionComponent(query: String, tops: TopDocs, indexSearcher: IndexSearc
         }
 }
 
+/**
+ * Func: featStringSimilarityComponent
+ * Desc: Combines Jaccard Similarity, JaroWinkler Similarity, NormalizedLevenshstein, and SorensenDice coefficient
+ *       by taking a weighted combined of these scores. The scores evaluate the similarity of the query's terms to
+ *       that of the spotlight entities in each of the documents.
+ */
 fun featStringSimilarityComponent(query: String, tops: TopDocs, indexSearcher: IndexSearcher): List<Double> {
     val weights = listOf(0.540756, 0.0, 0.0605, -0.3986067)
     val sims = listOf<StringDistance>(Jaccard(), JaroWinkler(), NormalizedLevenshtein(), SorensenDice())
@@ -89,12 +97,13 @@ fun featStringSimilarityComponent(query: String, tops: TopDocs, indexSearcher: I
 }
 
 
-// Get likelihood of query given entity mention
-// Then get likelihood of entity mention given document
+/**
+ * Func: featLikelihood  of Query Given Entity Mention
+ * Desc: The query is tokenized, and the likelihood of seeing an entity is based on how often the query token
+ *       is the anchor text for a given entity. The final score is the sum of these likelihoods.
+ */
 fun featLikehoodOfQueryGivenEntityMention(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                                           hIndexer: HyperlinkIndexer): List<Double> {
-
-//    val queryTokens = createTokenSequence(query).toList()
     val queryTokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
     return tops.scoreDocs.map { scoreDoc ->
         val doc = indexSearcher.doc(scoreDoc.doc)
@@ -112,8 +121,12 @@ fun featLikehoodOfQueryGivenEntityMention(query: String, tops: TopDocs, indexSea
 }
 
 
-
-
+/**
+ * Func: featSDM
+ * Desc: My best attempt at an SDM model (using Dirichlet smoothing). The individual components have
+ *       already been weighted (see training examples) and the final score is a weighted combination
+ *       of unigram, bigram, and windowed bigram.
+ */
 fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
             gramAnalyzer: KotlinGramAnalyzer, alpha: Double,
             gramType: GramStatType? = null): List<Double> {
@@ -124,15 +137,17 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
     return tops.scoreDocs.map { scoreDoc ->
         val doc = indexSearcher.doc(scoreDoc.doc)
         val text = doc.get(CONTENT)
-        val docStat = gramAnalyzer.getLanguageStatContainer(text)
 
+        // Generate a language model for the given document's text
+        val docStat = gramAnalyzer.getLanguageStatContainer(text)
         val queryLikelihood = docStat.getLikelihoodGivenQuery(queryCorpus, alpha)
         val v1 = queryLikelihood.unigramLikelihood
         val v2 = queryLikelihood.bigramLikelihood
         val v3 = queryLikelihood.bigramWindowLikelihood
-//        val weights = listOf(0.9113992744, 0.08220043144599, 0.0064001941)
-        val weights = listOf(0.9285990421606605, 0.070308081629, -0.0010928762)
 
+        // If gram type is given, only return the score of a particular -gram method.
+        // Otherwise, used the weights that were learned and combine all three types into a score.
+        val weights = listOf(0.9285990421606605, 0.070308081629, -0.0010928762)
         when (gramType) {
             GramStatType.TYPE_UNIGRAM -> v1
             GramStatType.TYPE_BIGRAM -> v2
@@ -143,29 +158,39 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 }
 
 
-
+/**
+ * Func: featAbstractSDM
+ * Desc: An SDM that uses the abstracts of Wikipedia pages as the language model.
+ *       The goal of this method is to find the likelihood of entities given a document
+ *       (simply the frequency they are mentioned in the document) and then get the likelihood of the
+ *       query given the entity's abstract text.
+ */
 fun featAbstractSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                    abstractAnalyzer: KotlinAbstractAnalyzer,
                    alpha: Double, gramType: GramStatType? = null): List<Double> {
     val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
     val cleanQuery = tokens.toList().joinToString(" ")
-    val weights = listOf(0.0486185, 0.9318018089, 0.01957)
 
-//    val queryCorpus = abstractAnalyzer.gramAnalyzer.getCorpusStatContainer(cleanQuery)
+    // Only look at entities that might be relevant to our query. This is done by searching the abstract
+    // index using BM25 and looking at only the top 20 entities. Each of these entities then has its
+    // language model generated and the likelihood of the model given the query.
     val relevantEntities = abstractAnalyzer.getRelevantEntities(cleanQuery, alpha)
-
     return tops.scoreDocs.map { scoreDoc ->
         val doc = indexSearcher.doc(scoreDoc.doc)
         val entities = doc.getValues("spotlight")
+
+        // Because the abstract page names don't always line up with Spotlight entities, try to match
+        // them using string similarity.
         val rels = entities.mapNotNull { entity ->
             abstractAnalyzer.getMostSimilarRelevantEntity(entity.toLowerCase(), relevantEntities)
         }
 
+        // Score is basically the average of all relevant entity models that a document contains.
+        val weights = listOf(0.0486185, 0.9318018089, 0.01957)
         val results = rels.map { (_, relEntity) ->
             val v1 = relEntity.queryLikelihood.unigramLikelihood
             val v2 = relEntity.queryLikelihood.bigramLikelihood
             val v3 = relEntity.queryLikelihood.bigramWindowLikelihood
-
             when (gramType) {
                 GramStatType.TYPE_UNIGRAM       -> v1
                 GramStatType.TYPE_BIGRAM        -> v2
@@ -179,12 +204,15 @@ fun featAbstractSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 }
 
 
+/**
+ * Func: featAverageAbstractScoreByQueryRelevance
+ * Desc: Using BM25 to score relevant entities, the scores of documents are expressed as the average
+ *       BM25 score of the relevant entities that it contains.
+ */
 fun featAverageAbstractScoreByQueryRelevance(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                    abstractAnalyzer: KotlinAbstractAnalyzer): List<Double> {
     val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
     val cleanQuery = tokens.toList().joinToString(" ")
-
-//    val queryCorpus = abstractAnalyzer.gramAnalyzer.getCorpusStatContainer(cleanQuery)
     val relevantEntities = abstractAnalyzer.getRelevantEntities(cleanQuery)
 
     return tops.scoreDocs.map { scoreDoc ->

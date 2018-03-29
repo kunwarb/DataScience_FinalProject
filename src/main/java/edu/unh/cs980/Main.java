@@ -241,13 +241,13 @@ public class Main {
 				.setDefault("query_results.run")
 				.help("Specifies the output name of the run file.");
 		ranklibQueryParser.addArgument("--hyperlink_database")
-				.setDefault("entity_mentions.db")
+				.setDefault("/trec_data/team_1/entity_mentions.db")
 				.help("Location to MapDB indexed by Hyperlink Indexer (default: entity_mentions.db)");
 		ranklibQueryParser.addArgument("--abstract_index")
-				.setDefault("abstract")
+				.setDefault("/trec_data/team_1/abstract")
 				.help("Location of Lucene index for entity abstracts (default: abstract/)");
 		ranklibQueryParser.addArgument("--gram_index")
-				.setDefault("gram")
+				.setDefault("/trec_data/team_1/gram")
 				.help("Location of Lucene index for -grams used in SDM (default: gram/");
 
 
@@ -269,13 +269,13 @@ public class Main {
 				.setDefault("ranklib_features.txt")
 				.help("Output name for the RankLib compatible feature file.");
 		ranklibTrainerParser.addArgument("--hyperlink_database")
-				.setDefault("entity_mentions.db")
+				.setDefault("/trec_data/team_1/entity_mentions.db")
 				.help("Location to MapDB indexed by Hyperlink Indexer (default: entity_mentions.db)");
 		ranklibTrainerParser.addArgument("--abstract_index")
-				.setDefault("abstract")
+				.setDefault("/trec_data/team_1/abstract")
 				.help("Location of Lucene index for entity abstracts (default: abstract/)");
 		ranklibTrainerParser.addArgument("--gram_index")
-				.setDefault("gram")
+				.setDefault("/trec_data/team_1/gram")
 				.help("Location of Lucene index for -grams used in SDM (default: gram/");
 
 		// Gram
