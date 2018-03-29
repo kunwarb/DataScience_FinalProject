@@ -47,9 +47,9 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 //        val weights = listOf(0.3106317698753524,-0.025891305471130843,
 //                0.34751201103557083, -0.2358113441529167, -0.08015356975284649)
 
-//        val weights = listOf(0.27569142, 0.17437123, 0.20848581, 0.34145153, 0.0, 0.0, 0.0)
+        val weights = listOf(0.27569142, 0.17437123, 0.20848581, 0.34145153, 0.0, 0.0, 0.0)
 //        val weights = listOf(0.61881053, 0.0, 0.0, 0.38118944)
-        val weights = listOf(0.5327952, 0.0, 0.18299106, 0.28421375)
+//        val weights = listOf(0.5327952, 0.0, 0.18299106, 0.28421375)
 
         val gramIndexSearcher = getIndexSearcher(gramPath)
         val hLinker = HyperlinkIndexer(hyperlinkPath)
@@ -59,9 +59,9 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
 
         formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE, weight = weights[0])
 
-//        formatter.addFeature({ query, tops, indexSearcher ->
-//            featStringSimilarityComponent(query, tops, indexSearcher)
-//        }, normType = NormType.ZSCORE, weight = weights[1])
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featStringSimilarityComponent(query, tops, indexSearcher)
+        }, normType = NormType.ZSCORE, weight = weights[1])
 
         formatter.addFeature({query, tops, indexSearcher ->
             featUseLucSim(query, tops, indexSearcher, LMDirichletSimilarity())
