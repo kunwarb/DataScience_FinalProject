@@ -41,12 +41,19 @@ public class QueryExpansion_variation {
 
 	public static ArrayList<String> getSearchResult(ArrayList<String> queriesStr, String index_dir)
 			throws IOException, ParseException {
-		logger.info("QueryExpansion ====> Retrieving results for " + queriesStr.size() + " queries...");
-		ArrayList<String> runFileStr = new ArrayList<String>();
 
+		// Create index searcher and pass to main method
 		IndexSearcher searcher = new IndexSearcher(
 				DirectoryReader.open(FSDirectory.open((new File(index_dir).toPath()))));
 		searcher.setSimilarity(new BM25Similarity());
+		return getSearchResult(queriesStr, searcher);
+	}
+
+	// Variant using existing IndexSearcher
+	public static ArrayList<String> getSearchResult(ArrayList<String> queriesStr, IndexSearcher searcher)
+			throws IOException, ParseException {
+		logger.info("QueryExpansion ====> Retrieving results for " + queriesStr.size() + " queries...");
+		ArrayList<String> runFileStr = new ArrayList<String>();
 
 		int duplicate = 0;
 		for (String queryStr : queriesStr) {
@@ -79,6 +86,7 @@ public class QueryExpansion_variation {
 				}
 			}
 		}
+
 
 		logger.info("QueryExpansion ====> Got " + runFileStr.size() + " results. Found " + duplicate + " duplicates.");
 
