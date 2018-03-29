@@ -357,6 +357,15 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
     }
 
+    private fun trainTest() {
+        formatter.addBM25(normType = NormType.ZSCORE)
+        val gramSearcher = getIndexSearcher(gramPath)
+        val hGram = KotlinGramAnalyzer(gramSearcher)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSDMWithQueryExpansion(query, tops, indexSearcher, hGram, 4.0)
+        }, normType = NormType.ZSCORE)
+    }
+
 
 
     /**
@@ -378,6 +387,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "sdm_components" -> trainSDMComponents()
             "string_similarities" -> trainSimilarityComponents()
             "similarity_section" -> trainSimilaritySection()
+            "test" -> trainTest()
             "combined" -> trainCombined()
             else -> println("Unknown method!")
         }
