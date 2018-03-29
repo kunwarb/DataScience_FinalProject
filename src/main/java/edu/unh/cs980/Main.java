@@ -242,13 +242,13 @@ public class Main {
 				.help("Specifies the output name of the run file.");
 		ranklibQueryParser.addArgument("--hyperlink_database")
 				.setDefault("/trec_data/team_1/entity_mentions.db")
-				.help("Location to MapDB indexed by Hyperlink Indexer (default: entity_mentions.db)");
+				.help("Location to MapDB indexed by Hyperlink Indexer (default: /trec_data/team_1/entity_mentions.db)");
 		ranklibQueryParser.addArgument("--abstract_index")
 				.setDefault("/trec_data/team_1/abstract")
-				.help("Location of Lucene index for entity abstracts (default: abstract/)");
+				.help("Location of Lucene index for entity abstracts (default: /trec_data/team_1/abstract/)");
 		ranklibQueryParser.addArgument("--gram_index")
 				.setDefault("/trec_data/team_1/gram")
-				.help("Location of Lucene index for -grams used in SDM (default: gram/");
+				.help("Location of Lucene index for -grams used in SDM (default: /trec_data/team_1/gram/");
 
 
 		// Ranklib Trainer
@@ -281,26 +281,27 @@ public class Main {
 		// Gram
 		Subparser gramParser = subparsers.addParser("gram_indexer")
 				.setDefault("func", new Exec(Main::runGram))
-				.help("");
+				.help("Indexes -gram models for paragraphCorpus. See Readme for further details.");
 
 		gramParser.addArgument("corpus")
 				.help("Location of paragraph corpus to index.");
 
 		gramParser.addArgument("--database")
 				.setDefault("gram")
-				.help("");
+				.help("Name of the indexed Lucene database to creature (default is gram)");
 
         // Abstract Indexer
         Subparser abstractParser = subparsers.addParser("abstract_indexer")
                 .setDefault("func", new Exec(Main::runAbstract))
-                .help("");
+                .help("Creates a Lucene index of entities, where abstract are derived from first three paragraphs." +
+						"See Readme for further details.");
         abstractParser.addArgument("corpus")
                 .help("Location of paragraph corpus to index.");
 
 		// FeatureSelection
 		Subparser featureParser = subparsers.addParser("feature_selection")
 				.setDefault("func", new Exec(Main::runFeatureSelection))
-				.help("");
+				.help("Performs best subset selection given a RankLib feature file. See ReadMe on Github.");
 
 		featureParser.addArgument("ranklib_jar")
 				.help("Location of RankLib jar file.");
@@ -331,7 +332,7 @@ public class Main {
 		// Hyperlink Indexer
 		Subparser hyperlinkIndexerParser = subparsers.addParser("hyperlink_indexer")
 				.setDefault("func", new Exec(Main::runHyperlinkIndexer))
-				.help("");
+				.help("Builds an entity likelihood model given entity mentions in page corpus.");
 		hyperlinkIndexerParser.addArgument("corpus")
 				.help("Location of all alllButBenchmark corpus.");
 

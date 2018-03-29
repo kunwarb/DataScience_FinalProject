@@ -80,6 +80,51 @@ public class QueryExpansion_variation {
 			}
 		}
 
+
+		logger.info("QueryExpansion ====> Got " + runFileStr.size() + " results. Found " + duplicate + " duplicates.");
+
+		return runFileStr;
+	}
+
+	// Variant using existing IndexSearcher
+	public static ArrayList<String> getSearchResult(ArrayList<String> queriesStr, IndexSearcher searcher)
+			throws IOException, ParseException {
+		logger.info("QueryExpansion ====> Retrieving results for " + queriesStr.size() + " queries...");
+		ArrayList<String> runFileStr = new ArrayList<String>();
+
+		int duplicate = 0;
+		for (String queryStr : queriesStr) {
+			Query q0 = parser.parse(QueryParser.escape(queryStr));
+
+			TopDocs init_tops = searcher.search(q0, top_k_doc);
+			ScoreDoc[] init_scoreDoc = init_tops.scoreDocs;
+
+			// Get top k terms with relevance mode
+			ArrayList<String> expanded_terms = getExpandedTerms(top_k_term, searcher, init_scoreDoc);
+
+			// Create new expanded query
+			Query q_rm = generateWeightedQuery(queryStr, expanded_terms);
+			TopDocs tops = searcher.search(q_rm, max_result);
+			ScoreDoc[] scoreDoc = tops.scoreDocs;
+			for (int i = 0; i < scoreDoc.length; i++) {
+				ScoreDoc score = scoreDoc[i];
+				Document doc = searcher.doc(score.doc);
+				String paraId = doc.getField(PID).stringValue();
+				float rankScore = score.score;
+				int rank = i + 1;
+
+				String runStr = "enwiki:" + queryStr.replace(" ", "%20") + " Q0 " + paraId + " " + rank + " "
+						+ rankScore + " QueryExpansion";
+				if (runFileStr.contains(runStr)) {
+					duplicate++;
+					// System.out.println("Found duplicate: " + runStr);
+				} else {
+					runFileStr.add(runStr);
+				}
+			}
+		}
+
+
 		logger.info("QueryExpansion ====> Got " + runFileStr.size() + " results. Found " + duplicate + " duplicates.");
 
 		return runFileStr;

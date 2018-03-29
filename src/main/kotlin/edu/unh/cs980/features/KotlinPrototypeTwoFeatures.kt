@@ -10,6 +10,8 @@ import edu.unh.cs980.language.KotlinAbstractAnalyzer
 import edu.unh.cs980.language.KotlinGramAnalyzer
 import edu.unh.cs980.misc.AnalyzerFunctions
 import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.*
+import edu.unh.cs980.variations.QueryExpansion_variation
+import edu.unh.cs980.variations.Query_RM_QE_variation
 import info.debatty.java.stringsimilarity.Jaccard
 import info.debatty.java.stringsimilarity.JaroWinkler
 import info.debatty.java.stringsimilarity.NormalizedLevenshtein
@@ -155,6 +157,41 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
             else -> v1 * weights[0] + v2 * weights[1] + v3 * weights[2]
         }
     }
+}
+
+// Not finished yet, but will be using Kevin's query expansion methods
+fun featSDMWithQueryExpansion(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
+            gramAnalyzer: KotlinGramAnalyzer, alpha: Double,
+            gramType: GramStatType? = null): List<Double> {
+    val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
+    val cleanQuery = tokens.toList().joinToString(" ")
+    val queryCorpus = gramAnalyzer.getCorpusStatContainer(cleanQuery)
+
+    val expandedTerms = QueryExpansion_variation.getSearchResult(arrayListOf(cleanQuery), indexSearcher)
+    println(expandedTerms)
+
+    return tops.scoreDocs.map { scoreDoc ->
+        val doc = indexSearcher.doc(scoreDoc.doc)
+        val text = doc.get(CONTENT)
+
+        // Generate a language model for the given document's text
+        val docStat = gramAnalyzer.getLanguageStatContainer(text)
+        val queryLikelihood = docStat.getLikelihoodGivenQuery(queryCorpus, alpha)
+        val v1 = queryLikelihood.unigramLikelihood
+        val v2 = queryLikelihood.bigramLikelihood
+        val v3 = queryLikelihood.bigramWindowLikelihood
+
+        // If gram type is given, only return the score of a particular -gram method.
+        // Otherwise, used the weights that were learned and combine all three types into a score.
+        val weights = listOf(0.9285990421606605, 0.070308081629, -0.0010928762)
+        when (gramType) {
+            GramStatType.TYPE_UNIGRAM -> v1
+            GramStatType.TYPE_BIGRAM -> v2
+            GramStatType.TYPE_BIGRAM_WINDOW -> v3
+            else -> v1 * weights[0] + v2 * weights[1] + v3 * weights[2]
+        }
+    }
+
 }
 
 
