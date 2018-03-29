@@ -51,7 +51,7 @@ class WordEmbedding {
 		runFileParameter = new ArrayList<>();
 		results = new HashMap<>();
 		maxResults = numResults;
-		Cosine c=new Cosine();
+		Cosine c=new Cosine(1); // Bindu, fix this
 		qp = new QueryParser("text", new StandardAnalyzer());
 		is = new IndexSearcher(DirectoryReader.open((FSDirectory.open(new File(MainClass.INDEX_DIRECTORY).toPath()))));
 		ir = is.getIndexReader();

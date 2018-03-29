@@ -33,7 +33,7 @@ public class TFIDFSimilarity {
 																	// to scores
 																	// for that
 																	// query
-	TFIDFSimilarity(ArrayList<Data.Page> pl, int n, String index) throws ParseException, IOException {
+	public TFIDFSimilarity(ArrayList<Data.Page> pl, int n, String index) throws ParseException, IOException {
 		String INDEX_DIRECTORY = index;
 		numDocs = n;
 		pageList = pl;
@@ -132,8 +132,7 @@ public class TFIDFSimilarity {
 
 	/**
 	 * @function:writeTFIDFScoresTo
-	 * @param The
-	 *            name of the run file output to
+	 * The name of the run file output to
 	 * @Description: Main function of the Similarity which calculates similarity
 	 *               score of paragraph
 	 * @throws IOException,ParseException
