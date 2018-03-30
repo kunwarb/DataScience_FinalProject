@@ -193,7 +193,7 @@ fun featSDMWithEntityQueryExpansion(query: String, tops: TopDocs, indexSearcher:
 
         // If gram type is given, only return the score of a particular -gram method.
         // Otherwise, used the weights that were learned and combine all three types into a score.
-        val weights = listOf(0.9285990421606605, 0.070308081629, -0.0010928762)
+        val weights = listOf(0.9640505557357185, 0.025725201783485203, 0.01022424280796314)
         when (gramType) {
             GramStatType.TYPE_UNIGRAM -> v1
             GramStatType.TYPE_BIGRAM -> v2
@@ -233,6 +233,7 @@ fun featAbstractSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         }
 
         // Score is basically the average of all relevant entity models that a document contains.
+        // Surprisingly, after training, the bigrams were favored the most (compared to the normal SDM above)
         val weights = listOf(0.0486185, 0.9318018089, 0.01957)
         val results = rels.map { (_, relEntity) ->
             val v1 = relEntity.queryLikelihood.unigramLikelihood
