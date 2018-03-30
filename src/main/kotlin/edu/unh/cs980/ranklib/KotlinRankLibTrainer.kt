@@ -361,8 +361,10 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         formatter.addBM25(normType = NormType.ZSCORE)
         val gramSearcher = getIndexSearcher(gramPath)
         val hGram = KotlinGramAnalyzer(gramSearcher)
+        val abstractIndexer = getIndexSearcher(abstractPath)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
         formatter.addFeature({ query, tops, indexSearcher ->
-            featSDMWithQueryExpansion(query, tops, indexSearcher, hGram, 4.0)
+            featSDMWithQueryExpansion(query, tops, indexSearcher, hGram, abstractAnalyzer.indexSearcher, 4.0)
         }, normType = NormType.ZSCORE)
     }
 
