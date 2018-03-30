@@ -167,7 +167,7 @@ fun featSDMWithQueryExpansion(query: String, tops: TopDocs, indexSearcher: Index
     val cleanQuery = tokens.toList().joinToString(" ")
 
     val expandedQuery = tokens
-        .map { token -> Query_RM_QE_variation.getExpandedEntitiesFromPageQuery(token, 5, abstractSearcher) }
+        .map { token -> Query_RM_QE_variation.getExpandedEntitiesFromPageQuery(token, 1, abstractSearcher) }
         .map { expandedTerms -> expandedTerms.joinToString(" ") }
         .toSet()
         .joinToString(" ")
