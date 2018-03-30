@@ -287,13 +287,13 @@ public class Query_RM_QE_variation {
 	}
 
 	public static ArrayList<String> getExpandedEntitiesFromPageQuery(String page_query, int top_k,
-			String abstract_index_dir) {
+																	 IndexSearcher searcher) {
 
 		ArrayList<String> expandedQueryTerms = new ArrayList<String>();
 		HashMap<String, Float> entityScore = new HashMap<>();
 
 		String abstracStr = EntityMethods.getEntityAbstract(page_query.replace(" ", "_").toLowerCase(),
-				abstract_index_dir);
+				searcher);
 
 		if (!abstracStr.isEmpty()) {
 			ArrayList<EntityWord> entities = EntityMethods.getAnnotatedEntites(abstracStr);
@@ -323,6 +323,7 @@ public class Query_RM_QE_variation {
 		}
 		return expandedQueryTerms;
 	}
+
 
 	public static HashMap<String, ArrayList<String>> getExpandedEntitiesListFromSectionQuery(String section_query,
 			int top_k, String abstract_index_dir) {

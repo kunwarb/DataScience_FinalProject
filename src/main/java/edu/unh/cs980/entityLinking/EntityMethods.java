@@ -39,7 +39,18 @@ public class EntityMethods {
 			IndexSearcher searcher = new IndexSearcher(
 					DirectoryReader.open(FSDirectory.open((new File(index_dir).toPath()))));
 			searcher.setSimilarity(new BM25Similarity());
+			return getEntityAbstract(queryStr, searcher);
 
+		} catch (Exception e) {
+			logger.error("Error when finding abstract. Throw: " + e.getMessage());
+		}
+
+		return content;
+	}
+
+	public static String getEntityAbstract(String queryStr, IndexSearcher searcher) {
+		String content = "";
+		try {
 			BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
 			// String[] terms = queryStr.split(" ");
 			// for (int i = 0; i < terms.length; i++) {

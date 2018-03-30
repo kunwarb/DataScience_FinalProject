@@ -161,14 +161,14 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 
 // Not finished yet, but will be using Kevin's query expansion methods
 fun featSDMWithQueryExpansion(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
-            gramAnalyzer: KotlinGramAnalyzer, alpha: Double,
+            gramAnalyzer: KotlinGramAnalyzer, abstractSearcher: IndexSearcher, alpha: Double,
             gramType: GramStatType? = null): List<Double> {
     val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
     val cleanQuery = tokens.toList().joinToString(" ")
     val queryCorpus = gramAnalyzer.getCorpusStatContainer(cleanQuery)
 
-    val expandedTerms = QueryExpansion_variation.getSearchResult(arrayListOf(cleanQuery), indexSearcher)
-    println(expandedTerms)
+    val expandedTerms = Query_RM_QE_variation.getExpandedEntitiesFromPageQuery(cleanQuery, 5, abstractSearcher)
+
 
     return tops.scoreDocs.map { scoreDoc ->
         val doc = indexSearcher.doc(scoreDoc.doc)
