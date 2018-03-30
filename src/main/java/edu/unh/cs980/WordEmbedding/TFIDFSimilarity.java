@@ -5,6 +5,7 @@
 package edu.unh.cs980.WordEmbedding;
 
 import edu.unh.cs.treccar_v2.Data;
+import edu.unh.cs.treccar_v2.Data.Page;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -26,24 +27,17 @@ public class TFIDFSimilarity {
 	private QueryParser parser;
 	private int numDocs; // Number of documents to return
 	private ArrayList<Data.Page> pageList; // List of pages to query
-	private HashMap<Query, ArrayList<ResultQuery>> queryResults; // Map of
-																	// queries
-																	// to map of
-																	// Documents
-																	// to scores
-																	// for that
-																	// query
-	public TFIDFSimilarity(ArrayList<Data.Page> pl, int n, String index) throws ParseException, IOException {
+	private HashMap<Query, ArrayList<ResultQuery>> queryResults; 
+
+	TFIDFSimilarity(ArrayList<Data.Page> pl, int n, String index) throws ParseException, IOException {
 		String INDEX_DIRECTORY = index;
 		numDocs = n;
 		pageList = pl;
 
-		// Parse the parabody field using StandardAnalyzer
+	
 		parser = new QueryParser("parabody", new StandardAnalyzer());
 
-		// Create an index searcher
 		searcher = new IndexSearcher(DirectoryReader.open(FSDirectory.open((new File(INDEX_DIRECTORY).toPath()))));
-
 		// Setting our own similarity class which computes
 		SimilarityBase tfidf = new SimilarityBase() {
 			protected float score(BasicStats stats, float freq, float docLen) {
@@ -58,6 +52,7 @@ public class TFIDFSimilarity {
 		searcher.setSimilarity(tfidf);
 	}
 
+
 	/*
 	 * public List<Double> doScoring(String query, TopDocs tops ...) {
 	 * BooleanQuery boolQuery = makeQuery(query); ArrayList<Double> scores = new
@@ -67,206 +62,275 @@ public class TFIDFSimilarity {
 	 * scores.add(score) } return score; }
 	 */
 
-	public synchronized List<Double> doScoring(String qid, TopDocs tpd, TermQuery query, HashMap<TermQuery, Float> queryweights2, HashMap<Document, Float> scores1, HashMap<Document, ResultQuery> docMap2)
-			throws IOException, ParseException {
+	
+	
+	/*
+	 * @Function: SplitThePageName
+	 * @Call: Another function calculateScore
+	 * 
+	 */
+	
+	
+	public List<List<Double>> getQueryScore(String query, IndexSearcher indexSearcher) throws ParseException, IOException {
+	
+		HashMap<TermQuery, Float> queryweights = new HashMap<>();
+		ArrayList<TermQuery> terms = new ArrayList<>();
+
+		Query q = parser.parse(query);
+
+		for (String term : query.split(" "))
+
+		{
+			TermQuery tq = new TermQuery(new Term("text", term));
+
+			terms.add(tq);
+
+			queryweights.put(tq, queryweights.getOrDefault(tq, 0.0f) + 1.0f);
+		}
+		
+		return calculateQueryScore(q, query, terms, queryweights);
+		
+	}
+	
+	private List<List<Double>> calculateQueryScore(Query q, String qname, ArrayList<TermQuery> terms,
+			HashMap<TermQuery, Float> queryweights2) throws IOException, ParseException {
+
+		List<List<Double>> ls = new ArrayList<List<Double>>();
+
+		PriorityQueue<ResultQuery> docQueue = new PriorityQueue<>(new ResultComparator());
+		for (TermQuery queryterm : terms) { // For every Term
+
+			// Get our Index Reader for helpful statistics
+			IndexReader reader = searcher.getIndexReader();
+
+			// If document frequency is zero, set DF to 1; else, set DF to
+			// document frequency
+			float DF = (reader.docFreq(queryterm.getTerm()) == 0) ? 1 : reader.docFreq(queryterm.getTerm());
+
+			// Calculate TF-IDF for the query vector
+			float qTF = (float) (1 + Math.log10(queryweights2.get(queryterm))); // Logarithmic
+			// term
+			// frequency
+			float qIDF = (float) (Math.log10(reader.numDocs() / DF)); // Logarithmic
+																		// inverse
+																		// document
+																		// frequency
+			float qWeight = qTF * qIDF;
+
+			// Store query weight for later calculations
+			queryweights2.put(queryterm, qWeight);
+
+			// Get the top 100 documents that match our query
+			TopDocs tpd = searcher.search(queryterm, numDocs);
+
+			ls.add(getTermScores(qname, tpd, queryweights2, queryterm, q));
+
+		}
+		return ls;
+	}
+	
+	
+	public void SplitPageName(Page page, String runfile) throws IOException, ParseException {
 		// TODO Auto-generated method stub
-       
-		   List<Double> myList = new ArrayList<Double>();
-		for (Data.Page page : pageList) {
+		String qid = page.getPageId();
+		String qname = page.getPageName();
+		HashMap<TermQuery, Float> queryweights = new HashMap<>();
+		ArrayList<TermQuery> terms = new ArrayList<>();
+
+		Query q = parser.parse(page.getPageName());
+
+		for (String term : page.getPageName().split(" "))
+
+		{
+			TermQuery tq = new TermQuery(new Term("text", term));
+
+			terms.add(tq);
+
+			queryweights.put(tq, queryweights.getOrDefault(tq, 0.0f) + 1.0f);
+		}
+
+		calculateScore(qid, q, qname, terms, runfile, queryweights);
+
+	}
+	
+	
+	
+
+	public  void calculateScore(String qid, Query q, String qname, ArrayList<TermQuery> terms, String runfile,
+			HashMap<TermQuery, Float> queryweights2) throws IOException, ParseException {
+
+		List<Double> ls = new ArrayList<Double>();
+
+		PriorityQueue<ResultQuery> docQueue = new PriorityQueue<>(new ResultComparator());
+		for (TermQuery queryterm : terms) { // For every Term
+
+			// Get our Index Reader for helpful statistics
+			IndexReader reader = searcher.getIndexReader();
+
+			// If document frequency is zero, set DF to 1; else, set DF to
+			// document frequency
+			float DF = (reader.docFreq(queryterm.getTerm()) == 0) ? 1 : reader.docFreq(queryterm.getTerm());
+
+			// Calculate TF-IDF for the query vector
+			float qTF = (float) (1 + Math.log10(queryweights2.get(queryterm))); // Logarithmic
+			// term
+			// frequency
+			float qIDF = (float) (Math.log10(reader.numDocs() / DF)); // Logarithmic
+																		// inverse
+																		// document
+																		// frequency
+			float qWeight = qTF * qIDF;
+
+			// Store query weight for later calculations
+			queryweights2.put(queryterm, qWeight);
+
+			// Get the top 100 documents that match our query
+			TopDocs tpd = searcher.search(queryterm, numDocs);
+
+			ls = doScoring(qid, qname, tpd, queryweights2, queryterm, runfile);
 			
-			PriorityQueue<ResultQuery> docQueue = new PriorityQueue<>(new ResultComparator());
-			
-			String qid1 = page.getPageId();
+
+		}
+
+	}
+	
+	private List<Double> getTermScores(String qname, TopDocs tpd, HashMap<TermQuery, Float> queryweights2,
+			TermQuery queryterm, Query q) throws IOException {
+		List<Double> ls1 = new ArrayList<Double>();
+		HashMap<Document, ResultQuery> docMap = new HashMap<>();
+		HashMap<Document, Float> scores = new HashMap<>(); // Mapping of each
+		PriorityQueue<ResultQuery> docQueue = new PriorityQueue<>(new ResultComparator());
+		
+		for (int i = 0; i < tpd.scoreDocs.length; i++) { // For every
+			// returned
+			// document...
+			Document doc = searcher.doc(tpd.scoreDocs[i].doc); // Get
+			// the
+			// document
+			double score = tpd.scoreDocs[i].score * queryweights2.get(queryterm); // Calculate
+			// TF-IDF
+			ResultQuery dResults = docMap.get(doc);
+			if (dResults == null) {
+				dResults = new ResultQuery(doc);
+			}
+
+			float prevScore = dResults.getScore();
+			dResults.score((float) (prevScore + score));
+			docMap.put(doc, dResults);
+
+			// Store score for later use
+			scores.put(doc, (float) (prevScore + score));
+
+		}
+		float cosineLength = 0.0f;
+		for (Map.Entry<Document, Float> entry : scores.entrySet()) {
+			Float score = entry.getValue();
+
+			cosineLength = (float) (cosineLength + Math.pow(score, 2));
+		}
+		cosineLength = (float) (Math.sqrt(cosineLength));
+
+		// Normalization of scores
+		for (Map.Entry<Document, Float> entry : scores.entrySet()) {
+
+			Document doc = entry.getKey();
+			Float score = entry.getValue();
+
+			// Normalize the score
+			scores.put(doc, score / scores.size());
+
+			ls1.add((double) (score / scores.size()));    //Creating list for combined Method
+			// System.out.println(score/scores.size());
+			ResultQuery dResults = docMap.get(doc);
+			dResults.score(dResults.getScore() / cosineLength);
+
+			docQueue.add(dResults);
+		}
+		return ls1;
+		
+	}
+
+	private List<Double> doScoring(String qid, String qname, TopDocs tpd, HashMap<TermQuery, Float> queryweights2,
+			TermQuery queryterm, String runfile) throws ParseException, IOException {
+		// TODO Auto-generated method stub
+		HashMap<Document, ResultQuery> docMap = new HashMap<>();
+		HashMap<Document, Float> scores = new HashMap<>(); // Mapping of each
+		ArrayList<ResultQuery> docResults = new ArrayList<>();
+		PriorityQueue<ResultQuery> docQueue = new PriorityQueue<>(new ResultComparator());
+		
+		List<Double> ls1 = new ArrayList<Double>();
+
+		Query q = parser.parse(qname);
 
 		for (int i = 0; i < tpd.scoreDocs.length; i++) { // For every
 			// returned
 			// document...
 			Document doc = searcher.doc(tpd.scoreDocs[i].doc); // Get
-
-			double score = tpd.scoreDocs[i].score * queryweights2.get(query);
-
-			ResultQuery dResults = docMap2.get(doc);
+			// the
+			// document
+			double score = tpd.scoreDocs[i].score * queryweights2.get(queryterm); // Calculate
+			// TF-IDF
+			ResultQuery dResults = docMap.get(doc);
 			if (dResults == null) {
 				dResults = new ResultQuery(doc);
 			}
+
 			float prevScore = dResults.getScore();
 			dResults.score((float) (prevScore + score));
-			dResults.queryId(qid1);
+			dResults.queryId(qid);
 			dResults.paragraphId(doc.getField("paragraphid").stringValue());
 			dResults.teamName("Team1 ");
-			dResults.methodName("TFDFSimilarity");
+			dResults.methodName("TF-IDFSimilarity");
 
-			docMap2.put(doc, dResults);
+			docMap.put(doc, dResults);
 
-		}
-		
-		
-		// Get cosine Length
-					float cosineLength = 0.0f;
-					for (Map.Entry<Document, Float> entry : scores1.entrySet()) {
-					       Float score = entry.getValue();
-
-						cosineLength = (float) (cosineLength + Math.pow(score, 2));
-					}
-					cosineLength = (float) (Math.sqrt(cosineLength));
-                  
-					// Normalization of scores
-					for (Map.Entry<Document, Float> entry : scores1.entrySet()) {
-                        
-						Float score = entry.getValue();
-
-						float finalscore=score / scores1.size();
-						if(finalscore!=0.0)
-						{
-						myList.add((double) (score / scores1.size()));
-					    System.out.println(score/scores1.size());
-						}
-					   
-					}
+			// Store score for later use
+			scores.put(doc, (float) (prevScore + score));
 
 		}
-		return myList;	
-				
+		float cosineLength = 0.0f;
+		for (Map.Entry<Document, Float> entry : scores.entrySet()) {
+			Float score = entry.getValue();
+
+			cosineLength = (float) (cosineLength + Math.pow(score, 2));
+		}
+		cosineLength = (float) (Math.sqrt(cosineLength));
+
+		// Normalization of scores
+		for (Map.Entry<Document, Float> entry : scores.entrySet()) {
+
+			Document doc = entry.getKey();
+			Float score = entry.getValue();
+
+			// Normalize the score
+			scores.put(doc, score / scores.size());
+
+			ls1.add((double) (score / scores.size()));    //Creating list for combined Method
+			// System.out.println(score/scores.size());
+			ResultQuery dResults = docMap.get(doc);
+			dResults.score(dResults.getScore() / cosineLength);
+
+			docQueue.add(dResults);
+		}
+
+		int rankCount = 0;
+		ResultQuery current;
+		while ((current = docQueue.poll()) != null) {
+			current.rank(rankCount);
+			docResults.add(current);
+			rankCount++;
+		}
+
+		// Map our Documents and scores to the corresponding query
+
+		queryResults.put(q, docResults);
+         writeResults(queryResults, runfile);
+		return ls1;
 
 	}
 
-	/**
-	 * @function:writeTFIDFScoresTo
-	 * The name of the run file output to
-	 * @Description: Main function of the Similarity which calculates similarity
-	 *               score of paragraph
-	 * @throws IOException,ParseException
-	 * 
-	 */
-	public void writeTFIDFScoresTo(String runfile) throws IOException, ParseException {
-
-		queryResults = new HashMap<>(); // Maps query to map of Documents with
-		// TF-IDF score
-
-		for (Data.Page page : pageList) {
-			HashMap<Document, Float> scores = new HashMap<>(); // Mapping of
-																// each Document
-																// to its score
-			HashMap<Document, ResultQuery> docMap = new HashMap<>();
-			PriorityQueue<ResultQuery> docQueue = new PriorityQueue<>(new ResultComparator());
-			ArrayList<ResultQuery> docResults = new ArrayList<>();
-
-			List<Double> ls = new ArrayList<Double>();
-
-			HashMap<TermQuery, Float> queryweights = new HashMap<>();
-			ArrayList<TermQuery> terms = new ArrayList<>(); // List of every
-															// term in the query
-			Query q = parser.parse(page.getPageName()); // The full query
-														// containing all terms
-			String qid = page.getPageId();
-
-			for (String term : page.getPageName().split(" "))
-
-			{ // For every word in page name...
-				// Take word as query term for parabody
-				TermQuery tq = new TermQuery(new Term("text", term));
-
-				terms.add(tq);
-
-				// Add one to our term weighting every time it appears in the
-				// query
-				queryweights.put(tq, queryweights.getOrDefault(tq, 0.0f) + 1.0f);
-			}
-			for (TermQuery query : terms) { // For every Term
-
-				// Get our Index Reader for helpful statistics
-				IndexReader reader = searcher.getIndexReader();
-
-				// If document frequency is zero, set DF to 1; else, set DF to
-				// document frequency
-				float DF = (reader.docFreq(query.getTerm()) == 0) ? 1 : reader.docFreq(query.getTerm());
-
-				// Calculate TF-IDF for the query vector
-				float qTF = (float) (1 + Math.log10(queryweights.get(query))); // Logarithmic
-																				// term
-																				// frequency
-				float qIDF = (float) (Math.log10(reader.numDocs() / DF)); // Logarithmic
-																			// inverse
-																			// document
-																			// frequency
-				float qWeight = qTF * qIDF;
-
-				// Store query weight for later calculations
-				queryweights.put(query, qWeight);
-
-				// Get the top 100 documents that match our query
-			     TopDocs tpd = searcher.search(query, numDocs);
-
-				//ls = doScoring(qid, tpd, query, queryweights,scores,docQueue);
-
-				for (int i = 0; i < tpd.scoreDocs.length; i++) { // For every
-																	// returned
-																	// document...
-					Document doc = searcher.doc(tpd.scoreDocs[i].doc); // Get
-																		// the
-																		// document
-					double score = tpd.scoreDocs[i].score * queryweights.get(query); // Calculate
-																						// TF-IDF
-					ResultQuery dResults = docMap.get(doc);
-					if (dResults == null) {
-						dResults = new ResultQuery(doc);
-					}
-					float prevScore = dResults.getScore();
-					dResults.score((float) (prevScore + score));
-					dResults.queryId(qid);
-					dResults.paragraphId(doc.getField("paragraphid").stringValue());
-					dResults.teamName("Team1 ");
-					dResults.methodName("TFDFSimilarity");
-
-					docMap.put(doc, dResults);
-
-					// Store score for later use
-					scores.put(doc, (float) (prevScore + score));
-                      
-					ls = doScoring(qid, tpd, query, queryweights,scores,docMap);
-					
-				}
-
-			}
-
-			// Get cosine Length
-			float cosineLength = 0.0f;
-			for (Map.Entry<Document, Float> entry : scores.entrySet()) {
-			       Float score = entry.getValue();
-
-				cosineLength = (float) (cosineLength + Math.pow(score, 2));
-			}
-			cosineLength = (float) (Math.sqrt(cosineLength));
-
-			// Normalization of scores
-			for (Map.Entry<Document, Float> entry : scores.entrySet()) {
-
-				Document doc = entry.getKey();
-				Float score = entry.getValue();
-
-				// Normalize the score
-				scores.put(doc, score / scores.size());
-			
-				ResultQuery dResults = docMap.get(doc);
-				dResults.score(dResults.getScore() / cosineLength);
-
-				docQueue.add(dResults);
-			}
-
-			int rankCount = 0;
-			ResultQuery current;
-			while ((current = docQueue.poll()) != null) {
-				current.rank(rankCount);
-                docResults.add(current);
-				rankCount++;
-			}
-
-			// Map our Documents and scores to the corresponding query
-
-			queryResults.put(q, docResults);
-		}
-
-		System.out.println("TF_IDFSimilarity writing results to: \t\t" + runfile);
+	private void writeResults(HashMap<Query, ArrayList<ResultQuery>> queryResults2, String runfile) throws IOException {
+		// TODO Auto-generated method stub
 
 		FileWriter runfileWriter = new FileWriter(new File(runfile));
 		for (Map.Entry<Query, ArrayList<ResultQuery>> results : queryResults.entrySet()) {
@@ -283,11 +347,33 @@ public class TFIDFSimilarity {
 
 	}
 
+	/**
+	 * @function:writeTFIDFScoresTo
+	 * @param The
+	 *            name of the run file output to
+	 * @Description: Main function of the Similarity which calculates similarity
+	 *               score of paragraph
+	 * @throws IOException,ParseException
+	 * 
+	 */
+	public void writeTFIDFScoresTo(String runfile) throws IOException, ParseException {
+
+		queryResults = new HashMap<>(); // Maps query to map of Documents with
+		// TF-IDF score
+
+		for (Data.Page page : pageList) {
+
+			SplitPageName(page, runfile);
+
+		}
+        System.out.println("TF_IDFSimilarity writing results to: \t\t" + runfile);
+
+	}
 }
 
 /**
  * @class:ResultComparator Description: To compare the result query strings
- * @return return result comparisionbased on methods
+ * @return return result comparision based on methods
  */
 
 class ResultComparator implements Comparator<ResultQuery> {
