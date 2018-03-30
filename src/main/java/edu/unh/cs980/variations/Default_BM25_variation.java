@@ -59,10 +59,10 @@ public class Default_BM25_variation {
 						+ rankScore + " BM25";
 				if (runFileStr.contains(runStr)) {
 					duplicate++;
-					// System.out.println("Found duplicate: " + runStr);
 				} else {
 					runFileStr.add(runStr);
 				}
+				logger.debug("Found " + duplicate + " duplicates");
 			}
 		}
 

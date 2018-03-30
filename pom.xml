@@ -92,6 +92,24 @@
 			<version>2.8.2</version>
 		</dependency>
 
+		<!-- Stanford Natural Language Processor  -->
+		<dependency>
+			<groupId>edu.stanford.nlp</groupId>
+			<artifactId>stanford-corenlp</artifactId>
+			<version>3.2.0</version>
+		</dependency>
+		<dependency>
+			<groupId>edu.stanford.nlp</groupId>
+			<artifactId>stanford-corenlp</artifactId>
+			<version>3.2.0</version>
+			<classifier>models</classifier>
+		</dependency>
+		<dependency>
+			<groupId>edu.stanford.nlp</groupId>
+			<artifactId>stanford-parser</artifactId>
+			<version>3.2.0</version>
+		</dependency>
+
 		<!-- Dependency for Cosine Similarity -->
 		<dependency>
 			<groupId>info.debatty</groupId>

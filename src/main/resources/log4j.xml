@@ -13,9 +13,9 @@
 	<logger name="org.apache">
 		<level value="warn" />
 	</logger>
-	
+
 	<logger name="edu.unh.cs980.variations">
-		<level value="error" />
+		<level value="info" />
 	</logger>
 
 	<root>

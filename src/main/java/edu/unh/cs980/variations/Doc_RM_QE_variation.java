@@ -57,7 +57,7 @@ public class Doc_RM_QE_variation {
 
 			// Get top k entities with relevance mode
 			ArrayList<String> expanded_entities = getExpandedTerms(top_k_entities, searcher, init_scoreDoc);
-
+			logger.debug(queryStr + " ====> " + String.join(", ", expanded_entities));
 			// Create new expanded query
 			Query q_rm = generateWeightedQuery(queryStr, expanded_entities);
 			// logger.debug(queryStr + " ====> " + expanded_entities);
@@ -80,6 +80,7 @@ public class Doc_RM_QE_variation {
 				}
 			}
 		}
+
 		logger.info("Doc_RM + QueryExpansion ====> Got " + runFileStr.size() + " results. Found " + duplicate
 				+ " duplicates.");
 
@@ -97,7 +98,7 @@ public class Doc_RM_QE_variation {
 			String paraId = doc.getField(PID).stringValue();
 			List<String> entityList = Arrays.asList(doc.getValues("spotlight"));
 			if (entityList.isEmpty()) {
-				// logger.warn("Can't get entities from doc: " + paraId);
+				// logger.debug("Can't get entities from doc: " + paraId);
 				// String content = doc.getField(CONTENT).stringValue();
 				// logger.debug(content);
 			} else {
