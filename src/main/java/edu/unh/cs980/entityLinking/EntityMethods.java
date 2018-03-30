@@ -97,7 +97,7 @@ public class EntityMethods {
 			results = gson.fromJson(gsonObject.get("Resources"), listType);
 
 		} catch (Exception e) {
-			logger.error("Can't get json response from Spotlight API.");
+//			logger.error("Can't get json response from Spotlight API.");
 		}
 
 		return results;

@@ -169,15 +169,16 @@ fun featSDMWithQueryExpansion(query: String, tops: TopDocs, indexSearcher: Index
     val expandedQuery = tokens
         .map { token -> Query_RM_QE_variation.getExpandedEntitiesFromPageQuery(token, 5, abstractSearcher) }
         .map { expandedTerms -> expandedTerms.joinToString(" ") }
+        .toSet()
         .joinToString(" ")
-    println(expandedQuery)
+//    println(expandedQuery)
 //    val expandedQuery = Query_RM_QE_variation
 //        .getExpandedEntitiesFromPageQuery(cleanQuery, 5, abstractSearcher) // returns list of expanded terms
 //        .joinToString(" ")
 //        .let { expandedQuery -> AnalyzerFunctions.createTokenList(expandedQuery) }
 //        .joinToString(" ")
 
-    val queryCorpus = gramAnalyzer.getCorpusStatContainer(expandedQuery)
+    val queryCorpus = gramAnalyzer.getCorpusStatContainer(cleanQuery + " " + expandedQuery)
 //    println(expandedQuery)
 
 
