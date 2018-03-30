@@ -148,6 +148,20 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         }, normType = NormType.ZSCORE, weight = weights[1])
     }
 
+    private fun querySDMExpansion() {
+        val weights = listOf(0.9691977861102452, -0.030802213889754796)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
+        val gramSearcher = getIndexSearcher(gramPath)
+        val hGram = KotlinGramAnalyzer(gramSearcher)
+        val abstractIndexer = getIndexSearcher(abstractPath)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
+
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSDMWithEntityQueryExpansion(query, tops, indexSearcher,
+                    hGram, abstractAnalyzer.indexSearcher, 4.0)},
+                normType = NormType.ZSCORE, weight = weights[1])
+    }
+
     private fun querySectionComponent() {
         val weights = listOf(0.0, 1.0)
         formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
@@ -164,6 +178,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "section_component" -> querySectionComponent()
             "abstract_sdm" -> queryAbstractSDM()
             "sdm" -> querySDM()
+            "sdm_expansion" -> querySDMExpansion()
             "combined" -> queryCombined()
             else -> println("Unknown method!")
         }
