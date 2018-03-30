@@ -173,6 +173,7 @@ fun featSDMWithQueryExpansion(query: String, tops: TopDocs, indexSearcher: Index
         .joinToString(" ")
 
     val queryCorpus = gramAnalyzer.getCorpusStatContainer(expandedQuery)
+    println(expandedQuery)
 
 
 
