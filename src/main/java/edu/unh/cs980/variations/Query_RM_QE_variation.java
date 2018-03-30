@@ -286,6 +286,99 @@ public class Query_RM_QE_variation {
 		return expandedQueryTerms;
 	}
 
+	public static ArrayList<String> getExpandedEntitiesFromPageQuery(String page_query, int top_k,
+			String abstract_index_dir) {
+
+		ArrayList<String> expandedQueryTerms = new ArrayList<String>();
+		HashMap<String, Float> entityScore = new HashMap<>();
+
+		String abstracStr = EntityMethods.getEntityAbstract(page_query.replace(" ", "_").toLowerCase(),
+				abstract_index_dir);
+
+		if (!abstracStr.isEmpty()) {
+			ArrayList<EntityWord> entities = EntityMethods.getAnnotatedEntites(abstracStr);
+			if (entities == null) {
+				return expandedQueryTerms;
+			}
+			if (entities.size() > 5) {
+				for (EntityWord entity : entities) {
+					// If entities is more than 5, save entity to hashmap, for
+					// scoring.
+					entityScore.put(entity.getSurfaceForm(), entity.getSimilarityScore());
+				}
+				// Get the top 5 entities.
+				Set<String> termSet = ProjectUtils.getTopValuesInMap(entityScore, top_k).keySet();
+				expandedQueryTerms.addAll(termSet);
+				return expandedQueryTerms;
+			} else if (entities.size() > 0 && entities.size() <= 5) {
+				for (EntityWord entity : entities) {
+					expandedQueryTerms.add(entity.getSurfaceForm());
+				}
+				return expandedQueryTerms;
+			} else {
+				// logger.warn("Can't find any entities for query: " +
+				// queryStr);
+				return expandedQueryTerms;
+			}
+		}
+		return expandedQueryTerms;
+	}
+
+	public static HashMap<String, ArrayList<String>> getExpandedEntitiesListFromSectionQuery(String section_query,
+			int top_k, String abstract_index_dir) {
+		// <query_term, List of expanded Terms
+		HashMap<String, ArrayList<String>> result_map = new HashMap<String, ArrayList<String>>();
+		HashMap<String, Float> entityScore;
+
+		List<String> termList = new ArrayList<String>();
+		termList = Arrays.asList(section_query.split("/"));
+
+		if (!termList.isEmpty()) {
+			for (int i = 0; i < termList.size(); i++) {
+				int factor = 1; // Entities from in-between will have normal
+								// score.
+				String term = termList.get(i);
+				if (i == 0) {
+					factor = 3; // Entities from top level section will rank
+								// higher
+				}
+				if (i == termList.size() - 1) {
+					factor = 2; // Entities from the bottom level section will
+								// rank higher
+				}
+
+				ArrayList<String> expanded_terms = new ArrayList<String>();
+
+				String abstracStr = EntityMethods.getEntityAbstract(term.replace(" ", "_").toLowerCase(),
+						abstract_index_dir);
+				entityScore = new HashMap<>();
+				if (!abstracStr.isEmpty()) {
+					ArrayList<EntityWord> entities = EntityMethods.getAnnotatedEntites(abstracStr);
+					if (entities != null) {
+						if (entities.size() > 0) {
+							for (EntityWord entity : entities) {
+								float score = (float) entity.getSimilarityScore() * factor;
+								entityScore.put(entity.getSurfaceForm(), score);
+							}
+						} else {
+							// logger.warn("Can't find any entities for term: "
+							// + term + ". Skipped.");
+						}
+					}
+
+				}
+				if (!entityScore.isEmpty()) {
+					Set<String> termSet = ProjectUtils.getTopValuesInMap(entityScore, top_k).keySet();
+					expanded_terms.addAll(termSet);
+				}
+				result_map.put(term, expanded_terms);
+			}
+
+		}
+
+		return result_map;
+	}
+
 	private static Query generateWeightedQuery(String initialQ, ArrayList<String> rm_list) throws ParseException {
 		if (!rm_list.isEmpty()) {
 			String rm_str = String.join(" ", rm_list);
@@ -296,7 +389,6 @@ public class Query_RM_QE_variation {
 		} else {
 			Query q = parser.parse(QueryParser.escape(initialQ));
 			// System.out.println(initialQ + " =====> " + initialQ);
-
 			return q;
 		}
 	}
