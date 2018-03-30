@@ -165,9 +165,15 @@ fun featSDMWithQueryExpansion(query: String, tops: TopDocs, indexSearcher: Index
             gramType: GramStatType? = null): List<Double> {
     val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
     val cleanQuery = tokens.toList().joinToString(" ")
-    val queryCorpus = gramAnalyzer.getCorpusStatContainer(cleanQuery)
 
-    val expandedTerms = Query_RM_QE_variation.getExpandedEntitiesFromPageQuery(cleanQuery, 5, abstractSearcher)
+    val expandedQuery = Query_RM_QE_variation
+        .getExpandedEntitiesFromPageQuery(cleanQuery, 5, abstractSearcher) // returns list of expanded terms
+        .joinToString(" ")
+        .let { expandedQuery -> AnalyzerFunctions.createTokenList(expandedQuery) }
+        .joinToString(" ")
+
+    val queryCorpus = gramAnalyzer.getCorpusStatContainer(expandedQuery)
+
 
 
     return tops.scoreDocs.map { scoreDoc ->

@@ -293,7 +293,7 @@ public class Query_RM_QE_variation {
 		HashMap<String, Float> entityScore = new HashMap<>();
 
 		String abstracStr = EntityMethods.getEntityAbstract(page_query.replace(" ", "_").toLowerCase(),
-				searcher);
+				searcher, true);
 
 		if (!abstracStr.isEmpty()) {
 			ArrayList<EntityWord> entities = EntityMethods.getAnnotatedEntites(abstracStr);

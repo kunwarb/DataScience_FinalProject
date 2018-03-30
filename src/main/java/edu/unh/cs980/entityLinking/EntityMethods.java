@@ -39,7 +39,7 @@ public class EntityMethods {
 			IndexSearcher searcher = new IndexSearcher(
 					DirectoryReader.open(FSDirectory.open((new File(index_dir).toPath()))));
 			searcher.setSimilarity(new BM25Similarity());
-			return getEntityAbstract(queryStr, searcher);
+			return getEntityAbstract(queryStr, searcher, false);
 
 		} catch (Exception e) {
 			logger.error("Error when finding abstract. Throw: " + e.getMessage());
@@ -48,7 +48,7 @@ public class EntityMethods {
 		return content;
 	}
 
-	public static String getEntityAbstract(String queryStr, IndexSearcher searcher) {
+	public static String getEntityAbstract(String queryStr, IndexSearcher searcher, Boolean shutUp) {
 		String content = "";
 		try {
 			BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
@@ -76,7 +76,9 @@ public class EntityMethods {
 			String name = doc.getField("name").stringValue();
 			content = doc.getField("text").stringValue();
 		} catch (Exception e) {
-			logger.error("Error when finding abstract. Throw: " + e.getMessage());
+		    if (!shutUp) {
+				logger.error("Error when finding abstract. Throw: " + e.getMessage());
+			}
 		}
 
 		return content;
