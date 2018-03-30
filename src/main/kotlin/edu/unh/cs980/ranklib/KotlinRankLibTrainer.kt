@@ -171,7 +171,10 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
     private fun querySDMSection() {
         val gramSearcher = getIndexSearcher(gramPath)
         val hGram = KotlinGramAnalyzer(gramSearcher)
-        val weights = listOf(0.18040763371108623, 0.053702972763138165, 0.3145376765137826, 0.45135171701199295)
+//        val weights = listOf(0.18040763371108623, 0.053702972763138165, 0.3145376765137826, 0.45135171701199295)
+        val weights = listOf(0.08047025663846726, 0.030239885393043505, 0.15642380129849698, 0.45881012321282,
+        0.1370279667285861, 0.1370279667285861
+        )
 
         val bindSDM = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
             featSDM(query, tops, indexSearcher, hGram, 4.0)
