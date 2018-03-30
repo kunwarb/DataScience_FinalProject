@@ -21,7 +21,19 @@ You may also compile the source code by entering the following command or by run
 mvn clean compile assembly:single
 ```
 
-This will create an executable jar file in the target/ directory.
+This will create a jar file in the target/ directory.
+___
+## Running Methods
+The program.jar file contains subcommands for querying, indexing, and other relevant functions.
+**If you are just interested in running our methods**, you can call the run.sh script and pass as an argument the jar file obtained during the installation step. For example:
+
+```bash
+./run.sh bin/program.jar
+```
+
+This will create a new directory called method_results. Each subdirectory inside of method_results contains the results of a particular method. This includes a run file and the output of trec_eval -c
+
+Note that this run.sh script depends on files (such as our Lucene index) that are stored in /trec_eval on the server. If you are not running this on the server you will need to change the filepaths to point to the correct files (descriptions of the filepaths are in the comments of the run.sh script).
 ___
 ## Program Commands
 The program is divided into the following subcommands:
