@@ -38,7 +38,7 @@ import kotlin.math.max
  */
 fun featSplitSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                  func: (String, TopDocs, IndexSearcher) -> List<Double>,
-                 secWeights: List<Double> = listOf(1.0, 1.0, 1.0, 1.0)): List<Double> {
+                 secWeights: List<Double> = listOf(1.0, 1.0, 1.0, 1.0, 1.0, 1.0)): List<Double> {
 
     val sections = query.split("/")
         .map { section -> AnalyzerFunctions

@@ -421,10 +421,10 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
                 featSDM(query, tops, indexSearcher, hGram, 4.0) }
 
         val makeWeights = { pos: Int ->
-            arrayListOf(0.0, 0.0, 0.0, 0.0).apply { this[pos] = 1.0 }
+            arrayListOf(0.0, 0.0, 0.0, 0.0, 0.0, 0.0).apply { this[pos] = 1.0 }
         }
 
-        (0 until 4).forEach { sectionWeight ->
+        (0 until 6).forEach { sectionWeight ->
             formatter.addFeature({ query, tops, indexSearcher ->
                 featSplitSim(query, tops, indexSearcher, bindSDM, secWeights = makeWeights(sectionWeight))},
                     normType = NormType.NONE)
