@@ -80,13 +80,11 @@ public class QueryExpansion_variation {
 						+ rankScore + " QueryExpansion";
 				if (runFileStr.contains(runStr)) {
 					duplicate++;
-					// System.out.println("Found duplicate: " + runStr);
 				} else {
 					runFileStr.add(runStr);
 				}
 			}
 		}
-
 
 		logger.info("QueryExpansion ====> Got " + runFileStr.size() + " results. Found " + duplicate + " duplicates.");
 
@@ -107,7 +105,7 @@ public class QueryExpansion_variation {
 			// Get single term list without stopwords
 			ArrayList<String> unigram_list = analyzeByUnigram(paraBody);
 			if (unigram_list.isEmpty()) {
-				logger.warn("Can't get terms list from : " + paraBody);
+				logger.debug("Can't get terms list from : " + paraBody);
 			}
 			int rank = i + 1;
 			// HashMap<String, Float> term_score;
@@ -138,12 +136,11 @@ public class QueryExpansion_variation {
 		if (!rm_list.isEmpty()) {
 			String rm_str = String.join(" ", rm_list);
 			Query q = parser.parse(QueryParser.escape(initialQ) + "^0.6" + QueryParser.escape(rm_str) + "^0.4");
-			// System.out.println(initialQ + " =====> " + initialQ + " " +
-			// rm_str);
+			logger.debug(initialQ + " =====> " + initialQ + " " + rm_str);
 			return q;
 		} else {
 			Query q = parser.parse(QueryParser.escape(initialQ));
-			// System.out.println(initialQ + " =====> " + initialQ);
+			logger.debug(initialQ + " =====> " + initialQ);
 
 			return q;
 		}
@@ -166,7 +163,7 @@ public class QueryExpansion_variation {
 
 	private static ArrayList<String> analyzeByUnigram(String inputStr) throws IOException {
 		Reader reader = new StringReader(inputStr);
-		// System.out.println("Input text: " + inputStr);
+		logger.debug("Input text: " + inputStr);
 		ArrayList<String> strList = new ArrayList<String>();
 		Analyzer analyzer = new UnigramAnalyzer();
 		TokenStream tokenizer = analyzer.tokenStream(CONTENT, inputStr);
@@ -176,7 +173,6 @@ public class QueryExpansion_variation {
 		while (tokenizer.incrementToken()) {
 			String token = charTermAttribute.toString();
 			strList.add(token);
-			// System.out.println(token);
 		}
 		tokenizer.end();
 		tokenizer.close();

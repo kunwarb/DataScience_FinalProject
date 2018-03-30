@@ -4,8 +4,16 @@
  */
 package edu.unh.cs980.WordEmbedding;
 
-import edu.unh.cs.treccar_v2.Data;
-import edu.unh.cs.treccar_v2.Data.Page;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.PriorityQueue;
+
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -13,13 +21,16 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.BasicStats;
 import org.apache.lucene.search.similarities.SimilarityBase;
 import org.apache.lucene.store.FSDirectory;
 
-import java.io.*;
-import java.util.*;
+import edu.unh.cs.treccar_v2.Data;
+import edu.unh.cs.treccar_v2.Data.Page;
 
 public class TFIDFSimilarity {
 
@@ -27,14 +38,13 @@ public class TFIDFSimilarity {
 	private QueryParser parser;
 	private int numDocs; // Number of documents to return
 	private ArrayList<Data.Page> pageList; // List of pages to query
-	private HashMap<Query, ArrayList<ResultQuery>> queryResults; 
+	private HashMap<Query, ArrayList<ResultQuery>> queryResults;
 
-	TFIDFSimilarity(ArrayList<Data.Page> pl, int n, String index) throws ParseException, IOException {
+	public TFIDFSimilarity(ArrayList<Data.Page> pl, int n, String index) throws ParseException, IOException {
 		String INDEX_DIRECTORY = index;
 		numDocs = n;
 		pageList = pl;
 
-	
 		parser = new QueryParser("parabody", new StandardAnalyzer());
 
 		searcher = new IndexSearcher(DirectoryReader.open(FSDirectory.open((new File(INDEX_DIRECTORY).toPath()))));
@@ -52,7 +62,6 @@ public class TFIDFSimilarity {
 		searcher.setSimilarity(tfidf);
 	}
 
-
 	/*
 	 * public List<Double> doScoring(String query, TopDocs tops ...) {
 	 * BooleanQuery boolQuery = makeQuery(query); ArrayList<Double> scores = new
@@ -62,17 +71,16 @@ public class TFIDFSimilarity {
 	 * scores.add(score) } return score; }
 	 */
 
-	
-	
 	/*
 	 * @Function: SplitThePageName
+	 * 
 	 * @Call: Another function calculateScore
 	 * 
 	 */
-	
-	
-	public List<List<Double>> getQueryScore(String query, IndexSearcher indexSearcher) throws ParseException, IOException {
-	
+
+	public List<List<Double>> getQueryScore(String query, IndexSearcher indexSearcher)
+			throws ParseException, IOException {
+
 		HashMap<TermQuery, Float> queryweights = new HashMap<>();
 		ArrayList<TermQuery> terms = new ArrayList<>();
 
@@ -87,11 +95,11 @@ public class TFIDFSimilarity {
 
 			queryweights.put(tq, queryweights.getOrDefault(tq, 0.0f) + 1.0f);
 		}
-		
+
 		return calculateQueryScore(q, query, terms, queryweights);
-		
+
 	}
-	
+
 	private List<List<Double>> calculateQueryScore(Query q, String qname, ArrayList<TermQuery> terms,
 			HashMap<TermQuery, Float> queryweights2) throws IOException, ParseException {
 
@@ -128,8 +136,7 @@ public class TFIDFSimilarity {
 		}
 		return ls;
 	}
-	
-	
+
 	public void SplitPageName(Page page, String runfile) throws IOException, ParseException {
 		// TODO Auto-generated method stub
 		String qid = page.getPageId();
@@ -152,11 +159,8 @@ public class TFIDFSimilarity {
 		calculateScore(qid, q, qname, terms, runfile, queryweights);
 
 	}
-	
-	
-	
 
-	public  void calculateScore(String qid, Query q, String qname, ArrayList<TermQuery> terms, String runfile,
+	public void calculateScore(String qid, Query q, String qname, ArrayList<TermQuery> terms, String runfile,
 			HashMap<TermQuery, Float> queryweights2) throws IOException, ParseException {
 
 		List<Double> ls = new ArrayList<Double>();
@@ -188,19 +192,18 @@ public class TFIDFSimilarity {
 			TopDocs tpd = searcher.search(queryterm, numDocs);
 
 			ls = doScoring(qid, qname, tpd, queryweights2, queryterm, runfile);
-			
 
 		}
 
 	}
-	
+
 	private List<Double> getTermScores(String qname, TopDocs tpd, HashMap<TermQuery, Float> queryweights2,
 			TermQuery queryterm, Query q) throws IOException {
 		List<Double> ls1 = new ArrayList<Double>();
 		HashMap<Document, ResultQuery> docMap = new HashMap<>();
 		HashMap<Document, Float> scores = new HashMap<>(); // Mapping of each
 		PriorityQueue<ResultQuery> docQueue = new PriorityQueue<>(new ResultComparator());
-		
+
 		for (int i = 0; i < tpd.scoreDocs.length; i++) { // For every
 			// returned
 			// document...
@@ -239,7 +242,8 @@ public class TFIDFSimilarity {
 			// Normalize the score
 			scores.put(doc, score / scores.size());
 
-			ls1.add((double) (score / scores.size()));    //Creating list for combined Method
+			ls1.add((double) (score / scores.size())); // Creating list for
+														// combined Method
 			// System.out.println(score/scores.size());
 			ResultQuery dResults = docMap.get(doc);
 			dResults.score(dResults.getScore() / cosineLength);
@@ -247,7 +251,7 @@ public class TFIDFSimilarity {
 			docQueue.add(dResults);
 		}
 		return ls1;
-		
+
 	}
 
 	private List<Double> doScoring(String qid, String qname, TopDocs tpd, HashMap<TermQuery, Float> queryweights2,
@@ -257,7 +261,7 @@ public class TFIDFSimilarity {
 		HashMap<Document, Float> scores = new HashMap<>(); // Mapping of each
 		ArrayList<ResultQuery> docResults = new ArrayList<>();
 		PriorityQueue<ResultQuery> docQueue = new PriorityQueue<>(new ResultComparator());
-		
+
 		List<Double> ls1 = new ArrayList<Double>();
 
 		Query q = parser.parse(qname);
@@ -305,7 +309,8 @@ public class TFIDFSimilarity {
 			// Normalize the score
 			scores.put(doc, score / scores.size());
 
-			ls1.add((double) (score / scores.size()));    //Creating list for combined Method
+			ls1.add((double) (score / scores.size())); // Creating list for
+														// combined Method
 			// System.out.println(score/scores.size());
 			ResultQuery dResults = docMap.get(doc);
 			dResults.score(dResults.getScore() / cosineLength);
@@ -324,7 +329,7 @@ public class TFIDFSimilarity {
 		// Map our Documents and scores to the corresponding query
 
 		queryResults.put(q, docResults);
-         writeResults(queryResults, runfile);
+		writeResults(queryResults, runfile);
 		return ls1;
 
 	}
@@ -366,7 +371,7 @@ public class TFIDFSimilarity {
 			SplitPageName(page, runfile);
 
 		}
-        System.out.println("TF_IDFSimilarity writing results to: \t\t" + runfile);
+		System.out.println("TF_IDFSimilarity writing results to: \t\t" + runfile);
 
 	}
 }
