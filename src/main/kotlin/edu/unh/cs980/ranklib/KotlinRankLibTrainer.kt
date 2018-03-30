@@ -192,7 +192,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "section_component" -> querySectionComponent()
             "abstract_sdm" -> queryAbstractSDM()
             "sdm" -> querySDM()
-            "sdm_section" -> querySDM()
+            "sdm_section" -> querySDMSection()
             "sdm_expansion" -> querySDMExpansion()
             "combined" -> queryCombined()
             else -> println("Unknown method!")
