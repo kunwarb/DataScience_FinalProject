@@ -398,6 +398,46 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         }
     }
 
+    private fun trainSectionSDM() {
+        val gramSearcher = getIndexSearcher(gramPath)
+        val hGram = KotlinGramAnalyzer(gramSearcher)
+
+        val bindSDM = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
+                featSDM(query, tops, indexSearcher, hGram, 4.0) }
+
+        val makeWeights = { pos: Int ->
+            arrayListOf(0.0, 0.0, 0.0, 0.0).apply { this[pos] = 1.0 }
+        }
+
+        (0 until 4).forEach { sectionWeight ->
+            formatter.addFeature({ query, tops, indexSearcher ->
+                featSplitSim(query, tops, indexSearcher, bindSDM, secWeights = makeWeights(sectionWeight))},
+                    normType = NormType.NONE)
+        }
+
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featSplitSim(query, tops, indexSearcher, bindSDM,
+//                    secWeights = listOf(1.0, 0.0, 0.0, 0.0))},
+//                    normType = NormType.NONE)
+//
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featSplitSim(query, tops, indexSearcher, bindSDM,
+//                    secWeights = listOf(0.0, 1.0, 0.0, 0.0))},
+//                    normType = NormType.NONE)
+//
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featSplitSim(query, tops, indexSearcher, bindSDM,
+//                    secWeights = listOf(0.0, 0.0, 1.0, 0.0))},
+//                    normType = NormType.NONE)
+//
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featSplitSim(query, tops, indexSearcher, bindSDM,
+//                    secWeights = listOf(0.0, 0.0, 0.0, 1.0))},
+//                    normType = NormType.NONE)
+
+//        val weights = listOf(0.13506566, -0.49940691, 0.21757824, 0.14794917259)
+    }
+
 
 
     /**
@@ -421,6 +461,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "similarity_section" -> trainSimilaritySection()
             "sdm_expansion_components" -> trainSDMEntityQueryExpansionComponents()
             "sdm_expansion" -> trainSDMExpansion()
+            "sdm_section" -> trainSectionSDM()
             "combined" -> trainCombined()
             else -> println("Unknown method!")
         }

@@ -261,7 +261,8 @@ public class Main {
 				.choices("combined", "abstract_sdm", "sdm_alpha", "sdm_components",
 						"section_path", "string_similarities",
 						"similarity_section", "average_abstract", "abstract_sdm_components", "hyperlink",
-						"abstract_alpha", "sdm", "section_component", "sdm_expansion", "sdm_expansion_components");
+						"abstract_alpha", "sdm", "section_component", "sdm_expansion", "sdm_expansion_components",
+						"sdm_section");
 		ranklibTrainerParser.addArgument("index").help("Location of the Lucene index directory");
 		ranklibTrainerParser.addArgument("query").help("Location of query file (.cbor)");
 		ranklibTrainerParser.addArgument("qrel").help("Locations of matching qrel file.");
