@@ -357,15 +357,30 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
     }
 
-    private fun trainTest() {
+    private fun trainSDMExpansion() {
         formatter.addBM25(normType = NormType.ZSCORE)
         val gramSearcher = getIndexSearcher(gramPath)
         val hGram = KotlinGramAnalyzer(gramSearcher)
         val abstractIndexer = getIndexSearcher(abstractPath)
         val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
         formatter.addFeature({ query, tops, indexSearcher ->
-            featSDMWithQueryExpansion(query, tops, indexSearcher, hGram, abstractAnalyzer.indexSearcher, 4.0)
+            featSDMWithEntityQueryExpansion(query, tops, indexSearcher, hGram, abstractAnalyzer.indexSearcher, 4.0)
         }, normType = NormType.ZSCORE)
+    }
+
+    private fun trainSDMEntityQueryExpansionComponents() {
+        val gramSearcher = getIndexSearcher(gramPath)
+        val hGram = KotlinGramAnalyzer(gramSearcher)
+        val abstractIndexer = getIndexSearcher(abstractPath)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
+
+        val grams = listOf(GramStatType.TYPE_UNIGRAM, GramStatType.TYPE_BIGRAM, GramStatType.TYPE_BIGRAM_WINDOW)
+        grams.forEach { gram ->
+            formatter.addFeature({ query, tops, indexSearcher ->
+                featSDMWithEntityQueryExpansion(query, tops, indexSearcher,
+                        hGram, abstractAnalyzer.indexSearcher, 4.0, gramType = gram)
+            }, normType = NormType.NONE)
+        }
     }
 
 
@@ -380,16 +395,17 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "hyperlink" -> trainHyperlinkLikelihood()
             "abstract_sdm" -> trainAbstractSDM()
             "abstract_sdm_components" -> trainAbstractSDMComponents()
-            "average_abstract" -> trainAverageAbstractScore()
-            "sdm_alpha" -> trainDirichletAlpha()
-            "sdm" -> trainSDM()
             "abstract_alpha" -> trainAbstractSDMAlpha()
+            "average_abstract" -> trainAverageAbstractScore()
+            "sdm" -> trainSDM()
+            "sdm_alpha" -> trainDirichletAlpha()
+            "sdm_components" -> trainSDMComponents()
             "section_path" -> trainSectionPath()
             "section_component" -> trainSectionComponent()
-            "sdm_components" -> trainSDMComponents()
             "string_similarities" -> trainSimilarityComponents()
             "similarity_section" -> trainSimilaritySection()
-            "test" -> trainTest()
+            "sdm_expansion_components" -> trainSDMEntityQueryExpansionComponents()
+            "sdm_expansion" -> trainSDMExpansion()
             "combined" -> trainCombined()
             else -> println("Unknown method!")
         }

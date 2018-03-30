@@ -159,29 +159,26 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
     }
 }
 
-// Not finished yet, but will be using Kevin's query expansion methods
-fun featSDMWithQueryExpansion(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
+/**
+ * Func: featSDMWithEntityQueryExpansion
+ * Desc: The original query string is tokenized, and the token's terms are expanded according to Kevin's
+ *       entity expansion model (top n entities are retrieved with BM25, abstracts are annotated with Spotlight,
+ *       annotations are extracted and returned as a list of expanded terms)
+ *
+ *       Expanded terms are appended to each query token and the final list is joined together as a single query.
+ *       This query is then used with the SDM method.
+ */
+fun featSDMWithEntityQueryExpansion(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
             gramAnalyzer: KotlinGramAnalyzer, abstractSearcher: IndexSearcher, alpha: Double,
             gramType: GramStatType? = null): List<Double> {
     val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
-    val cleanQuery = tokens.toList().joinToString(" ")
-
     val expandedQuery = tokens
         .map { token ->
             token to Query_RM_QE_variation.getExpandedEntitiesFromPageQuery(token, 1, abstractSearcher) }
         .map { (token, expandedResults) -> token + " " + expandedResults.joinToString(" ")  }
         .joinToString(" ")
-//    println(expandedQuery)
-//    val expandedQuery = Query_RM_QE_variation
-//        .getExpandedEntitiesFromPageQuery(cleanQuery, 5, abstractSearcher) // returns list of expanded terms
-//        .joinToString(" ")
-//        .let { expandedQuery -> AnalyzerFunctions.createTokenList(expandedQuery) }
-//        .joinToString(" ")
 
     val queryCorpus = gramAnalyzer.getCorpusStatContainer(expandedQuery)
-//    println(expandedQuery)
-
-
 
     return tops.scoreDocs.map { scoreDoc ->
         val doc = indexSearcher.doc(scoreDoc.doc)
