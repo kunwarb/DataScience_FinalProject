@@ -156,7 +156,7 @@ public class Query_RM_QE_variation {
 			}
 
 		} catch (Exception e) {
-			logger.error("Error!!!! " + e.getLocalizedMessage());
+			logger.debug("Error!!!! " + e.getLocalizedMessage());
 		}
 
 		return runFileStr;
@@ -243,7 +243,7 @@ public class Query_RM_QE_variation {
 					}
 					return expandedQueryTerms;
 				} else {
-					// logger.warn("Can't find any entities for query: " +
+					// logger.debu("Can't find any entities for query: " +
 					// queryStr);
 					return expandedQueryTerms;
 				}
@@ -269,8 +269,7 @@ public class Query_RM_QE_variation {
 								entityScore.put(entity.getSurfaceForm(), score);
 							}
 						} else {
-							// logger.warn("Can't find any entities for term: "
-							// + term + ". Skipped.");
+							logger.debug("Can't find any entities for term: " + term + ". Skipped.");
 						}
 					}
 
@@ -316,7 +315,7 @@ public class Query_RM_QE_variation {
 				}
 				return expandedQueryTerms;
 			} else {
-				// logger.warn("Can't find any entities for query: " +
+				// logger.debug("Can't find any entities for query: " +
 				// queryStr);
 				return expandedQueryTerms;
 			}
@@ -361,8 +360,7 @@ public class Query_RM_QE_variation {
 								entityScore.put(entity.getSurfaceForm(), score);
 							}
 						} else {
-							// logger.warn("Can't find any entities for term: "
-							// + term + ". Skipped.");
+							logger.debug("Can't find any entities for term: " + term + ". Skipped.");
 						}
 					}
 
@@ -383,12 +381,11 @@ public class Query_RM_QE_variation {
 		if (!rm_list.isEmpty()) {
 			String rm_str = String.join(" ", rm_list);
 			Query q = parser.parse(QueryParser.escape(initialQ) + "^0.6" + QueryParser.escape(rm_str) + "^0.4");
-			// System.out.println(initialQ + " =====> " + initialQ + " " +
-			// rm_str);
+			logger.debug(initialQ + " =====> " + initialQ + " " + rm_str);
 			return q;
 		} else {
 			Query q = parser.parse(QueryParser.escape(initialQ));
-			// System.out.println(initialQ + " =====> " + initialQ);
+			logger.debug(initialQ + " =====> " + initialQ);
 			return q;
 		}
 	}
@@ -404,7 +401,6 @@ public class Query_RM_QE_variation {
 			if (token.contains(" ")) {
 				strList.add(token);
 			}
-			// System.out.println(token);
 		}
 		tokenizer.end();
 		tokenizer.close();

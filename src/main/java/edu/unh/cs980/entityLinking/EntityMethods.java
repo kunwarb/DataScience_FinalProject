@@ -53,7 +53,6 @@ public class EntityMethods {
 			Query q = queryBuilder.build();
 
 			QueryParser parser = new QueryParser("name", new StandardAnalyzer());
-			Query q2 = parser.parse(QueryParser.escape(queryStr));
 
 			TopDocs tops = searcher.search(q, 1);
 			ScoreDoc[] scoreDoc = tops.scoreDocs;
@@ -65,7 +64,7 @@ public class EntityMethods {
 			String name = doc.getField("name").stringValue();
 			content = doc.getField("text").stringValue();
 		} catch (Exception e) {
-			logger.error("Error when finding abstract. Throw: " + e.getMessage());
+			logger.debug("Error when finding abstract. Throw: " + e.getMessage());
 		}
 
 		return content;
@@ -84,7 +83,7 @@ public class EntityMethods {
 			results = gson.fromJson(gsonObject.get("Resources"), listType);
 
 		} catch (Exception e) {
-			logger.error("Can't get json response from Spotlight API.");
+			logger.debug("Can't get json response from Spotlight API.");
 		}
 
 		return results;
