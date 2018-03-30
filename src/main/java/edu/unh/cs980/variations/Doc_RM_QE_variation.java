@@ -57,7 +57,7 @@ public class Doc_RM_QE_variation {
 
 			// Get top k entities with relevance mode
 			ArrayList<String> expanded_entities = getExpandedTerms(top_k_entities, searcher, init_scoreDoc);
-
+			logger.debug(queryStr + " ====> " + String.join(", ", expanded_entities));
 			// Create new expanded query
 			Query q_rm = generateWeightedQuery(queryStr, expanded_entities);
 			// logger.debug(queryStr + " ====> " + expanded_entities);
