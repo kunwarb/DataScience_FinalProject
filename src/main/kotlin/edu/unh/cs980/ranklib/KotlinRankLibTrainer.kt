@@ -203,6 +203,17 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
                 normType = NormType.ZSCORE, weight = featureWeights[1])
     }
 
+    private fun queryNatSDM() {
+        System.err.close() // Stanford NLP needs to shut the hell up
+        val weights = listOf(0.62146543079, 0.37853)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
+        val gramSearcher = getIndexSearcher(gramPath)
+        val hGram = KotlinGramAnalyzer(gramSearcher)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featNatSDM(query, tops, indexSearcher, hGram, 4.0)
+        }, normType = NormType.ZSCORE, weight = weights[1])
+    }
+
     // Runs associated query method
     fun runRanklibQuery(method: String, out: String) {
         Logger.getRootLogger().level = Level.ERROR
@@ -214,6 +225,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
             "section_component" -> querySectionComponent()
             "abstract_sdm" -> queryAbstractSDM()
             "sdm" -> querySDM()
+            "nat_sdm" -> queryNatSDM()
             "sdm_section" -> querySDMSection()
             "sdm_expansion" -> querySDMExpansion()
             "tfidf_section" -> queryTFIDFSection()
@@ -303,7 +315,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
     }
 
     private fun trainNatSDM() {
-        System.err.close()
+        System.err.close() // Stanford NLP needs to shut the hell up
         formatter.addBM25(normType = NormType.ZSCORE)
         val gramSearcher = getIndexSearcher(gramPath)
         val hGram = KotlinGramAnalyzer(gramSearcher)
