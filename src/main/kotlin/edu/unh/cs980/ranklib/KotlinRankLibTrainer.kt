@@ -291,13 +291,20 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
     }
 
     private fun trainSDM() {
-//        val weights = listOf(0.49827237108, 0.23021207089, 0.1280351944, 0.143480363604666)
-//        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE, weight = weights[0])
         formatter.addBM25(normType = NormType.ZSCORE)
         val gramSearcher = getIndexSearcher(gramPath)
         val hGram = KotlinGramAnalyzer(gramSearcher)
         formatter.addFeature({ query, tops, indexSearcher ->
             featSDM(query, tops, indexSearcher, hGram, 4.0)
+        }, normType = NormType.ZSCORE)
+    }
+
+    private fun trainNatSDM() {
+        formatter.addBM25(normType = NormType.ZSCORE)
+        val gramSearcher = getIndexSearcher(gramPath)
+        val hGram = KotlinGramAnalyzer(gramSearcher)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featNatSDM(query, tops, indexSearcher, hGram, 4.0)
         }, normType = NormType.ZSCORE)
     }
 
@@ -499,6 +506,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
             "abstract_sdm_components" -> trainAbstractSDMComponents()
             "abstract_alpha" -> trainAbstractSDMAlpha()
             "average_abstract" -> trainAverageAbstractScore()
+            "nat_sdm" -> trainNatSDM()
             "sdm" -> trainSDM()
             "sdm_alpha" -> trainDirichletAlpha()
             "sdm_components" -> trainSDMComponents()

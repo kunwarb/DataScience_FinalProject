@@ -6,6 +6,8 @@ import edu.unh.cs980.getIndexSearcher
 import edu.unh.cs980.identity
 import edu.unh.cs980.misc.AnalyzerFunctions
 import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH
+import edu.unh.cs980.nlp.NL_Document
+import edu.unh.cs980.nlp.NL_Processor
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.index.Term
@@ -142,6 +144,34 @@ class KotlinGramAnalyzer(val indexSearcher: IndexSearcher) {
                 bigramWindowStat = getStats(text, GramStatType.TYPE_BIGRAM_WINDOW)
         )
 
+    /**
+     * Func: extractNounsVerbs
+     * Desc: Using Kevin's NLP, extract nouns and verbs
+     */
+    private fun extractNounsVerbs(text: String): Pair<String, String> {
+        val nlDoc = NL_Processor.convertToNL_Document(text)
+        val nouns = nlDoc.allNounsInPara.joinToString(" ")
+        val verbs = nlDoc.allVerbsInPara.joinToString(" ")
+        return nouns to verbs
+    }
+
+    /**
+     * Func: getNatCorpusStatContainers
+     * Desc: Using Kevin's NLP, extract nouns and verbs and build corpus language models from them.
+     */
+    fun getNatCorpusStatContainers(text: String): Pair<CorpusStatContainer, CorpusStatContainer> {
+        val (nouns, verbs) = extractNounsVerbs(text)
+        return getCorpusStatContainer(nouns) to getCorpusStatContainer(verbs)
+    }
+
+    /**
+     * Func: getNatLanguageStatContainers
+     * Desc: Using Kevin's NLP, extract nouns and verbs and build document language models from them.
+     */
+    fun getNatLanguageStatContainers(text: String): Pair<LanguageStatContainer, LanguageStatContainer> {
+        val (nouns, verbs) = extractNounsVerbs(text)
+        return getLanguageStatContainer(nouns) to getLanguageStatContainer(verbs)
+    }
 
     /**
      * Func: getCorpusStatContainer
@@ -263,6 +293,20 @@ class KotlinGramAnalyzer(val indexSearcher: IndexSearcher) {
     }
 
     fun runTest() {
+    }
+
+    /**
+     * Func: getQueryLikelihood
+     * Desc: Wrapper function around LanguageStatsContainer to run query likelihood and return just that
+     *       scores.
+     */
+    fun getQueryLikelihood(langStat: LanguageStatContainer, corpStat: CorpusStatContainer, alpha: Double)
+            : Triple<Double, Double, Double> {
+        val queryLikelihoodContainer = langStat.getLikelihoodGivenQuery(corpStat, alpha)
+        val uniLike = queryLikelihoodContainer.unigramLikelihood
+        val biLike = queryLikelihoodContainer.bigramLikelihood
+        val windLike = queryLikelihoodContainer.bigramWindowLikelihood
+        return Triple(uniLike, biLike, windLike)
     }
 }
 
