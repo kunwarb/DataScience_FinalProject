@@ -19,6 +19,7 @@ import info.debatty.java.stringsimilarity.interfaces.StringDistance
 import org.apache.lucene.index.Term
 import org.apache.lucene.search.*
 import org.apache.lucene.search.similarities.*
+import edu.unh.cs980.WordEmbedding.TFIDFSimilarity
 import java.lang.Double.sum
 import java.util.*
 import kotlin.math.abs
@@ -29,7 +30,7 @@ import kotlin.math.abs
  * Description: This is used to encapsulate my different query methods, and the training methods I used to
  *              learn their weights.
  */
-class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: String,
+class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qrelPath: String,
                            val hyperlinkPath: String, val abstractPath: String, val gramPath: String ) {
 
 //    val db = if (graphPath == "") null else KotlinDatabase(graphPath)
@@ -416,6 +417,29 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         }
     }
 
+    private fun trainSectionTFIDF() {
+
+        val tifdSearcher = getIndexSearcher(indexPath)
+        // Huh... Bindu's class shares the same name as the TFIDFSimilarity from Lucene... that's not good.
+        val tifd = TFIDFSimilarity(100, tifdSearcher)
+        val bindTIFD = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
+            featTFIFDAverage(query, tops, indexSearcher, tifd)
+        }
+
+        val makeWeights = { pos: Int ->
+            arrayListOf(0.0, 0.0, 0.0, 0.0, 0.0, 0.0).apply { this[pos] = 1.0 }
+        }
+
+        (0 until 6).forEach { sectionWeight ->
+            formatter.addFeature({ query, tops, indexSearcher ->
+                featSplitSim(query, tops, indexSearcher, bindTIFD, secWeights = makeWeights(sectionWeight))},
+                    normType = NormType.NONE)
+        }
+
+
+
+    }
+
     private fun trainSectionSDM() {
         val gramSearcher = getIndexSearcher(gramPath)
         val hGram = KotlinGramAnalyzer(gramSearcher)
@@ -474,6 +498,7 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "sdm_alpha" -> trainDirichletAlpha()
             "sdm_components" -> trainSDMComponents()
             "section_path" -> trainSectionPath()
+            "tfidf_section" -> trainSectionTFIDF()
             "section_component" -> trainSectionComponent()
             "string_similarities" -> trainSimilarityComponents()
             "similarity_section" -> trainSimilaritySection()

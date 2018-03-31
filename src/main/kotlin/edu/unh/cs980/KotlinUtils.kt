@@ -69,12 +69,7 @@ fun <K,V>MutableMap<K,V>.removeAll(f: (key:K,value:V) -> Boolean) {
 }
 
 // Retrieves an index searcher (I use this everywhere so might as well put it here)
-val openIndexSearchers = HashSet<String>()
 fun getIndexSearcher(indexLocation: String): IndexSearcher {
-    if (!openIndexSearchers.add(indexLocation)) {
-        println("Warning: you have already opened an index at $indexLocation!!!")
-    }
-
     val indexPath = Paths.get(indexLocation)
     val indexDir = FSDirectory.open(indexPath)
     val indexReader = DirectoryReader.open(indexDir)

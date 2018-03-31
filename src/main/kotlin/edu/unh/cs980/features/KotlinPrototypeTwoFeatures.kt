@@ -9,26 +9,15 @@ import edu.unh.cs980.language.GramStatType
 import edu.unh.cs980.language.KotlinAbstractAnalyzer
 import edu.unh.cs980.language.KotlinGramAnalyzer
 import edu.unh.cs980.misc.AnalyzerFunctions
-import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.*
-import edu.unh.cs980.variations.QueryExpansion_variation
+import edu.unh.cs980.WordEmbedding.TFIDFSimilarity
 import edu.unh.cs980.variations.Query_RM_QE_variation
 import info.debatty.java.stringsimilarity.Jaccard
 import info.debatty.java.stringsimilarity.JaroWinkler
 import info.debatty.java.stringsimilarity.NormalizedLevenshtein
 import info.debatty.java.stringsimilarity.SorensenDice
 import info.debatty.java.stringsimilarity.interfaces.StringDistance
-import org.apache.lucene.analysis.standard.StandardAnalyzer
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
-import org.apache.lucene.index.Term
 import org.apache.lucene.search.*
-import org.apache.lucene.search.similarities.Similarity
-import java.io.StringReader
-import java.lang.Double.max
-import kotlin.coroutines.experimental.buildSequence
 import kotlin.math.ln
-import kotlin.math.log
-import kotlin.math.log10
-import kotlin.math.max
 
 
 /**
@@ -182,31 +171,27 @@ fun featSDMWithEntityQueryExpansion(query: String, tops: TopDocs, indexSearcher:
         .reduce { acc, list -> acc.zip(list).map { (l1, l2) -> l1 + l2 } }
         .map { finalResult -> finalResult / expandedQueryResults.size }
 
-//    val queryCorpus = gramAnalyzer.getCorpusStatContainer(expandedQuery)
-//
-//    return tops.scoreDocs.map { scoreDoc ->
-//        val doc = indexSearcher.doc(scoreDoc.doc)
-//        val text = doc.get(CONTENT)
-//
-//        // Generate a language model for the given document's text
-//        val docStat = gramAnalyzer.getLanguageStatContainer(text)
-//        val queryLikelihood = docStat.getLikelihoodGivenQuery(queryCorpus, alpha)
-//        val v1 = queryLikelihood.unigramLikelihood
-//        val v2 = queryLikelihood.bigramLikelihood
-//        val v3 = queryLikelihood.bigramWindowLikelihood
-//
-//        // If gram type is given, only return the score of a particular -gram method.
-//        // Otherwise, used the weights that were learned and combine all three types into a score.
-//        val weights = listOf(0.9640505557357185, 0.025725201783485203, 0.01022424280796314)
-//        when (gramType) {
-//            GramStatType.TYPE_UNIGRAM -> v1
-//            GramStatType.TYPE_BIGRAM -> v2
-//            GramStatType.TYPE_BIGRAM_WINDOW -> v3
-//            else -> v1 * weights[0] + v2 * weights[1] + v3 * weights[2]
-//        }
-//    }
-
 }
+
+
+/**
+ * Func: featTIFDAverage
+ * Desc: Uses Bindu's TIFD to get average TIFD score for tokens in query.
+ */
+fun featTFIFDAverage(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
+                    tifd: TFIDFSimilarity): List<Double> {
+    val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
+    val filteredQuery = tokens.joinToString(" ")
+
+    // Call Bindu's TIFD to get one list of doubles per term in query string
+    val results: List<List<Double>> = tifd.getQueryScore(query, tops)
+
+    return results
+        .reduce { acc, list ->
+                    acc.zip(list).map { (l1, l2) -> l1 + l2 } }
+        .map { reducedScore -> reducedScore / results.size }
+}
+
 
 
 /**
