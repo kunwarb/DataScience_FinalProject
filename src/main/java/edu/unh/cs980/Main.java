@@ -444,20 +444,20 @@ public class Main {
 			String queryType = params.getString("query_type");
 			String out = params.getString("out");
 			QueryBuilder queryBuilder = new QueryBuilder(queryFile);
-			if (queryType == "pages") {
+			if (queryType.equalsIgnoreCase("page")) {
 				ArrayList<String> pages_queries = queryBuilder.getAllpageQueries();
 				logger.info("Page queries: " + pages_queries.size());
 				ArrayList<String> page_run = QueryExpansion_variation.getSearchResult(pages_queries, index);
 				ProjectUtils.writeToFile(out, page_run);
 
-			} else if (queryType == "section") {
+			} else if (queryType.equalsIgnoreCase("section")) {
 				ArrayList<String> section_queries = queryBuilder.getAllSectionQueries();
 				logger.info("Section queries: " + section_queries.size());
 				ArrayList<String> section_run = QueryExpansion_variation.getSearchResult(section_queries, index);
 				ProjectUtils.writeToFile(out, section_run);
 
 			} else {
-				System.out.println("Error: QueryType not recognized.");
+				System.out.println("Error: QueryType not recognized. Got: " + queryType);
 			}
 
 		} catch (Throwable e) {
@@ -474,20 +474,20 @@ public class Main {
 			String queryType = params.getString("query_type");
 			String out = params.getString("out");
 			QueryBuilder queryBuilder = new QueryBuilder(queryFile);
-			if (queryType == "pages") {
+			if (queryType.equalsIgnoreCase("page")) {
 				ArrayList<String> pages_queries = queryBuilder.getAllpageQueries();
 				logger.info("Page queries: " + pages_queries.size());
 				ArrayList<String> page_run = FreqBigram_variation.getSearchResult(pages_queries, index);
 				ProjectUtils.writeToFile(out, page_run);
 
-			} else if (queryType == "section") {
+			} else if (queryType.equalsIgnoreCase("section")) {
 				ArrayList<String> section_queries = queryBuilder.getAllSectionQueries();
 				logger.info("Section queries: " + section_queries.size());
 				ArrayList<String> section_run = FreqBigram_variation.getSearchResult(section_queries, index);
 				ProjectUtils.writeToFile(out, section_run);
 
 			} else {
-				logger.error("Error: QueryType not recognized.");
+				logger.error("Error: QueryType not recognized. Got: " + queryType);
 			}
 
 		} catch (Throwable e) {
@@ -506,7 +506,7 @@ public class Main {
 			Boolean runMultiThread = Boolean.valueOf(multi.toLowerCase());
 			String out = params.getString("out");
 			QueryBuilder queryBuilder = new QueryBuilder(queryFile);
-			if (queryType == "pages") {
+			if (queryType.equalsIgnoreCase("page")) {
 				ArrayList<String> pages_queries = queryBuilder.getAllpageQueries();
 				logger.info("Page queries: " + pages_queries.size());
 				if (runMultiThread) {
@@ -518,7 +518,7 @@ public class Main {
 					ProjectUtils.writeToFile(out, page_run);
 				}
 
-			} else if (queryType == "section") {
+			} else if (queryType.equalsIgnoreCase("section")) {
 				ArrayList<String> section_queries = queryBuilder.getAllSectionQueries();
 				logger.info("Section queries: " + section_queries.size());
 				if (runMultiThread) {
@@ -532,7 +532,7 @@ public class Main {
 				}
 
 			} else {
-				logger.error("Error: QueryType not recognized.");
+				logger.error("Error: QueryType not recognized. Got: " + queryType);
 			}
 
 		} catch (Throwable e) {
@@ -548,20 +548,20 @@ public class Main {
 			String queryType = params.getString("query_type");
 			String out = params.getString("out");
 			QueryBuilder queryBuilder = new QueryBuilder(queryFile);
-			if (queryType == "pages") {
+			if (queryType.equalsIgnoreCase("page")) {
 				ArrayList<String> pages_queries = queryBuilder.getAllpageQueries();
 				logger.info("Page queries: " + pages_queries.size());
 				ArrayList<String> page_run = Doc_RM_QE_variation.getResults(pages_queries, index);
 				ProjectUtils.writeToFile(out, page_run);
 
-			} else if (queryType == "section") {
+			} else if (queryType.equalsIgnoreCase("section")) {
 				ArrayList<String> section_queries = queryBuilder.getAllSectionQueries();
 				logger.info("Section queries: " + section_queries.size());
 				ArrayList<String> section_run = Doc_RM_QE_variation.getResults(section_queries, index);
 				ProjectUtils.writeToFile(out, section_run);
 
 			} else {
-				logger.error("Error: QueryType not recognized.");
+				logger.error("Error: QueryType not recognized. Got: " + queryType);
 			}
 
 		} catch (Throwable e) {
