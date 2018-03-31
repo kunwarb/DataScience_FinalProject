@@ -94,23 +94,10 @@ public class TFIDFSimilarity {
 			throws ParseException, IOException {
 
 		HashMap<TermQuery, Float> queryweights = new HashMap<>();
-//		ArrayList<TermQuery> terms = new ArrayList<>();
-
-//		Query q = parser.parse(query);
 		for (TermQuery tq: termQueries) {
 			queryweights.put(tq, queryweights.getOrDefault(tq, 0.0f) + 1.0f);
 		}
 
-//		for (String term : query.split(" "))
-//
-//		{
-//			TermQuery tq = new TermQuery(new Term("text", term));
-//
-//			terms.add(tq);
-//
-//			queryweights.put(tq, queryweights.getOrDefault(tq, 0.0f) + 1.0f);
-//		}
-//
 		return calculateQueryScore(termQueries, queryweights, tops);
 	}
 
