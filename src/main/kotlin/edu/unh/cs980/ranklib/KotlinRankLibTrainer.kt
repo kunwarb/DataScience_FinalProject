@@ -20,6 +20,8 @@ import org.apache.lucene.index.Term
 import org.apache.lucene.search.*
 import org.apache.lucene.search.similarities.*
 import edu.unh.cs980.WordEmbedding.TFIDFSimilarity
+import org.apache.log4j.Level
+import org.apache.log4j.Logger
 import java.lang.Double.sum
 import java.util.*
 import kotlin.math.abs
@@ -201,8 +203,20 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
                 normType = NormType.ZSCORE, weight = featureWeights[1])
     }
 
+    private fun queryNatSDM() {
+        System.err.close() // Stanford NLP needs to shut the hell up
+        val weights = listOf(0.62146543079, 0.37853)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
+        val gramSearcher = getIndexSearcher(gramPath)
+        val hGram = KotlinGramAnalyzer(gramSearcher)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featNatSDM(query, tops, indexSearcher, hGram, 4.0)
+        }, normType = NormType.ZSCORE, weight = weights[1])
+    }
+
     // Runs associated query method
     fun runRanklibQuery(method: String, out: String) {
+        Logger.getRootLogger().level = Level.ERROR
         when (method) {
             "average_abstract" -> queryAverageAbstractScore()
             "hyperlink" -> queryHyperlinkLikelihood()
@@ -211,6 +225,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
             "section_component" -> querySectionComponent()
             "abstract_sdm" -> queryAbstractSDM()
             "sdm" -> querySDM()
+            "nat_sdm" -> queryNatSDM()
             "sdm_section" -> querySDMSection()
             "sdm_expansion" -> querySDMExpansion()
             "tfidf_section" -> queryTFIDFSection()
@@ -291,13 +306,21 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
     }
 
     private fun trainSDM() {
-//        val weights = listOf(0.49827237108, 0.23021207089, 0.1280351944, 0.143480363604666)
-//        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE, weight = weights[0])
         formatter.addBM25(normType = NormType.ZSCORE)
         val gramSearcher = getIndexSearcher(gramPath)
         val hGram = KotlinGramAnalyzer(gramSearcher)
         formatter.addFeature({ query, tops, indexSearcher ->
             featSDM(query, tops, indexSearcher, hGram, 4.0)
+        }, normType = NormType.ZSCORE)
+    }
+
+    private fun trainNatSDM() {
+        System.err.close() // Stanford NLP needs to shut the hell up
+        formatter.addBM25(normType = NormType.ZSCORE)
+        val gramSearcher = getIndexSearcher(gramPath)
+        val hGram = KotlinGramAnalyzer(gramSearcher)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featNatSDM(query, tops, indexSearcher, hGram, 4.0)
         }, normType = NormType.ZSCORE)
     }
 
@@ -493,12 +516,14 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
      *              file for later use in training weights.
      */
     fun train(method: String, out: String) {
+        Logger.getRootLogger().level = Level.ERROR
         when (method) {
             "hyperlink" -> trainHyperlinkLikelihood()
             "abstract_sdm" -> trainAbstractSDM()
             "abstract_sdm_components" -> trainAbstractSDMComponents()
             "abstract_alpha" -> trainAbstractSDMAlpha()
             "average_abstract" -> trainAverageAbstractScore()
+            "nat_sdm" -> trainNatSDM()
             "sdm" -> trainSDM()
             "sdm_alpha" -> trainDirichletAlpha()
             "sdm_components" -> trainSDMComponents()

@@ -234,7 +234,7 @@ public class Main {
 				.help("The type of method to use when querying (see readme).")
 				.choices("average_abstract", "combined", "abstract_sdm", "sdm_components",
 						"hyperlink", "sdm", "section_component", "sdm_expansion", "sdm_section",
-                        "tfidf_section");
+                        "tfidf_section", "nat_sdm");
 
 		ranklibQueryParser.addArgument("index").help("Location of Lucene index directory.");
 		ranklibQueryParser.addArgument("query").help("Location of query file (.cbor)");
@@ -263,7 +263,7 @@ public class Main {
 						"section_path", "string_similarities",
 						"similarity_section", "average_abstract", "abstract_sdm_components", "hyperlink",
 						"abstract_alpha", "sdm", "section_component", "sdm_expansion", "sdm_expansion_components",
-						"sdm_section", "tfidf_section", "tfidf_component");
+						"sdm_section", "tfidf_section", "tfidf_component", "nat_sdm");
 		ranklibTrainerParser.addArgument("index").help("Location of the Lucene index directory");
 		ranklibTrainerParser.addArgument("query").help("Location of query file (.cbor)");
 		ranklibTrainerParser.addArgument("qrel").help("Locations of matching qrel file.");

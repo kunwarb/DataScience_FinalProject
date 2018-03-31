@@ -10,6 +10,7 @@ import edu.unh.cs980.language.KotlinAbstractAnalyzer
 import edu.unh.cs980.language.KotlinGramAnalyzer
 import edu.unh.cs980.misc.AnalyzerFunctions
 import edu.unh.cs980.WordEmbedding.TFIDFSimilarity
+import edu.unh.cs980.nlp.NL_Processor
 import edu.unh.cs980.variations.Query_RM_QE_variation
 import info.debatty.java.stringsimilarity.Jaccard
 import info.debatty.java.stringsimilarity.JaroWinkler
@@ -132,19 +133,20 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
 
         // Generate a language model for the given document's text
         val docStat = gramAnalyzer.getLanguageStatContainer(text)
-        val queryLikelihood = docStat.getLikelihoodGivenQuery(queryCorpus, alpha)
-        val v1 = queryLikelihood.unigramLikelihood
-        val v2 = queryLikelihood.bigramLikelihood
-        val v3 = queryLikelihood.bigramWindowLikelihood
+        val (uniLike, biLike, windLike) = gramAnalyzer.getQueryLikelihood(docStat, queryCorpus, alpha)
+//        val queryLikelihood = docStat.getLikelihoodGivenQuery(queryCorpus, alpha)
+//        val v1 = queryLikelihood.unigramLikelihood
+//        val v2 = queryLikelihood.bigramLikelihood
+//        val v3 = queryLikelihood.bigramWindowLikelihood
 
         // If gram type is given, only return the score of a particular -gram method.
         // Otherwise, used the weights that were learned and combine all three types into a score.
         val weights = listOf(0.9285990421606605, 0.070308081629, -0.0010928762)
         when (gramType) {
-            GramStatType.TYPE_UNIGRAM -> v1
-            GramStatType.TYPE_BIGRAM -> v2
-            GramStatType.TYPE_BIGRAM_WINDOW -> v3
-            else -> v1 * weights[0] + v2 * weights[1] + v3 * weights[2]
+            GramStatType.TYPE_UNIGRAM -> uniLike
+            GramStatType.TYPE_BIGRAM -> biLike
+            GramStatType.TYPE_BIGRAM_WINDOW -> windLike
+            else -> uniLike * weights[0] + biLike * weights[1] + windLike * weights[2]
         }
     }
 }
@@ -226,14 +228,14 @@ fun featAbstractSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         // Surprisingly, after training, the bigrams were favored the most (compared to the normal SDM above)
         val weights = listOf(0.0486185, 0.9318018089, 0.01957)
         val results = rels.map { (_, relEntity) ->
-            val v1 = relEntity.queryLikelihood.unigramLikelihood
-            val v2 = relEntity.queryLikelihood.bigramLikelihood
-            val v3 = relEntity.queryLikelihood.bigramWindowLikelihood
+            val uniLike = relEntity.queryLikelihood.unigramLikelihood
+            val biLike = relEntity.queryLikelihood.bigramLikelihood
+            val windLike = relEntity.queryLikelihood.bigramWindowLikelihood
             when (gramType) {
-                GramStatType.TYPE_UNIGRAM       -> v1
-                GramStatType.TYPE_BIGRAM        -> v2
-                GramStatType.TYPE_BIGRAM_WINDOW -> v3
-                else                            -> weights[0] * v1 + weights[1] * v2 + weights[2] * v3
+                GramStatType.TYPE_UNIGRAM       -> uniLike
+                GramStatType.TYPE_BIGRAM        -> biLike
+                GramStatType.TYPE_BIGRAM_WINDOW -> windLike
+                else                            -> weights[0] * uniLike + weights[1] * biLike + weights[2] * windLike
             }
         }
 
@@ -263,6 +265,44 @@ fun featAverageAbstractScoreByQueryRelevance(query: String, tops: TopDocs, index
         rels.map { (sim, relEntity) -> sim * relEntity.score }
             .average()
             .defaultWhenNotFinite(0.0)
+    }
+}
+
+/**
+ * Func: featNatSDM
+ * Desc: My best attempt at an SDM model (using Dirichlet smoothing). The individual components have
+ *       already been weighted (see training examples) and the final score is a weighted combination
+ *       of unigram, bigram, and windowed bigram.
+ */
+fun featNatSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
+            gramAnalyzer: KotlinGramAnalyzer, alpha: Double,
+            gramType: GramStatType? = null): List<Double> {
+    val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
+    val cleanQuery = tokens.toList().joinToString(" ")
+    val (nounCorpus, verbCorpus) = gramAnalyzer.getNatCorpusStatContainers(cleanQuery)
+
+    return tops.scoreDocs.map { scoreDoc ->
+        val doc = indexSearcher.doc(scoreDoc.doc)
+        val text = doc.get(CONTENT)
+
+        // Generate a language model for the given document's text
+        val (nounDoc, verbDoc) = gramAnalyzer.getNatLanguageStatContainers(text)
+
+        val (uniNoun, biNoun, windNoun) = gramAnalyzer.getQueryLikelihood(nounDoc, nounCorpus, alpha)
+        val (uniVerb, biVerb, windVerb) = gramAnalyzer.getQueryLikelihood(verbDoc, verbCorpus, alpha)
+
+
+        // If gram type is given, only return the score of a particular -gram method.
+        // Otherwise, used the weights that were learned and combine all three types into a score.
+        val weights = listOf(0.9285990421606605, 0.070308081629, -0.0010928762)
+        when (gramType) {
+            GramStatType.TYPE_UNIGRAM -> uniNoun + uniVerb
+            GramStatType.TYPE_BIGRAM -> biNoun + biVerb
+            GramStatType.TYPE_BIGRAM_WINDOW -> windNoun + windVerb
+            else -> (uniNoun + uniVerb) * weights[0] +
+                    (biNoun + biVerb) * weights[1] +
+                    (windNoun + windVerb) * weights[2]
+        }
     }
 }
 

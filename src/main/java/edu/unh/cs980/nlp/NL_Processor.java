@@ -17,13 +17,16 @@ import edu.stanford.nlp.util.CoreMap;
 
 public class NL_Processor {
 	private static final Logger logger = Logger.getLogger(NL_Processor.class);
+	private static StanfordCoreNLP pipeline;
 
 	public static NL_Document.Paragraph convertToNL_Document(String para_text) {
 
 		logger.info("Processing text with stanford NLP.");
-		Properties props = new Properties();
-		props.put("annotators", "tokenize, ssplit, pos");
-		StanfordCoreNLP pipeline = new StanfordCoreNLP(props);
+		if (pipeline == null) {
+			Properties props = new Properties();
+			props.put("annotators", "tokenize, ssplit, pos");
+			pipeline = new StanfordCoreNLP(props);
+		}
 
 		NL_Document.Paragraph para = new NL_Document.Paragraph();
 		Annotation annotation = new Annotation(para_text);
