@@ -22,10 +22,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.similarities.BasicStats;
 import org.apache.lucene.search.similarities.SimilarityBase;
 import org.apache.lucene.store.FSDirectory;
@@ -93,29 +90,31 @@ public class TFIDFSimilarity {
 	 * 
 	 */
 
-	public List<List<Double>> getQueryScore(String query, TopDocs tops)
+	public List<List<Double>> getQueryScore(List<TermQuery> termQueries, TopDocs tops)
 			throws ParseException, IOException {
 
 		HashMap<TermQuery, Float> queryweights = new HashMap<>();
-		ArrayList<TermQuery> terms = new ArrayList<>();
+//		ArrayList<TermQuery> terms = new ArrayList<>();
 
-		Query q = parser.parse(query);
-
-		for (String term : query.split(" "))
-
-		{
-			TermQuery tq = new TermQuery(new Term("text", term));
-
-			terms.add(tq);
-
+//		Query q = parser.parse(query);
+		for (TermQuery tq: termQueries) {
 			queryweights.put(tq, queryweights.getOrDefault(tq, 0.0f) + 1.0f);
 		}
 
-		return calculateQueryScore(q, query, terms, queryweights, tops);
-
+//		for (String term : query.split(" "))
+//
+//		{
+//			TermQuery tq = new TermQuery(new Term("text", term));
+//
+//			terms.add(tq);
+//
+//			queryweights.put(tq, queryweights.getOrDefault(tq, 0.0f) + 1.0f);
+//		}
+//
+		return calculateQueryScore(termQueries, queryweights, tops);
 	}
 
-	private List<List<Double>> calculateQueryScore(Query q, String qname, ArrayList<TermQuery> terms,
+	private List<List<Double>> calculateQueryScore(List<TermQuery> terms,
 			HashMap<TermQuery, Float> queryweights2, TopDocs tops) throws IOException, ParseException {
 
 		List<List<Double>> ls = new ArrayList<List<Double>>();
@@ -146,7 +145,7 @@ public class TFIDFSimilarity {
 			// Get the top 100 documents that match our query
 //			TopDocs tpd = searcher.search(queryterm, numDocs);
 
-			ls.add(getTermScores(qname, tops, queryweights2, queryterm, q));
+			ls.add(getTermScores(tops, queryweights2, queryterm));
 
 		}
 		return ls;
@@ -212,8 +211,8 @@ public class TFIDFSimilarity {
 
 	}
 
-	private List<Double> getTermScores(String qname, TopDocs tpd, HashMap<TermQuery, Float> queryweights2,
-			TermQuery queryterm, Query q) throws IOException {
+	private List<Double> getTermScores(TopDocs tpd, HashMap<TermQuery, Float> queryweights2,
+									   TermQuery queryterm) throws IOException {
 		List<Double> ls1 = new ArrayList<Double>();
 		HashMap<Document, ResultQuery> docMap = new HashMap<>();
 		HashMap<Document, Float> scores = new HashMap<>(); // Mapping of each
@@ -226,6 +225,11 @@ public class TFIDFSimilarity {
 			// the
 			// document
 //			double score = tpd.scoreDocs[i].score * queryweights2.get(queryterm); // Calculate
+
+			BooleanQuery q = new BooleanQuery.Builder()
+					.add(queryterm, BooleanClause.Occur.SHOULD)
+					.build();
+
 			double score = searcher.explain(q, tpd.scoreDocs[i].doc).getValue() * queryweights2.get(queryterm); // Calculate
 			// TF-IDF
 			ResultQuery dResults = docMap.get(doc);

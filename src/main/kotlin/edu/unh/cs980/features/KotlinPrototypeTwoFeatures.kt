@@ -16,6 +16,7 @@ import info.debatty.java.stringsimilarity.JaroWinkler
 import info.debatty.java.stringsimilarity.NormalizedLevenshtein
 import info.debatty.java.stringsimilarity.SorensenDice
 import info.debatty.java.stringsimilarity.interfaces.StringDistance
+import org.apache.lucene.index.Term
 import org.apache.lucene.search.*
 import kotlin.math.ln
 
@@ -180,11 +181,11 @@ fun featSDMWithEntityQueryExpansion(query: String, tops: TopDocs, indexSearcher:
  */
 fun featTFIFDAverage(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                     tifd: TFIDFSimilarity): List<Double> {
-    val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
-    val filteredQuery = tokens.joinToString(" ")
+    val termQueries = AnalyzerFunctions.createTokenList(query, useFiltering = true)
+        .map { token -> TermQuery(Term(CONTENT, token)) }
 
     // Call Bindu's TIFD to get one list of doubles per term in query string
-    val results: List<List<Double>> = tifd.getQueryScore(query, tops)
+    val results: List<List<Double>> = tifd.getQueryScore(termQueries, tops)
 
     return results
         .reduce { acc, list ->
