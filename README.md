@@ -203,11 +203,7 @@ Where:
  **query_file**: Is the query (.cbor) file to be used in querying the Lucene index.
  
  **--out**: Is the name of the trec_car compatible run file to create. Default: query_results.run
- 
- ## Description of Primary RanklibQuery Methods and Training
- Each of these methods score the Top 100 documents obtained by running BM25 on the concatenated section path against the index.
- For all individual methods, the score from BM25 is added as an additional feature (in addition to those created by the methods) and the weights are trained using RankLib. **The features (including BM25) were normalized by Z-score.**
- ___
+  ___
 #### Query Abstract Entiteis Relevance + Query Expansion Variation:
 Predict relevant entities by annotated abstract of the entities from query
 Build expanded query = query + words from entity's page (like RM3/Relevance Model); run this query against paragraph index  
@@ -234,6 +230,11 @@ Where:
  
  **--out**: Is the name of the trec_car compatible run file to create. Default: query_results.run
  ___
+ 
+ ## Description of Primary RanklibQuery Methods and Training
+ Each of these methods score the Top 100 documents obtained by running BM25 on the concatenated section path against the index.
+ For all individual methods, the score from BM25 is added as an additional feature (in addition to those created by the methods) and the weights are trained using RankLib. **The features (including BM25) were normalized by Z-score.**
+ 
 #### sdm
 This represents my (hopefully decent) attempt at implementing the SDM model for the paragraphCorpus. Stemmed unigrams, bigrams, and windowed bigrams were indexed for 33% of the corpus (could not do more due to space limitations). Dirichlet smoothing was used for the language models (to do this, I ran RankLib a bunch of times with different versions of alpha (see KotlinFeatureSelector and the **sdm_alpha** method in ranklib_train) to determine what values of alpha work best). The three -gram scores were also waited according to training with RankLib (this is the **sdm_components** method in ranklib_train).
 
