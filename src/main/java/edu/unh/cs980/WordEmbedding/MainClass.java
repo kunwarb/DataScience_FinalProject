@@ -210,7 +210,7 @@ class MainClass
                     ArrayList<Data.Page> pagelist = 
                     		getAllPageFromPath(indexLocation,queryLocation,rankingOutputLocation);
                     
-                    TFIDFSimilarity tfidf = new TFIDFSimilarity(pagelist, 100,args[1]);
+                    TfIdfSimilarity tfidf = new TfIdfSimilarity(pagelist, 100,args[1]);
                    tfidf.writeTFIDFScoresTo(args[3] + "\\Similarity_TFIDF.run");
        			}
        			catch(ArrayIndexOutOfBoundsException e)

@@ -46,7 +46,7 @@ public class ParagraphSimilarity {
 	private ArrayList<Data.Page> pageList;
 	private HashMap<Query, ArrayList<ResultQuery>> ParagraphqueryResults;
 
-	ParagraphSimilarity(ArrayList<Data.Page> pl, int n, String index) throws ParseException, IOException {
+	public ParagraphSimilarity(ArrayList<Data.Page> pl, int n, String index) throws ParseException, IOException {
 		String INDEX_DIRECTORY = index;
 		numDocs = n;
 		pageList = pl;

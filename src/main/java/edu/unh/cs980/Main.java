@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import edu.unh.cs980.WordEmbedding.TfIdfSimilarity;
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.search.IndexSearcher;
@@ -20,7 +21,6 @@ import edu.unh.cs.treccar_v2.Data;
 import edu.unh.cs.treccar_v2.read_data.DeserializeData;
 import edu.unh.cs980.WordEmbedding.Lucene_Query_Creator;
 import edu.unh.cs980.WordEmbedding.ParagraphSimilarity;
-import edu.unh.cs980.WordEmbedding.TFIDFSimilarity;
 import edu.unh.cs980.context.HyperlinkIndexer;
 import edu.unh.cs980.language.KotlinAbstractAnalyzer;
 import edu.unh.cs980.language.KotlinAbstractExtractor;
@@ -428,7 +428,7 @@ public class Main {
 																					// be
 			ArrayList<Data.Page> pagelist = getAllPageFromPath(indexLocation, queryLocation, rankingOutputLocation);
 
-			TFIDFSimilarity tfidf = new TFIDFSimilarity(pagelist, 100, indexLocation);
+			TfIdfSimilarity tfidf = new TfIdfSimilarity(pagelist, 100, indexLocation);
 			tfidf.writeTFIDFScoresTo(rankingOutputLocation + "\\Similarity_TFIDF.run");
 		} catch (Exception e) {
 			logger.error(e.getMessage());
