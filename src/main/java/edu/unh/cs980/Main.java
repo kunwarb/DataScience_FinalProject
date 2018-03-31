@@ -176,14 +176,8 @@ public class Main {
 				
 		
 				Subparser paragraphwithwordnet;
-				try {
 					paragraphwithwordnet = subparsers.addParser("query_heading")
 							.setDefault("func", new Exec(Main::runParagraphWordnet)).help("Paragraph Wordnet Similarity");
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				
 				paragraphwithwordnet.addArgument("index").help("Location of Lucene index directory.");
 				paragraphwithwordnet.addArgument("query_file").help("Location of the query file (.cbor)");
 				paragraphwithwordnet.addArgument("outputLocation") // -- means it's not positional
