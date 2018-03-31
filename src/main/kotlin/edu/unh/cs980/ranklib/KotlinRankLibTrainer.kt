@@ -85,6 +85,14 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
 //            featAverageAbstractScoreByQueryRelevance(query, tops, indexSearcher, abstractAnalyzer)
 //        }, normType = NormType.ZSCORE)
     }
+
+
+    /**
+     * Func: queryAverageAbstractScore
+     * Desc: First, relevant entities are determined by querying abstract Lucene index.
+     *       The top 20 documents are the "relevant" entities, and these are used to score the paragraph documents
+     *       by taking the average score of "relevant" entities that the paragraph was annotated with using Spotlight.
+     */
     private fun queryAverageAbstractScore() {
         val weights = listOf(0.8974292632642049, -0.10257073673579509)
         formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
@@ -95,6 +103,15 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
         }, normType = NormType.ZSCORE, weight = weights[1])
     }
 
+
+    /**
+     * Func: queryHyperlinkLikelihood
+     * Desc: The allButParagraphCorpus was parsed for "entity mentions" according to what page was linked for each
+     *       given anchor text. This is used to build a model for the likelihood of an entity given the query.
+     *       Each document is then scored according to the likelihood of its entities given the query.
+     *       This method is basically an implementation of the "popularity linking" method from the entity linking
+     *       variations assignment.
+     */
     private fun queryHyperlinkLikelihood() {
         val weights = listOf(0.8821131679, -0.11788632077)
         formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
@@ -104,32 +121,31 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
                 normType = NormType.ZSCORE, weight = weights[1])
     }
 
-    private fun queryAbstractSim() {
-        formatter.addBM25(weight = 0.86553535, normType = NormType.ZSCORE)
-        val abstractIndexer = getIndexSearcher(abstractPath)
-        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, 1.0)
-        }, normType = NormType.ZSCORE, weight = 0.1344646)
-    }
 
-
-
-    private fun querySDMComponents() {
-        formatter.addBM25(normType = NormType.ZSCORE, weight = 0.381845239)
+    /**
+     * Func: querySDM
+     * Desc: This is a Sequential Dependence Model method, in which the score of a document is based on likelihood
+     *       given query using unigram, bigram, and windowed bigram models. Each of scoring components have been
+     *       weighted according to training with RankLib.
+     */
+    private fun querySDM() {
+        val weights = listOf(0.14059688887081667, 0.8594031111291832)
         val gramSearcher = getIndexSearcher(gramPath)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
         val hGram = KotlinGramAnalyzer(gramSearcher)
         formatter.addFeature({ query, tops, indexSearcher ->
-            featSDM(query, tops, indexSearcher, hGram, 4.0, GramStatType.TYPE_UNIGRAM)
-        }, normType = NormType.ZSCORE, weight = -0.385628901)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            featSDM(query, tops, indexSearcher, hGram, 4.0, GramStatType.TYPE_BIGRAM)
-        }, normType = NormType.ZSCORE, weight = 0.01499519)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            featSDM(query, tops, indexSearcher, hGram, 4.0, GramStatType.TYPE_BIGRAM_WINDOW)
-        }, normType = NormType.ZSCORE, weight = 0.217530662)
+            featSDM(query, tops, indexSearcher, hGram, 4.0)
+        }, normType = NormType.ZSCORE, weight = weights[1])
     }
 
+
+    /**
+     * Func: queryAbstractSDM
+     * Desc: This method is similar to the SDM method, except that a language model is built from entity abstracts.
+     *       These abstracts are the first three paragraphs in the page that the entity represents.
+     *       The score of a document is based on the average likelihood score of its annotated entities given an
+     *       SDM model.
+     */
     private fun queryAbstractSDM() {
         val weights = listOf(0.86553535, 0.134464695)
         formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
@@ -140,17 +156,15 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
         }, normType = NormType.ZSCORE, weight = weights[1])
     }
 
-    private fun querySDM() {
-        val weights = listOf(0.14059688887081667, 0.8594031111291832)
-//        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE, weight = weights[0])
-        val gramSearcher = getIndexSearcher(gramPath)
-        formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
-        val hGram = KotlinGramAnalyzer(gramSearcher)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            featSDM(query, tops, indexSearcher, hGram, 4.0)
-        }, normType = NormType.ZSCORE, weight = weights[1])
-    }
 
+    /**
+     * Func: querySDMExpansion
+     * Desc: This method is a variant of SDM where the query is first expanded using Kevin's query entity expansion
+     *       method. In effect, it queries the abstract dabase and takes the top entity's abstracts, identifies the
+     *       linked entities using Spotlight, and then returns these as a list of tokens.
+     *
+     *       An SDM is generated for every expanded query term and the results are averaged.
+     */
     private fun querySDMExpansion() {
         val weights = listOf(0.9691977861102452, -0.030802213889754796)
         formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
@@ -165,12 +179,24 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
                 normType = NormType.ZSCORE, weight = weights[1])
     }
 
+    /**
+     * Func: querySectionComponent
+     * Desc: This is an example a section-path version of BM25, where the query was broken into paths, and the
+     *       new scored is expressed as a weighted combination of BM25 on each of the sections.
+     *       In this prototype, it is now a single feature, which can be combined with other features.
+     */
     private fun querySectionComponent() {
         val weights = listOf(0.0, 1.0)
         formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
         formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE, weight = weights[1])
     }
 
+
+    /**
+     * Func: querySDMSection
+     * Desc: Like the section-paths variant of BM25, the SDM method is run on each of a query's sections,
+     *       and the score of a document is expressed as a weighted sum of likelihoods given each section.
+     */
     private fun querySDMSection() {
         val gramSearcher = getIndexSearcher(gramPath)
         val hGram = KotlinGramAnalyzer(gramSearcher)
@@ -188,6 +214,12 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
         }, normType = NormType.ZSCORE)
     }
 
+
+    /**
+     * Func: queryTFIDF
+     * Desc: This takes Bindu's TFIDF metric and applies it to each of the sections of a query.
+     *       The final score is a weighted combination of the sections scored with Bindu's TFIDF.
+     */
     private fun queryTFIDFSection() {
         val tifdSearcher = getIndexSearcher(indexPath)
         val tifd = TFIDFSimilarity(100, tifdSearcher)
@@ -203,6 +235,13 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
                 normType = NormType.ZSCORE, weight = featureWeights[1])
     }
 
+    /**
+     * Func: queryNatSDM
+     * Desc: This uses Kevin's natural language processing methods to extract sentence structure from the
+     *       query and the text of each of the paragraphs. In this method, I create language models for the nouns
+     *       and verbs extracted from the query and document text and do SDM on these models.
+     *       Hopefully in the next prototype we can do something a little advantage with this structure.
+     */
     private fun queryNatSDM() {
         System.err.close() // Stanford NLP needs to shut the hell up
         val weights = listOf(0.62146543079, 0.37853)
@@ -220,8 +259,6 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
         when (method) {
             "average_abstract" -> queryAverageAbstractScore()
             "hyperlink" -> queryHyperlinkLikelihood()
-            "sdm_components" -> querySDMComponents()
-            "abstract_sim" -> queryAbstractSim()
             "section_component" -> querySectionComponent()
             "abstract_sdm" -> queryAbstractSDM()
             "sdm" -> querySDM()
@@ -281,6 +318,13 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
     }
 
 
+    /**
+     * Func: trainDirichletAlpha
+     * Desc: This is my attempt at tuning the alpha parameter of the SDM method I implemented by generating a
+     *       lot of instances of the SDM with different values of alpha. The KotlinFeatureSelector class is then used
+     *       to do pairwise feature selection (where the first feature is always BM25 and the other feature is one of
+     *       the instances of the SDM with a particular alpha), where the best result determines the alpha to use.
+     */
     private fun trainDirichletAlpha() {
         formatter.addBM25(normType = NormType.ZSCORE)
         val gramIndexSearcher = getIndexSearcher(gramPath)
@@ -293,6 +337,11 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
 
     }
 
+    /**
+     * Func: trainAbstractSDMAlpha
+     * Desc: This is the same method as trainDirichletAlpha, except I am training the alpha parameter for
+     *       the abstract SDM method.
+     */
     private fun trainAbstractSDMAlpha() {
         formatter.addBM25(normType = NormType.ZSCORE)
         val abstractSearcher = getIndexSearcher(abstractPath)
@@ -305,6 +354,12 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
 
     }
 
+
+    /**
+     * Func: trainSDM
+     * Desc: Combining SDM and BM25 to determine weights for method.
+     * @see querySDM
+     */
     private fun trainSDM() {
         formatter.addBM25(normType = NormType.ZSCORE)
         val gramSearcher = getIndexSearcher(gramPath)
@@ -314,6 +369,12 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
         }, normType = NormType.ZSCORE)
     }
 
+
+    /**
+     * Func: trainNatSDM
+     * Desc: Combining Nat SDM and BM25 to determine weights for method.
+     * @see queryNatSDM
+     */
     private fun trainNatSDM() {
         System.err.close() // Stanford NLP needs to shut the hell up
         formatter.addBM25(normType = NormType.ZSCORE)
@@ -324,6 +385,29 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
         }, normType = NormType.ZSCORE)
     }
 
+
+    /**
+     * Func: trainAbstractSDM
+     * Desc: Combining Abstract SDM and BM25 to determine weights for method.
+     * @see queryAbstractSDM
+     */
+    private fun trainAbstractSDM() {
+        formatter.addBM25(normType = NormType.ZSCORE)
+        val abstractIndexer = getIndexSearcher(abstractPath)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, 2.0)
+        }, normType = NormType.ZSCORE)
+    }
+
+
+    /**
+     * Func: trainSDMComponents
+     * Desc: Since the SDM score is based on three features, this method will treat each of the component scores as
+     *       a feature (un-normalized), with the result from running RankLib being used to determine the best
+     *       combination of these scores for the SDM method.
+     * @see querySDM
+     */
     private fun trainSDMComponents() {
         val gramIndexSearcher = getIndexSearcher(gramPath)
         val hGram = KotlinGramAnalyzer(gramIndexSearcher)
@@ -336,15 +420,12 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
     }
 
 
-    private fun trainAbstractSDM() {
-        formatter.addBM25(normType = NormType.ZSCORE)
-        val abstractIndexer = getIndexSearcher(abstractPath)
-        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, 2.0)
-        }, normType = NormType.ZSCORE)
-    }
-
+    /**
+     * Func: trainAbstractSDMComponents
+     * Desc: As trainSDMComponents, except for the Abstract SDM method.
+     * @see queryAbstractSDM
+     * @see trainSDMComponents
+     */
     private fun trainAbstractSDMComponents() {
         val grams = listOf(GramStatType.TYPE_UNIGRAM, GramStatType.TYPE_BIGRAM, GramStatType.TYPE_BIGRAM_WINDOW)
         val abstractIndexer = getIndexSearcher(abstractPath)
@@ -356,6 +437,13 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
         }
     }
 
+    /**
+     * Func: trainSectionPath
+     * Desc: This was used to train the section-path version of BM25. The weights trained using RankLib
+     *       determines the best combination of the section scores given BM25, and this is used to create
+     *       the section component feature.
+     * @see querySectionComponent
+     */
     private fun trainSectionPath() {
         formatter.addFeature({ query, tops, indexSearcher ->
             featSectionSplit(query, tops, indexSearcher, 0) }, normType = NormType.NONE)
@@ -367,12 +455,25 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
             featSectionSplit(query, tops, indexSearcher, 3) }, normType = NormType.NONE)
     }
 
+    /**
+     * Func: trainSectionComponent
+     * Desc: This feature represents a linear combination of section scores using BM25.
+     * @see trainSectionPath
+     * @see querySectionComponent
+     */
     private fun trainSectionComponent() {
         formatter.addBM25(normType = NormType.ZSCORE)
         formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE)
     }
 
-    private fun trainSimilarityComponents() {
+    /**
+     * Func: trainStringSimilarityComponents
+     * Desc: For each of the string similarity metrics (Jaccard, JaroWinkler, NormalizedLevenshtein, SorensenDice),
+     *       they are used to score a document according to the average similarity of the document's entities
+     *       (annotated using Spotlight) to that of the query's terms. The scores are treated as separate features,
+     *       and the weights of which are learned using RankLib.
+     */
+    private fun trainStringSimilarityComponents() {
         formatter.addFeature({ query, tops, indexSearcher ->
             featAddStringDistanceFunction(query, tops, indexSearcher, Jaccard() )
         }, normType = NormType.NONE)
@@ -387,7 +488,15 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
         }, normType = NormType.NONE)
     }
 
-    private fun trainSimilaritySection() {
+
+    /**
+     * Func: trainStringSimilaritySection
+     * Desc: After the best combination of string similarity scores are learned, and a feature is created from this
+     *       combination, the new feature is evaluated on each of the query's sections and a new weighted score
+     *       is determined (again, just another kind of section-path feature).
+     * @see trainStringSimilarityComponents
+     */
+    private fun trainStringSimilaritySection() {
         formatter.addFeature({ query, tops, indexSearcher ->
             featSplitSim(query, tops, indexSearcher, ::featStringSimilarityComponent,
                     secWeights = listOf(1.0, 0.0, 0.0, 0.0))}, normType = NormType.NONE)
@@ -400,10 +509,14 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
         formatter.addFeature({ query, tops, indexSearcher ->
             featSplitSim(query, tops, indexSearcher, ::featStringSimilarityComponent,
                     secWeights = listOf(0.0, 0.0, 0.0, 1.0))}, normType = NormType.NONE)
-
-//        val weights = listOf(0.13506566, -0.49940691, 0.21757824, 0.14794917259)
     }
 
+
+    /**
+     * Func: trainAverageAbstractScore
+     * Desc: This is training for the average_abstract method.
+     * @see queryAverageAbstractScore
+     */
     private fun trainAverageAbstractScore() {
         formatter.addBM25(normType = NormType.ZSCORE)
         val abstractIndexer = getIndexSearcher(abstractPath)
@@ -411,18 +524,14 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
         formatter.addFeature({ query, tops, indexSearcher ->
             featAverageAbstractScoreByQueryRelevance(query, tops, indexSearcher, abstractAnalyzer)
         }, normType = NormType.ZSCORE)
-
-//        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE)
-//        val gramIndexSearcher = getIndexSearcher(gramPath)
-//        val hLinker = HyperlinkIndexer("entity_mentions.db")
-//        val hGram = KotlinGramAnalyzer(gramIndexSearcher)
-//        formatter.addFeature({ query, tops, indexSearcher ->
-//            featSDM(query, tops, indexSearcher, hGram, 4.0)
-//        }, normType = NormType.ZSCORE)
-
-//        formatter.addFeature(::featStringSimilarityComponent, normType = NormType.ZSCORE)
     }
 
+
+    /**
+     * Func: trainHyperlinkLikelihood
+     * Desc: This is training for the hyperlink method.
+     * @see queryHyperlinkLikelihood
+     */
     private fun trainHyperlinkLikelihood() {
         formatter.addBM25(normType = NormType.ZSCORE)
         val hLinker = HyperlinkIndexer(hyperlinkPath)
@@ -430,6 +539,12 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
             featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
     }
 
+
+    /**
+     * Func: trainSDMExpansion
+     * Desc: This is training for the SDM expansion method.
+     * @see querySDMExpansion
+     */
     private fun trainSDMExpansion() {
         formatter.addBM25(normType = NormType.ZSCORE)
         val gramSearcher = getIndexSearcher(gramPath)
@@ -441,6 +556,13 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
         }, normType = NormType.ZSCORE)
     }
 
+
+    /**
+     * Func: trainSDMEntityQueryExpansionComponents
+     * Desc: As the training done with SDM components, except for the SDM entity expansion variant.
+     * @see querySDMExpansion
+     * @see trainSDMComponents
+     */
     private fun trainSDMEntityQueryExpansionComponents() {
         val gramSearcher = getIndexSearcher(gramPath)
         val hGram = KotlinGramAnalyzer(gramSearcher)
@@ -456,6 +578,13 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
         }
     }
 
+
+    /**
+     * Func: trainSectionTFIDF
+     * Desc: This uses Bindu's TFIDF score and scores each of the section separately, with the new score being the
+     *       linear combination of each of the section score trained using RankLib.
+     * @see queryTFIDFSection
+     */
     private fun trainSectionTFIDF() {
         val tifdSearcher = getIndexSearcher(indexPath)
         // Huh... Bindu's class shares the same name as the TFIDFSimilarity from Lucene... that's not good.
@@ -475,6 +604,14 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
         }
     }
 
+
+    /**
+     * Func: trainTFIDFComponent
+     * Desc: After the section-path version of Bindu's TFIDF method is trained, we see how it fairs as a feature
+     *       when combined with BM25.
+     * @see queryTFIDFSection
+     * @see trainSectionTFIDF
+     */
     private fun trainTFIDFComponent() {
         val tifdSearcher = getIndexSearcher(indexPath)
         val tifd = TFIDFSimilarity(100, tifdSearcher)
@@ -491,6 +628,13 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
 
     }
 
+    /**
+     * Func: trainSectionSDM
+     * Desc: Given the SDM method, we want to see if we can improve it by treating each section of the query
+     *       as a separate SDM model, and to learn a weighted combination of sections (scored with SDM) using
+     *       RankLib.
+     * @see querySDMSection
+     */
     private fun trainSectionSDM() {
         val gramSearcher = getIndexSearcher(gramPath)
         val hGram = KotlinGramAnalyzer(gramSearcher)
@@ -531,8 +675,8 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
             "tfidf_section" -> trainSectionTFIDF()
             "tfidf_component" -> trainTFIDFComponent()
             "section_component" -> trainSectionComponent()
-            "string_similarities" -> trainSimilarityComponents()
-            "similarity_section" -> trainSimilaritySection()
+            "string_similarities" -> trainStringSimilarityComponents()
+            "similarity_section" -> trainStringSimilaritySection()
             "sdm_expansion_components" -> trainSDMEntityQueryExpansionComponents()
             "sdm_expansion" -> trainSDMExpansion()
             "sdm_section" -> trainSectionSDM()
