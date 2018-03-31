@@ -1,7 +1,4 @@
-package edu.unh.cs980.variations;
-
-import static edu.unh.cs980.KotUtils.CONTENT;
-import static edu.unh.cs980.KotUtils.PID;
+package edu.unh.cs980.WordEmbedding;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,12 +14,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.log4j.Logger;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -32,77 +24,70 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.BM25Similarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.FSDirectory;
 
 import edu.unh.cs980.entityLinking.EntityMethods;
 import edu.unh.cs980.entityLinking.EntityWord;
 import edu.unh.cs980.utils.ProjectUtils;
+import edu.unh.cs980.utils.QueryBuilder;
 
-// 1. Predict relevant entities by annotated abstract of the entities from query
-// 2. Build expanded query = query + words from entity's page (like RM3/Relevance Model); run this query against paragraph index
-class QueryObj {
-	String queryStr;
-	Query query;
+/****
+ * 
+ * Description: This class is being used for Word-net Entity Similarity
+ *
+ */
 
-	public void setQueryStr(String str) {
-		this.queryStr = str;
-	}
+public class EntitySimilarity {
 
-	public String getQueryStr() {
-		return this.queryStr;
-	}
-
-	public void setQuery(Query q) {
-		this.query = q;
-	}
-
-	public Query getQuery() {
-		return this.query;
-	}
-}
-
-public class Query_RM_QE_variation {
-
-	private static final Logger logger = Logger.getLogger(Query_RM_QE_variation.class);
-	private static int top_k_entities = 5; // Include top k entities for QE
-	private static int max_result = 100; // Max number for Lucene docs
-	private static QueryParser parser = new QueryParser(CONTENT, new StandardAnalyzer());
+	private static QueryParser parser = new QueryParser("parabody", new StandardAnalyzer());
 	private static String abstract_index_dir;
 	private static Integer time_out = 5;
+	private static ExecutorService executors;
+	private static int topnentities = 5;
+	private static int numDocs = 100;
 
-	private static ExecutorService workers;
-
-	public static ArrayList<String> getResults(ArrayList<String> queriesStr, String index_dir, String abstract_index)
-			throws IOException, ParseException {
+	/**
+	 * Function:getEntityResults
+	 * 
+	 * @param queriesStr
+	 * @param index_dir
+	 * @param abstract_index
+	 * @return
+	 * @throws IOException
+	 * @throws ParseException
+	 *             Description:This function returns runfile string for the
+	 *             given entities
+	 */
+	public static ArrayList<String> getEntityResults(ArrayList<String> queriesStr, String index_dir,
+			String abstract_index) throws IOException, ParseException {
 
 		abstract_index_dir = abstract_index;
 		ArrayList<String> runFileStr = new ArrayList<String>();
 
 		IndexSearcher searcher = new IndexSearcher(
 				DirectoryReader.open(FSDirectory.open((new File(index_dir).toPath()))));
-		searcher.setSimilarity(new BM25Similarity());
+		searcher.setSimilarity(new ClassicSimilarity());
 
-		logger.info("Query_RM + QueryExpansion ====> Retrieving results for " + queriesStr.size() + " queries...");
-
-		int duplicate = 0;
+		int dupcount = 0;
 		for (String queryStr : queriesStr) {
-			ArrayList<String> expanded_entities = getExpandedQuery(top_k_entities, queryStr);
-			Query q_rm = generateWeightedQuery(queryStr, expanded_entities);
+			ArrayList<String> expanded_entities = getExpandedEntityQuerySimilairty(topnentities, queryStr);
+			Query q_rm = generateWeightedEntityQuery(queryStr, expanded_entities);
 
-			TopDocs tops = searcher.search(q_rm, max_result);
+			TopDocs tops = searcher.search(q_rm, numDocs);
 			ScoreDoc[] scoreDoc = tops.scoreDocs;
 			for (int i = 0; i < scoreDoc.length; i++) {
 				ScoreDoc score = scoreDoc[i];
 				Document doc = searcher.doc(score.doc);
-				String paraId = doc.getField(PID).stringValue();
+				String paraId = doc.getField("paragraphid").stringValue();
 				float rankScore = score.score;
 				int rank = i + 1;
 
 				String runStr = "enwiki:" + queryStr.replace(" ", "%20") + " Q0 " + paraId + " " + rank + " "
-						+ rankScore + " Query_RM_QE";
+						+ rankScore + " Entity-Similarity";
 				if (runFileStr.contains(runStr)) {
-					duplicate++;
-					// System.out.println("Found duplicate: " + runStr);
+					dupcount++;
+
 				} else {
 					runFileStr.add(runStr);
 				}
@@ -113,41 +98,110 @@ public class Query_RM_QE_variation {
 		return runFileStr;
 	}
 
+	/*****
+	 * 
+	 * @Function:RunEntitySimilarity
+	 * @param indexLocation
+	 * @param abstractIndexLocation
+	 * @param queryFile
+	 * @param qt
+	 * @param threadChoice
+	 * @param outputLocation
+	 *            Function: This Function gets result from page queries or
+	 *            section queries and write into file
+	 */
+
+	public void runEntitySimilarity(String indexLocation, String abstractIndexLocation, String queryFile, String qt,
+			String threadChoice, String outputLocation) {
+		try {
+			String index = indexLocation;
+			String abstract_index = abstractIndexLocation;
+			String queryFileLocation = queryFile;
+			String queryType = qt;
+			String multi = threadChoice;
+			Boolean runMultiThread = Boolean.valueOf(multi.toLowerCase());
+			String out = outputLocation;
+			QueryBuilder queryBuilder = new QueryBuilder(queryFileLocation);
+
+			if (queryType.equalsIgnoreCase("section")) {
+
+				ArrayList<String> section_queries = queryBuilder.getAllSectionQueries();
+
+				if (runMultiThread) {
+					ArrayList<String> section_run = EntitySimilarity.getResultsWithMultiThread(section_queries, index,
+							abstract_index);
+					ProjectUtils.writeToFile(out, section_run);
+				} else {
+					ArrayList<String> section_run = EntitySimilarity.getEntityResults(section_queries, index,
+							abstract_index);
+					ProjectUtils.writeToFile(out, section_run);
+				}
+			} else if (queryType.equalsIgnoreCase("pages")) {
+				ArrayList<String> pages_queries = queryBuilder.getAllpageQueries();
+
+				if (runMultiThread) {
+					ArrayList<String> page_run = EntitySimilarity.getResultsWithMultiThread(pages_queries, index,
+							abstract_index);
+					ProjectUtils.writeToFile(out, page_run);
+				} else {
+					ArrayList<String> page_run = EntitySimilarity.getEntityResults(pages_queries, index,
+							abstract_index);
+					ProjectUtils.writeToFile(out, page_run);
+				}
+
+			} else {
+				System.out.println("Error: QueryType could not be  recognized");
+			}
+
+		} catch (Throwable e) {
+			System.out.println(e.getMessage());
+		}
+	}
+
+	/***************
+	 * Function:getResultsWithMultiThread
+	 * 
+	 * @param queriesStr
+	 * @param index_dir
+	 * @param abstract_index
+	 * @return
+	 * @throws IOException
+	 * @throws ParseException
+	 *             Description : If multithread is true then this function is
+	 *             being called
+	 */
+
 	public static ArrayList<String> getResultsWithMultiThread(ArrayList<String> queriesStr, String index_dir,
 			String abstract_index) throws IOException, ParseException {
 
 		abstract_index_dir = abstract_index;
 		ArrayList<String> runFileStr = new ArrayList<String>();
-		ArrayList<QueryObj> queryList = new ArrayList<QueryObj>();
+		ArrayList<EntityQueryObj> queryList = new ArrayList<EntityQueryObj>();
 
 		IndexSearcher searcher = new IndexSearcher(
 				DirectoryReader.open(FSDirectory.open((new File(index_dir).toPath()))));
 		searcher.setSimilarity(new BM25Similarity());
 
-		logger.info("Query_RM + QueryExpansion (Multi-threads)====> Retrieving results for " + queriesStr.size()
-				+ " queries...");
-
 		try {
-			queryList = convertToExpanedQuery(queriesStr);
-			logger.debug(queryList.size());
+			queryList = EntityQuerySimilarity(queriesStr);
+			System.out.println(queryList.size());
 
-			int duplicate = 0;
-			for (QueryObj q_obj : queryList) {
+			int dupCount = 0;
+			for (EntityQueryObj q_obj : queryList) {
 
-				TopDocs tops = searcher.search(q_obj.getQuery(), max_result);
+				TopDocs tops = searcher.search(q_obj.getQuery(), numDocs);
 				ScoreDoc[] scoreDoc = tops.scoreDocs;
 				for (int i = 0; i < scoreDoc.length; i++) {
 					ScoreDoc score = scoreDoc[i];
 					Document doc = searcher.doc(score.doc);
-					String paraId = doc.getField(PID).stringValue();
+					String paraId = doc.getField("paragraphid").stringValue();
 					float rankScore = score.score;
 					int rank = i + 1;
 
 					String runStr = "enwiki:" + q_obj.getQueryStr().replace(" ", "%20") + " Q0 " + paraId + " " + rank
-							+ " " + rankScore + " Query_RM_QE";
+							+ " " + rankScore + " Entity-Similarity";
 					if (runFileStr.contains(runStr)) {
-						duplicate++;
-						// System.out.println("Found duplicate: " + runStr);
+						dupCount++;
 					} else {
 						runFileStr.add(runStr);
 					}
@@ -156,40 +210,34 @@ public class Query_RM_QE_variation {
 			}
 
 		} catch (Exception e) {
-			logger.debug("Error!!!! " + e.getLocalizedMessage());
+			System.out.println("Error!!!! " + e.getLocalizedMessage());
 		}
 
 		return runFileStr;
 	}
 
-	/*
-	 * Multi-thread methods has error.
+	/****
+	 * Function:convertToExpanedEntityQuery Description:
 	 * 
-	 * MMapIndexInput(path=
-	 * "C:\Users\Kaixin\workspace\DataScience_FinalProject\abstract_index\_p8.cfs")
-	 * [this may be caused by lack of enough unfragmented virtual address space
-	 * or too restrictive virtual memory limits enforced by the operating
-	 * system, preventing us to map a chunk of 16716594 bytes. Windows is
-	 * unfortunately very limited on virtual address space. If your index size
-	 * is several hundred Gigabytes, consider changing to Linux. More
-	 * information:
-	 * http://blog.thetaphi.de/2012/07/use-lucenes-mmapdirectory-on-64bit.html]
+	 * @param queriesStr
+	 * @return
+	 * @throws InterruptedException
+	 * @throws ExecutionException
 	 */
-	private static ArrayList<QueryObj> convertToExpanedQuery(ArrayList<String> queriesStr)
+	private static ArrayList<EntityQueryObj> EntityQuerySimilarity(ArrayList<String> queriesStr)
 			throws InterruptedException, ExecutionException {
 		// Use cache pool to create multi thread.
-		workers = Executors.newCachedThreadPool();
-		ArrayList<QueryObj> queryList = new ArrayList<QueryObj>();
-		Collection<Callable<QueryObj>> tasks = new ArrayList<Callable<QueryObj>>();
+		executors = Executors.newCachedThreadPool();
+		ArrayList<EntityQueryObj> queryList = new ArrayList<EntityQueryObj>();
+		Collection<Callable<EntityQueryObj>> tasks = new ArrayList<Callable<EntityQueryObj>>();
 		for (final String queryStr : queriesStr) {
 			if (queriesStr != null) {
-				tasks.add(new Callable<QueryObj>() {
-					public QueryObj call() throws Exception {
-						logger.debug("Get query: " + queryStr);
-						ArrayList<String> terms = getExpandedQuery(top_k_entities, queryStr);
+				tasks.add(new Callable<EntityQueryObj>() {
+					public EntityQueryObj call() throws Exception {
+						ArrayList<String> terms = getExpandedEntityQuerySimilairty(topnentities, queryStr);
 
-						Query expanded_query = generateWeightedQuery(queryStr, terms);
-						QueryObj obj = new QueryObj();
+						Query expanded_query = generateWeightedEntityQuery(queryStr, terms);
+						EntityQueryObj obj = new EntityQueryObj();
 						obj.setQueryStr(queryStr);
 						obj.setQuery(expanded_query);
 
@@ -200,18 +248,49 @@ public class Query_RM_QE_variation {
 			}
 		}
 
-		List<Future<QueryObj>> results = workers.invokeAll(tasks, time_out, TimeUnit.SECONDS);
-		for (Future<QueryObj> f : results) {
+		List<Future<EntityQueryObj>> results = executors.invokeAll(tasks, time_out, TimeUnit.SECONDS);
+		for (Future<EntityQueryObj> f : results) {
 			if (f != null) {
-				QueryObj result = f.get();
+				EntityQueryObj result = f.get();
 				queryList.add(result);
 			}
 		}
-		workers.shutdown();
+		executors.shutdown();
 		return queryList;
 	}
 
-	private static ArrayList<String> getExpandedQuery(int top_k, String queryStr) throws IOException {
+	/***
+	 * Function: generateWeightedEntityQuery Description:This function generated
+	 * the weighted Query
+	 * 
+	 * @param initialQ
+	 * @param rm_list
+	 * @return Query
+	 * @throws ParseException
+	 */
+
+	private static Query generateWeightedEntityQuery(String EQ, ArrayList<String> rm_list) throws ParseException {
+		if (!rm_list.isEmpty()) {
+			String rm_str = String.join(" ", rm_list);
+			Query q = parser.parse(QueryParser.escape(EQ) + "^0.5" + QueryParser.escape(rm_str) + "^0.3");
+			return q;
+		} else {
+			Query q = parser.parse(QueryParser.escape(EQ));
+
+			return q;
+		}
+	}
+
+	/*********************
+	 * Function:getExpandedEntityQuerySimilairty Description :This function is
+	 * being used for expanded entity QuerySimilarity
+	 * 
+	 * @param top_k
+	 * @param queryStr
+	 * @return
+	 * @throws IOException
+	 */
+	private static ArrayList<String> getExpandedEntityQuerySimilairty(int top_k, String queryStr) throws IOException {
 		// Page query
 		// Section query
 		Boolean isSection = false;
@@ -220,9 +299,9 @@ public class Query_RM_QE_variation {
 		ArrayList<String> expandedQueryTerms = new ArrayList<String>();
 
 		if (queryStr.contains("/")) {
-			// Section query
 			isSection = true;
 			termList = Arrays.asList(queryStr.split("/"));
+
 		}
 
 		if (!isSection) {
@@ -243,8 +322,7 @@ public class Query_RM_QE_variation {
 					}
 					return expandedQueryTerms;
 				} else {
-					// logger.debu("Can't find any entities for query: " +
-					// queryStr);
+
 					return expandedQueryTerms;
 				}
 			}
@@ -269,7 +347,8 @@ public class Query_RM_QE_variation {
 								entityScore.put(entity.getSurfaceForm(), score);
 							}
 						} else {
-							logger.debug("Can't find any entities for term: " + term + ". Skipped.");
+							System.out.println("Can't find any entities for term: ");
+
 						}
 					}
 
@@ -285,14 +364,24 @@ public class Query_RM_QE_variation {
 		return expandedQueryTerms;
 	}
 
+	/********
+	 * Function:getExpandedEntitiesFromPageQuery Description: This function
+	 * returns an Arraylist of Expanded Query
+	 * 
+	 * @param page_query
+	 * @param top_k
+	 * @param abstract_index_dir
+	 * @return
+	 */
+
 	public static ArrayList<String> getExpandedEntitiesFromPageQuery(String page_query, int top_k,
-																	 IndexSearcher searcher) {
+			String abstract_index_dir) {
 
 		ArrayList<String> expandedQueryTerms = new ArrayList<String>();
 		HashMap<String, Float> entityScore = new HashMap<>();
 
 		String abstracStr = EntityMethods.getEntityAbstract(page_query.replace(" ", "_").toLowerCase(),
-				searcher, true);
+				abstract_index_dir);
 
 		if (!abstracStr.isEmpty()) {
 			ArrayList<EntityWord> entities = EntityMethods.getAnnotatedEntites(abstracStr);
@@ -301,11 +390,9 @@ public class Query_RM_QE_variation {
 			}
 			if (entities.size() > 5) {
 				for (EntityWord entity : entities) {
-					// If entities is more than 5, save entity to hashmap, for
-					// scoring.
 					entityScore.put(entity.getSurfaceForm(), entity.getSimilarityScore());
 				}
-				// Get the top 5 entities.
+
 				Set<String> termSet = ProjectUtils.getTopValuesInMap(entityScore, top_k).keySet();
 				expandedQueryTerms.addAll(termSet);
 				return expandedQueryTerms;
@@ -315,14 +402,22 @@ public class Query_RM_QE_variation {
 				}
 				return expandedQueryTerms;
 			} else {
-				// logger.debug("Can't find any entities for query: " +
-				// queryStr);
+
 				return expandedQueryTerms;
 			}
 		}
 		return expandedQueryTerms;
 	}
 
+	/**************
+	 * Function:getExpandedEntitiesListFromSectionQuery Description :It check
+	 * the entities
+	 * 
+	 * @param section_query
+	 * @param top_k
+	 * @param abstract_index_dir
+	 * @return :HashMap
+	 */
 
 	public static HashMap<String, ArrayList<String>> getExpandedEntitiesListFromSectionQuery(String section_query,
 			int top_k, String abstract_index_dir) {
@@ -335,16 +430,13 @@ public class Query_RM_QE_variation {
 
 		if (!termList.isEmpty()) {
 			for (int i = 0; i < termList.size(); i++) {
-				int factor = 1; // Entities from in-between will have normal
-								// score.
+				int factor = 1;
 				String term = termList.get(i);
 				if (i == 0) {
-					factor = 3; // Entities from top level section will rank
-								// higher
+					factor = 3;
 				}
 				if (i == termList.size() - 1) {
-					factor = 2; // Entities from the bottom level section will
-								// rank higher
+					factor = 2;
 				}
 
 				ArrayList<String> expanded_terms = new ArrayList<String>();
@@ -361,7 +453,7 @@ public class Query_RM_QE_variation {
 								entityScore.put(entity.getSurfaceForm(), score);
 							}
 						} else {
-							logger.debug("Can't find any entities for term: " + term + ". Skipped.");
+							System.out.println("Can't find any entities for term: " + term);
 						}
 					}
 
@@ -378,33 +470,4 @@ public class Query_RM_QE_variation {
 		return result_map;
 	}
 
-	private static Query generateWeightedQuery(String initialQ, ArrayList<String> rm_list) throws ParseException {
-		if (!rm_list.isEmpty()) {
-			String rm_str = String.join(" ", rm_list);
-			Query q = parser.parse(QueryParser.escape(initialQ) + "^0.6" + QueryParser.escape(rm_str) + "^0.4");
-			logger.debug(initialQ + " =====> " + initialQ + " " + rm_str);
-			return q;
-		} else {
-			Query q = parser.parse(QueryParser.escape(initialQ));
-			logger.debug(initialQ + " =====> " + initialQ);
-			return q;
-		}
-	}
-
-	private static ArrayList<String> analyzeByBigram(String inputStr) throws IOException {
-		ArrayList<String> strList = new ArrayList<String>();
-		Analyzer analyzer = new BigramAnalyzer();
-		TokenStream tokenizer = analyzer.tokenStream(CONTENT, inputStr);
-		CharTermAttribute charTermAttribute = tokenizer.addAttribute(CharTermAttribute.class);
-		tokenizer.reset();
-		while (tokenizer.incrementToken()) {
-			String token = charTermAttribute.toString();
-			if (token.contains(" ")) {
-				strList.add(token);
-			}
-		}
-		tokenizer.end();
-		tokenizer.close();
-		return strList;
-	}
 }
