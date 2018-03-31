@@ -19,8 +19,10 @@ import org.apache.lucene.search.similarities.BM25Similarity;
 import co.nstant.in.cbor.CborException;
 import edu.unh.cs.treccar_v2.Data;
 import edu.unh.cs.treccar_v2.read_data.DeserializeData;
+import edu.unh.cs980.WordEmbedding.EntitySimilarity;
 import edu.unh.cs980.WordEmbedding.Lucene_Query_Creator;
 import edu.unh.cs980.WordEmbedding.ParagraphSimilarity;
+import edu.unh.cs980.WordEmbedding.ParagraphWithWordnet;
 import edu.unh.cs980.context.HyperlinkIndexer;
 import edu.unh.cs980.language.KotlinAbstractAnalyzer;
 import edu.unh.cs980.language.KotlinAbstractExtractor;
@@ -142,17 +144,52 @@ public class Main {
 
 		// Argument parser for TFIDF Similarity (Added By Bindu)
 
-		Subparser TFIDFSimilarityParser = subparsers.addParser("tfidf_similarity")
-				.setDefault("func", new Exec(Main::runTFIDFSimilarity)).help("Queries Lucene database.");
+		Subparser tfidfSimilarityParser = subparsers.addParser("tfidf_similarity")
+				.setDefault("func", new Exec(Main::runTfidfSimilarity)).help("Queries Lucene database.");
 
-		TFIDFSimilarityParser.addArgument("index").help("Location of Lucene index directory.");
-		TFIDFSimilarityParser.addArgument("query_file").help("Location of the query file (.cbor)");
-		TFIDFSimilarityParser.addArgument("--out") // -- means it's not
+		tfidfSimilarityParser.addArgument("index").help("Location of Lucene index directory.");
+		tfidfSimilarityParser.addArgument("query_file").help("Location of the query file (.cbor)");
+		tfidfSimilarityParser.addArgument("--out") // -- means it's not
 													// positional
 				.setDefault("query_results.run") // If no --out is supplied,
 													// defaults to
 													// query_results.txt
 				.help("The name of the trec_eval compatible run file to write. (default: query_results.run)");
+		
+		
+		// Argument parser for Entity Similarity
+				Subparser entitySimilarityParser = subparsers.addParser("entitySimilarity")
+						.setDefault("func", new Exec(Main::runEntitySimilarity))
+						.help("Use EntitySimilarity");
+				entitySimilarityParser.addArgument("query_choice").choices("page", "section")
+						.help("\tpage: Page of paragraph corpus\n" + "\tsection: Section of paragraph corpus\n");
+				entitySimilarityParser.addArgument("multi_thread").choices("true", "false").setDefault("false")
+						.help("\ttrue: Run Multi Thread function. (Not Stable)\n" + "\tfalse: Use normal function\n");
+
+				entitySimilarityParser.addArgument("index").help("Location of Lucene index directory.");
+				entitySimilarityParser.addArgument("abstract").help("Location of Lucene entity abstract index directory.");
+				entitySimilarityParser.addArgument("query_file").help("Location of the query file (.cbor)");
+				entitySimilarityParser.addArgument("--out") .setDefault("Entity-Similarity.run") 
+						.help("The name of the trec_eval compatible run file to write. (default: EntitySimilarity.run)");
+		
+				
+				
+		
+				Subparser paragraphwithwordnet;
+				try {
+					paragraphwithwordnet = subparsers.addParser("query_heading")
+							.setDefault("func", new Exec(Main::runParagraphWordnet)).help("Paragraph Wordnet Similarity");
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				paragraphwithwordnet.addArgument("index").help("Location of Lucene index directory.");
+				paragraphwithwordnet.addArgument("query_file").help("Location of the query file (.cbor)");
+				paragraphwithwordnet.addArgument("outputLocation") // -- means it's not positional
+												.help("The name of the trec_eval compatible run file to write. (default: query_results.run)");
+
+
 
 		// Argument parser for Query Expansion
 		Subparser queryExpansionParser = subparsers.addParser("query_expansion")
@@ -391,17 +428,14 @@ public class Main {
 	}
 
 	// Runs Bindu Paragraph Similarity Variation
-	private static void runParagraphSimilarity(Namespace params) {
+	public static void runParagraphSimilarity(Namespace params) {
 		try {
 			String indexLocation = params.getString("index");// Paragraph Corpus
 																// indexing
 			String queryLocation = params.getString("Outlinecborfile"); // outlines-cbor
 																		// file
-			String rankingOutputLocation = params.getString("OutputLocationFile"); // where
-																					// Tf-IDF
-																					// output
-																					// should
-																					// be
+			String rankingOutputLocation = params.getString("OutputLocationFile");
+
 			ArrayList<Data.Page> pagelist = getAllPageFromPath(indexLocation, queryLocation, rankingOutputLocation);
 
 			ParagraphSimilarity ps = new ParagraphSimilarity(pagelist, 100, indexLocation);
@@ -412,10 +446,58 @@ public class Main {
 		}
 
 	}
+	
+	//Run for Entity Similarity
+	
+		private static void runEntitySimilarity(Namespace params) {
+			try {
+				String indexLocation = params.getString("index");
+				String abstract_indexLocation = params.getString("abstract");
+				String queryFile = params.getString("query_file");
+				String queryChoice = params.getString("query_choice");
+				String multi = params.getString("multi_thread");
+				Boolean runMultiThread = Boolean.valueOf(multi.toLowerCase());
+				String out = params.getString("out");
+				QueryBuilder queryBuilder = new QueryBuilder(queryFile);
+				if (queryChoice.equalsIgnoreCase("page")) {
+					ArrayList<String> pages_queries = queryBuilder.getAllpageQueries();
+				
+					if (runMultiThread) {
+						ArrayList<String> page_run = EntitySimilarity.getResultsWithMultiThread(pages_queries, indexLocation,
+								abstract_indexLocation);
+						ProjectUtils.writeToFile(out, page_run);
+					} else {
+						ArrayList<String> page_run = EntitySimilarity.getEntityResults(pages_queries, indexLocation, abstract_indexLocation);
+						ProjectUtils.writeToFile(out, page_run);
+					}
 
-	// Runs Bindu TFIDF SImilarity Variation
+				} else if (queryChoice.equalsIgnoreCase("section")) {
+					ArrayList<String> section_queries = queryBuilder.getAllSectionQueries();
+				
+					if (runMultiThread) {
+						ArrayList<String> section_run = EntitySimilarity.getResultsWithMultiThread(section_queries,
+								indexLocation, abstract_indexLocation);
+						ProjectUtils.writeToFile(out, section_run);
+					} else {
+						ArrayList<String> section_run = EntitySimilarity.getEntityResults(section_queries, indexLocation,
+								abstract_indexLocation);
+						ProjectUtils.writeToFile(out, section_run);
+					}
 
-	private static void runTFIDFSimilarity(Namespace params) {
+				} else {
+					System.out.println("Error: QueryChoice was not recognized");
+				}
+
+			} catch (Throwable e) {
+				logger.error(e.getMessage());
+			}
+		}
+
+
+
+	// Runs Bindu Tfidf(lnc.ltc) SImilarity Variation
+
+	public static void runTfidfSimilarity(Namespace params) {
 		try {
 			String indexLocation = params.getString("index"); // Paragraph
 																// Corpus
@@ -429,12 +511,39 @@ public class Main {
 			ArrayList<Data.Page> pagelist = getAllPageFromPath(indexLocation, queryLocation, rankingOutputLocation);
 
 			TfIdfSimilarity tfidf = new TfIdfSimilarity(pagelist, 100, indexLocation);
-			tfidf.writeTFIDFScoresTo(rankingOutputLocation + "\\Similarity_TFIDF.run");
+			tfidf.writeTFIDFScoresTo(rankingOutputLocation + "\\Similarity_TFIDF_lnc.ltc.run");
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 
 		}
 	}
+	
+	
+	 //This function is being used for running query
+    public static void runParagraphWordnet(Namespace params ) {
+    	try{
+    	String index = params.getString("index");
+		String queryLocation= params.getString("query_file");
+		String rankingOutputLocation = params.getString("outputLocation");
+		   	
+    	ParagraphWithWordnet qbuilder = getQueryBuilder( index, queryLocation, rankingOutputLocation);
+		qbuilder.writeRankings(queryLocation, rankingOutputLocation);
+    	}
+    	catch(IOException e)
+    	{
+    		e.printStackTrace();
+    	}
+	}
+	
+	
+	
+
+		  //This function is being used for creating 
+  	public static ParagraphWithWordnet getQueryBuilder( String indexLocation, String queryLocation,
+  			String rankingOutputLocation) throws IOException {
+  	
+     return new ParagraphWithWordnet( new StandardAnalyzer(), new BM25Similarity(), indexLocation);
+  	}
 
 	// Runs Kevin's Query Expansion Variation
 	private static void runQueryExpansion(Namespace params) {
