@@ -192,14 +192,13 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
         val bindTIFD = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
             featTFIFDAverage(query, tops, indexSearcher, tifd)
         }
+        val featureWeights = listOf(0.945, -0.054399)
+        val tifdWeights = listOf(0.0000484, 0.000018545, 0.00244388, 0.996917, 0.000001823081, 0.000001823081)
 
-        val sectionWeights = listOf(1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
-        val featureWeights = listOf(1.0, 1.0)
-        formatter.addBM25(weight = featureWeights[0], normType = NormType.ZSCORE)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = featureWeights[0])
         formatter.addFeature({ query, tops, indexSearcher ->
-            featSplitSim(query, tops, indexSearcher, bindTIFD, secWeights = sectionWeights)},
+            featSplitSim(query, tops, indexSearcher, bindTIFD, secWeights = tifdWeights)},
                 normType = NormType.ZSCORE, weight = featureWeights[1])
-
     }
 
     // Runs associated query method
