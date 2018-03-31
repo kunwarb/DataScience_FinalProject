@@ -204,7 +204,7 @@ Where:
  
  **--out**: Is the name of the trec_car compatible run file to create. Default: query_results.run
   ___
-### Query Abstract Entiteis Relevance + Query Expansion Variation:
+### Query Abstract Entiteis Relevance Model + Query Expansion Variation:
 Predict relevant entities by annotated abstract of the entities from query
 Build expanded query = query + words from entity's page (like RM3/Relevance Model); run this query against paragraph index  
 
