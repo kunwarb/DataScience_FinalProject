@@ -9,7 +9,7 @@ import edu.unh.cs980.language.GramStatType
 import edu.unh.cs980.language.KotlinAbstractAnalyzer
 import edu.unh.cs980.language.KotlinGramAnalyzer
 import edu.unh.cs980.misc.AnalyzerFunctions
-import edu.unh.cs980.WordEmbedding.TFIDFSimilarity
+import edu.unh.cs980.WordEmbedding.TfIdfSimilarity
 import edu.unh.cs980.nlp.NL_Processor
 import edu.unh.cs980.variations.Query_RM_QE_variation
 import info.debatty.java.stringsimilarity.Jaccard
@@ -182,7 +182,7 @@ fun featSDMWithEntityQueryExpansion(query: String, tops: TopDocs, indexSearcher:
  * Desc: Uses Bindu's TIFD to get average TIFD score for tokens in query.
  */
 fun featTFIFDAverage(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
-                    tifd: TFIDFSimilarity): List<Double> {
+                    tifd: TfIdfSimilarity): List<Double> {
     val termQueries = AnalyzerFunctions.createTokenList(query, useFiltering = true)
         .map { token -> TermQuery(Term(CONTENT, token)) }
 

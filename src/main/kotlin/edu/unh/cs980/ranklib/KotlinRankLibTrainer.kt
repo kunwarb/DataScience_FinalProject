@@ -19,7 +19,7 @@ import info.debatty.java.stringsimilarity.interfaces.StringDistance
 import org.apache.lucene.index.Term
 import org.apache.lucene.search.*
 import org.apache.lucene.search.similarities.*
-import edu.unh.cs980.WordEmbedding.TFIDFSimilarity
+import edu.unh.cs980.WordEmbedding.TfIdfSimilarity
 import org.apache.log4j.Level
 import org.apache.log4j.Logger
 import java.lang.Double.sum
@@ -222,7 +222,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
      */
     private fun queryTFIDFSection() {
         val tifdSearcher = getIndexSearcher(indexPath)
-        val tifd = TFIDFSimilarity(100, tifdSearcher)
+        val tifd = TfIdfSimilarity(100, tifdSearcher)
         val bindTIFD = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
             featTFIFDAverage(query, tops, indexSearcher, tifd)
         }
@@ -587,8 +587,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
      */
     private fun trainSectionTFIDF() {
         val tifdSearcher = getIndexSearcher(indexPath)
-        // Huh... Bindu's class shares the same name as the TFIDFSimilarity from Lucene... that's not good.
-        val tifd = TFIDFSimilarity(100, tifdSearcher)
+        val tifd = TfIdfSimilarity(100, tifdSearcher)
         val bindTIFD = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
             featTFIFDAverage(query, tops, indexSearcher, tifd)
         }
@@ -614,7 +613,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
      */
     private fun trainTFIDFComponent() {
         val tifdSearcher = getIndexSearcher(indexPath)
-        val tifd = TFIDFSimilarity(100, tifdSearcher)
+        val tifd = TfIdfSimilarity(100, tifdSearcher)
         val bindTIFD = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
             featTFIFDAverage(query, tops, indexSearcher, tifd)
         }

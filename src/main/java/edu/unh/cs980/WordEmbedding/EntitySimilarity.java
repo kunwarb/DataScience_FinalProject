@@ -263,7 +263,7 @@ public class EntitySimilarity {
 	 * Function: generateWeightedEntityQuery Description:This function generated
 	 * the weighted Query
 	 * 
-	 * @param initialQ
+	 * @param EQ
 	 * @param rm_list
 	 * @return Query
 	 * @throws ParseException
