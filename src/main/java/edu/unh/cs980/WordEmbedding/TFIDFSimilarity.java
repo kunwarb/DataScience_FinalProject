@@ -354,8 +354,8 @@ public class TFIDFSimilarity {
 
 	/**
 	 * @function:writeTFIDFScoresTo
-	 * @param The
-	 *            name of the run file output to
+	 * @param runfile
+	 *            The name of the run file output to
 	 * @Description: Main function of the Similarity which calculates similarity
 	 *               score of paragraph
 	 * @throws IOException,ParseException
