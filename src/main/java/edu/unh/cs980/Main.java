@@ -233,7 +233,8 @@ public class Main {
 		ranklibQueryParser.addArgument("method")
 				.help("The type of method to use when querying (see readme).")
 				.choices("average_abstract", "combined", "abstract_sdm", "sdm_components",
-						"hyperlink", "sdm", "section_component", "sdm_expansion", "sdm_section");
+						"hyperlink", "sdm", "section_component", "sdm_expansion", "sdm_section",
+                        "tfidf_section");
 
 		ranklibQueryParser.addArgument("index").help("Location of Lucene index directory.");
 		ranklibQueryParser.addArgument("query").help("Location of query file (.cbor)");

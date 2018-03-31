@@ -186,6 +186,22 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
         }, normType = NormType.ZSCORE)
     }
 
+    private fun queryTFIDFSection() {
+        val tifdSearcher = getIndexSearcher(indexPath)
+        val tifd = TFIDFSimilarity(100, tifdSearcher)
+        val bindTIFD = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
+            featTFIFDAverage(query, tops, indexSearcher, tifd)
+        }
+
+        val sectionWeights = listOf(1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
+        val featureWeights = listOf(1.0, 1.0)
+        formatter.addBM25(weight = featureWeights[0], normType = NormType.ZSCORE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSplitSim(query, tops, indexSearcher, bindTIFD, secWeights = sectionWeights)},
+                normType = NormType.ZSCORE, weight = featureWeights[1])
+
+    }
+
     // Runs associated query method
     fun runRanklibQuery(method: String, out: String) {
         when (method) {
@@ -198,6 +214,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
             "sdm" -> querySDM()
             "sdm_section" -> querySDMSection()
             "sdm_expansion" -> querySDMExpansion()
+            "tfidf_section" -> queryTFIDFSection()
             "combined" -> queryCombined()
             else -> println("Unknown method!")
         }
@@ -418,7 +435,6 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
     }
 
     private fun trainSectionTFIDF() {
-
         val tifdSearcher = getIndexSearcher(indexPath)
         // Huh... Bindu's class shares the same name as the TFIDFSimilarity from Lucene... that's not good.
         val tifd = TFIDFSimilarity(100, tifdSearcher)
@@ -435,9 +451,6 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
                 featSplitSim(query, tops, indexSearcher, bindTIFD, secWeights = makeWeights(sectionWeight))},
                     normType = NormType.NONE)
         }
-
-
-
     }
 
     private fun trainSectionSDM() {
