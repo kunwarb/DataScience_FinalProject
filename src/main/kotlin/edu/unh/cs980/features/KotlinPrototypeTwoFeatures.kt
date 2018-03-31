@@ -38,7 +38,7 @@ import kotlin.math.max
  */
 fun featSplitSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                  func: (String, TopDocs, IndexSearcher) -> List<Double>,
-                 secWeights: List<Double> = listOf(1.0, 1.0, 1.0, 1.0)): List<Double> {
+                 secWeights: List<Double> = listOf(1.0, 1.0, 1.0, 1.0, 1.0, 1.0)): List<Double> {
 
     val sections = query.split("/")
         .map { section -> AnalyzerFunctions
@@ -159,38 +159,52 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
     }
 }
 
-// Not finished yet, but will be using Kevin's query expansion methods
-fun featSDMWithQueryExpansion(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
-            gramAnalyzer: KotlinGramAnalyzer, alpha: Double,
+/**
+ * Func: featSDMWithEntityQueryExpansion
+ * Desc: The original query string is tokenized, and the token's terms are expanded according to Kevin's
+ *       entity expansion model (top n entities are retrieved with BM25, abstracts are annotated with Spotlight,
+ *       annotations are extracted and returned as a list of expanded terms)
+ *
+ *       Expanded terms are appended to each query token and the final list is joined together as a single query.
+ *       This query is then used with the SDM method.
+ */
+fun featSDMWithEntityQueryExpansion(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
+            gramAnalyzer: KotlinGramAnalyzer, abstractSearcher: IndexSearcher, alpha: Double,
             gramType: GramStatType? = null): List<Double> {
     val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
-    val cleanQuery = tokens.toList().joinToString(" ")
-    val queryCorpus = gramAnalyzer.getCorpusStatContainer(cleanQuery)
+    val expandedQueryResults = tokens
+        .map { token ->
+            token to Query_RM_QE_variation.getExpandedEntitiesFromPageQuery(token, 1, abstractSearcher) }
+        .map { (token, expandedResults) -> token + " " + expandedResults.joinToString(" ")  }
+        .map { expandedQuery -> featSDM(expandedQuery, tops, indexSearcher, gramAnalyzer, alpha, gramType) }
 
-    val expandedTerms = QueryExpansion_variation.getSearchResult(arrayListOf(cleanQuery), indexSearcher)
-    println(expandedTerms)
+    return expandedQueryResults
+        .reduce { acc, list -> acc.zip(list).map { (l1, l2) -> l1 + l2 } }
+        .map { finalResult -> finalResult / expandedQueryResults.size }
 
-    return tops.scoreDocs.map { scoreDoc ->
-        val doc = indexSearcher.doc(scoreDoc.doc)
-        val text = doc.get(CONTENT)
-
-        // Generate a language model for the given document's text
-        val docStat = gramAnalyzer.getLanguageStatContainer(text)
-        val queryLikelihood = docStat.getLikelihoodGivenQuery(queryCorpus, alpha)
-        val v1 = queryLikelihood.unigramLikelihood
-        val v2 = queryLikelihood.bigramLikelihood
-        val v3 = queryLikelihood.bigramWindowLikelihood
-
-        // If gram type is given, only return the score of a particular -gram method.
-        // Otherwise, used the weights that were learned and combine all three types into a score.
-        val weights = listOf(0.9285990421606605, 0.070308081629, -0.0010928762)
-        when (gramType) {
-            GramStatType.TYPE_UNIGRAM -> v1
-            GramStatType.TYPE_BIGRAM -> v2
-            GramStatType.TYPE_BIGRAM_WINDOW -> v3
-            else -> v1 * weights[0] + v2 * weights[1] + v3 * weights[2]
-        }
-    }
+//    val queryCorpus = gramAnalyzer.getCorpusStatContainer(expandedQuery)
+//
+//    return tops.scoreDocs.map { scoreDoc ->
+//        val doc = indexSearcher.doc(scoreDoc.doc)
+//        val text = doc.get(CONTENT)
+//
+//        // Generate a language model for the given document's text
+//        val docStat = gramAnalyzer.getLanguageStatContainer(text)
+//        val queryLikelihood = docStat.getLikelihoodGivenQuery(queryCorpus, alpha)
+//        val v1 = queryLikelihood.unigramLikelihood
+//        val v2 = queryLikelihood.bigramLikelihood
+//        val v3 = queryLikelihood.bigramWindowLikelihood
+//
+//        // If gram type is given, only return the score of a particular -gram method.
+//        // Otherwise, used the weights that were learned and combine all three types into a score.
+//        val weights = listOf(0.9640505557357185, 0.025725201783485203, 0.01022424280796314)
+//        when (gramType) {
+//            GramStatType.TYPE_UNIGRAM -> v1
+//            GramStatType.TYPE_BIGRAM -> v2
+//            GramStatType.TYPE_BIGRAM_WINDOW -> v3
+//            else -> v1 * weights[0] + v2 * weights[1] + v3 * weights[2]
+//        }
+//    }
 
 }
 
@@ -223,6 +237,7 @@ fun featAbstractSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         }
 
         // Score is basically the average of all relevant entity models that a document contains.
+        // Surprisingly, after training, the bigrams were favored the most (compared to the normal SDM above)
         val weights = listOf(0.0486185, 0.9318018089, 0.01957)
         val results = rels.map { (_, relEntity) ->
             val v1 = relEntity.queryLikelihood.unigramLikelihood

@@ -148,10 +148,41 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
         }, normType = NormType.ZSCORE, weight = weights[1])
     }
 
+    private fun querySDMExpansion() {
+        val weights = listOf(0.9691977861102452, -0.030802213889754796)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
+        val gramSearcher = getIndexSearcher(gramPath)
+        val hGram = KotlinGramAnalyzer(gramSearcher)
+        val abstractIndexer = getIndexSearcher(abstractPath)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
+
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSDMWithEntityQueryExpansion(query, tops, indexSearcher,
+                    hGram, abstractAnalyzer.indexSearcher, 4.0)},
+                normType = NormType.ZSCORE, weight = weights[1])
+    }
+
     private fun querySectionComponent() {
         val weights = listOf(0.0, 1.0)
         formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
         formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE, weight = weights[1])
+    }
+
+    private fun querySDMSection() {
+        val gramSearcher = getIndexSearcher(gramPath)
+        val hGram = KotlinGramAnalyzer(gramSearcher)
+//        val weights = listOf(0.18040763371108623, 0.053702972763138165, 0.3145376765137826, 0.45135171701199295)
+        val weights = listOf(0.08047025663846726, 0.030239885393043505, 0.15642380129849698, 0.45881012321282,
+        0.1370279667285861, 0.1370279667285861
+        )
+
+        val bindSDM = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
+            featSDM(query, tops, indexSearcher, hGram, 4.0)
+        }
+
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSplitSim(query, tops, indexSearcher, bindSDM, weights)
+        }, normType = NormType.ZSCORE)
     }
 
     // Runs associated query method
@@ -164,6 +195,8 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "section_component" -> querySectionComponent()
             "abstract_sdm" -> queryAbstractSDM()
             "sdm" -> querySDM()
+            "sdm_section" -> querySDMSection()
+            "sdm_expansion" -> querySDMExpansion()
             "combined" -> queryCombined()
             else -> println("Unknown method!")
         }
@@ -357,13 +390,70 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             featLikehoodOfQueryGivenEntityMention(query, tops, indexSearcher, hLinker)}, normType = NormType.ZSCORE)
     }
 
-    private fun trainTest() {
+    private fun trainSDMExpansion() {
         formatter.addBM25(normType = NormType.ZSCORE)
         val gramSearcher = getIndexSearcher(gramPath)
         val hGram = KotlinGramAnalyzer(gramSearcher)
+        val abstractIndexer = getIndexSearcher(abstractPath)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
         formatter.addFeature({ query, tops, indexSearcher ->
-            featSDMWithQueryExpansion(query, tops, indexSearcher, hGram, 4.0)
+            featSDMWithEntityQueryExpansion(query, tops, indexSearcher, hGram, abstractAnalyzer.indexSearcher, 4.0)
         }, normType = NormType.ZSCORE)
+    }
+
+    private fun trainSDMEntityQueryExpansionComponents() {
+        val gramSearcher = getIndexSearcher(gramPath)
+        val hGram = KotlinGramAnalyzer(gramSearcher)
+        val abstractIndexer = getIndexSearcher(abstractPath)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
+
+        val grams = listOf(GramStatType.TYPE_UNIGRAM, GramStatType.TYPE_BIGRAM, GramStatType.TYPE_BIGRAM_WINDOW)
+        grams.forEach { gram ->
+            formatter.addFeature({ query, tops, indexSearcher ->
+                featSDMWithEntityQueryExpansion(query, tops, indexSearcher,
+                        hGram, abstractAnalyzer.indexSearcher, 4.0, gramType = gram)
+            }, normType = NormType.NONE)
+        }
+    }
+
+    private fun trainSectionSDM() {
+        val gramSearcher = getIndexSearcher(gramPath)
+        val hGram = KotlinGramAnalyzer(gramSearcher)
+
+        val bindSDM = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
+                featSDM(query, tops, indexSearcher, hGram, 4.0) }
+
+        val makeWeights = { pos: Int ->
+            arrayListOf(0.0, 0.0, 0.0, 0.0, 0.0, 0.0).apply { this[pos] = 1.0 }
+        }
+
+        (0 until 6).forEach { sectionWeight ->
+            formatter.addFeature({ query, tops, indexSearcher ->
+                featSplitSim(query, tops, indexSearcher, bindSDM, secWeights = makeWeights(sectionWeight))},
+                    normType = NormType.NONE)
+        }
+
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featSplitSim(query, tops, indexSearcher, bindSDM,
+//                    secWeights = listOf(1.0, 0.0, 0.0, 0.0))},
+//                    normType = NormType.NONE)
+//
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featSplitSim(query, tops, indexSearcher, bindSDM,
+//                    secWeights = listOf(0.0, 1.0, 0.0, 0.0))},
+//                    normType = NormType.NONE)
+//
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featSplitSim(query, tops, indexSearcher, bindSDM,
+//                    secWeights = listOf(0.0, 0.0, 1.0, 0.0))},
+//                    normType = NormType.NONE)
+//
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featSplitSim(query, tops, indexSearcher, bindSDM,
+//                    secWeights = listOf(0.0, 0.0, 0.0, 1.0))},
+//                    normType = NormType.NONE)
+
+//        val weights = listOf(0.13506566, -0.49940691, 0.21757824, 0.14794917259)
     }
 
 
@@ -378,16 +468,18 @@ class KotlinRankLibTrainer(indexPath: String, queryPath: String, qrelPath: Strin
             "hyperlink" -> trainHyperlinkLikelihood()
             "abstract_sdm" -> trainAbstractSDM()
             "abstract_sdm_components" -> trainAbstractSDMComponents()
-            "average_abstract" -> trainAverageAbstractScore()
-            "sdm_alpha" -> trainDirichletAlpha()
-            "sdm" -> trainSDM()
             "abstract_alpha" -> trainAbstractSDMAlpha()
+            "average_abstract" -> trainAverageAbstractScore()
+            "sdm" -> trainSDM()
+            "sdm_alpha" -> trainDirichletAlpha()
+            "sdm_components" -> trainSDMComponents()
             "section_path" -> trainSectionPath()
             "section_component" -> trainSectionComponent()
-            "sdm_components" -> trainSDMComponents()
             "string_similarities" -> trainSimilarityComponents()
             "similarity_section" -> trainSimilaritySection()
-            "test" -> trainTest()
+            "sdm_expansion_components" -> trainSDMEntityQueryExpansionComponents()
+            "sdm_expansion" -> trainSDMExpansion()
+            "sdm_section" -> trainSectionSDM()
             "combined" -> trainCombined()
             else -> println("Unknown method!")
         }
