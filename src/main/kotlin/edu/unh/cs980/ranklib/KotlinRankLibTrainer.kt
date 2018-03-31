@@ -186,6 +186,21 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
         }, normType = NormType.ZSCORE)
     }
 
+    private fun queryTFIDFSection() {
+        val tifdSearcher = getIndexSearcher(indexPath)
+        val tifd = TFIDFSimilarity(100, tifdSearcher)
+        val bindTIFD = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
+            featTFIFDAverage(query, tops, indexSearcher, tifd)
+        }
+        val featureWeights = listOf(0.945, -0.054399)
+        val tifdWeights = listOf(0.0000484, 0.000018545, 0.00244388, 0.996917, 0.000001823081, 0.000001823081)
+
+        formatter.addBM25(normType = NormType.ZSCORE, weight = featureWeights[0])
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSplitSim(query, tops, indexSearcher, bindTIFD, secWeights = tifdWeights)},
+                normType = NormType.ZSCORE, weight = featureWeights[1])
+    }
+
     // Runs associated query method
     fun runRanklibQuery(method: String, out: String) {
         when (method) {
@@ -198,6 +213,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
             "sdm" -> querySDM()
             "sdm_section" -> querySDMSection()
             "sdm_expansion" -> querySDMExpansion()
+            "tfidf_section" -> queryTFIDFSection()
             "combined" -> queryCombined()
             else -> println("Unknown method!")
         }
@@ -418,7 +434,6 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
     }
 
     private fun trainSectionTFIDF() {
-
         val tifdSearcher = getIndexSearcher(indexPath)
         // Huh... Bindu's class shares the same name as the TFIDFSimilarity from Lucene... that's not good.
         val tifd = TFIDFSimilarity(100, tifdSearcher)
@@ -435,15 +450,27 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
                 featSplitSim(query, tops, indexSearcher, bindTIFD, secWeights = makeWeights(sectionWeight))},
                     normType = NormType.NONE)
         }
+    }
 
+    private fun trainTFIDFComponent() {
+        val tifdSearcher = getIndexSearcher(indexPath)
+        val tifd = TFIDFSimilarity(100, tifdSearcher)
+        val bindTIFD = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
+            featTFIFDAverage(query, tops, indexSearcher, tifd)
+        }
 
+        val tifdWeights = listOf(0.0000484, 0.000018545, 0.00244388, 0.996917, 0.000001823081, 0.000001823081)
+
+        formatter.addBM25(normType = NormType.ZSCORE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSplitSim(query, tops, indexSearcher, bindTIFD, secWeights = tifdWeights)},
+                normType = NormType.ZSCORE)
 
     }
 
     private fun trainSectionSDM() {
         val gramSearcher = getIndexSearcher(gramPath)
         val hGram = KotlinGramAnalyzer(gramSearcher)
-
         val bindSDM = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
                 featSDM(query, tops, indexSearcher, hGram, 4.0) }
 
@@ -456,28 +483,6 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
                 featSplitSim(query, tops, indexSearcher, bindSDM, secWeights = makeWeights(sectionWeight))},
                     normType = NormType.NONE)
         }
-
-//        formatter.addFeature({ query, tops, indexSearcher ->
-//            featSplitSim(query, tops, indexSearcher, bindSDM,
-//                    secWeights = listOf(1.0, 0.0, 0.0, 0.0))},
-//                    normType = NormType.NONE)
-//
-//        formatter.addFeature({ query, tops, indexSearcher ->
-//            featSplitSim(query, tops, indexSearcher, bindSDM,
-//                    secWeights = listOf(0.0, 1.0, 0.0, 0.0))},
-//                    normType = NormType.NONE)
-//
-//        formatter.addFeature({ query, tops, indexSearcher ->
-//            featSplitSim(query, tops, indexSearcher, bindSDM,
-//                    secWeights = listOf(0.0, 0.0, 1.0, 0.0))},
-//                    normType = NormType.NONE)
-//
-//        formatter.addFeature({ query, tops, indexSearcher ->
-//            featSplitSim(query, tops, indexSearcher, bindSDM,
-//                    secWeights = listOf(0.0, 0.0, 0.0, 1.0))},
-//                    normType = NormType.NONE)
-
-//        val weights = listOf(0.13506566, -0.49940691, 0.21757824, 0.14794917259)
     }
 
 
@@ -499,6 +504,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
             "sdm_components" -> trainSDMComponents()
             "section_path" -> trainSectionPath()
             "tfidf_section" -> trainSectionTFIDF()
+            "tfidf_component" -> trainTFIDFComponent()
             "section_component" -> trainSectionComponent()
             "string_similarities" -> trainSimilarityComponents()
             "similarity_section" -> trainSimilaritySection()
