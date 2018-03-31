@@ -1,50 +1,32 @@
+/*****
+ * @author:Bindu Kumari
+ * @Date:03/27/2018
+ */
 package edu.unh.cs980.WordEmbedding;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Map.Entry;
+import edu.unh.cs.treccar_v2.Data;
+import edu.unh.cs.treccar_v2.Data.Page;
+import info.debatty.java.stringsimilarity.NGram;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.similarities.BasicStats;
 import org.apache.lucene.search.similarities.SimilarityBase;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.BytesRef;
-import info.debatty.java.stringsimilarity.*;
 
-
-import edu.unh.cs.treccar_v2.Data;
+import java.io.*;
+import java.util.*;
 
 /**
- * @class:ParagraphResultComparator 
- * Description: To compare the result query strings
- * @return based on methods
+ * @class:ResultComparator Description: To compare the result query strings
+ * @return return result comparision based on Paragraph
  */
-
 
 class ParagraphResultComparator implements Comparator<ResultQuery> {
 	public int compare(ResultQuery d2, ResultQuery d1) {
@@ -56,33 +38,26 @@ class ParagraphResultComparator implements Comparator<ResultQuery> {
 	}
 }
 
-
-public class ParagraphSimilarity{
+public class ParagraphSimilarity {
 
 	private IndexSearcher searcher;
 	private QueryParser parser;
-	private int numDocs; // Number of documents to return
-	private ArrayList<Data.Page> pageList; // List of pages to query
-	private HashMap<Query, ArrayList<ResultQuery>> queryResults; // Map of
-																	// queries
-																	// to map of
-																	// Documents
-																	// to scores
-																	// for that
-																	// query
+	private int numDocs;
+	private ArrayList<Data.Page> pageList;
+	private HashMap<Query, ArrayList<ResultQuery>> ParagraphqueryResults;
 
-	public ParagraphSimilarity(ArrayList<Data.Page> pl, int n, String index) throws ParseException, IOException {
+	ParagraphSimilarity(ArrayList<Data.Page> pl, int n, String index) throws ParseException, IOException {
 		String INDEX_DIRECTORY = index;
-		numDocs = n; 
-		pageList = pl; 
+		numDocs = n;
+		pageList = pl;
 
 		parser = new QueryParser("parabody", new StandardAnalyzer());
+
 		searcher = new IndexSearcher(DirectoryReader.open(FSDirectory.open((new File(INDEX_DIRECTORY).toPath()))));
 
-		// Setting our own similarity function
-		SimilarityBase ps = new SimilarityBase() {
+		SimilarityBase tfidf = new SimilarityBase() {
 			protected float score(BasicStats stats, float freq, float docLen) {
-				return (freq);
+				return (float) (1 + Math.log10(freq));
 			}
 
 			@Override
@@ -90,135 +65,180 @@ public class ParagraphSimilarity{
 				return null;
 			}
 		};
-		searcher.setSimilarity(ps);
+		searcher.setSimilarity(tfidf);
+	}
+
+	/*****
+	 * Function:SplitParagraph
+	 * @param page
+	 * @param runfile
+	 * @throws IOException
+	 * @throws ParseException
+	 */
+
+	public void SplitParagraph(Page page, String runfile) throws IOException, ParseException {
+
+		String qid = page.getPageId();
+		String qname = page.getPageName();
+		HashMap<TermQuery, Float> queryweights = new HashMap<>();
+		ArrayList<TermQuery> terms = new ArrayList<>();
+
+		Query q = parser.parse(page.getPageName());
+
+		for (String term : page.getPageName().split(" "))
+
+		{
+			TermQuery tq = new TermQuery(new Term("text", term));
+            terms.add(tq);
+            queryweights.put(tq, queryweights.getOrDefault(tq, 0.0f) + 1.0f);
+		}
+
+		calculateParagraphScore(qid, q, qname, terms, runfile, queryweights);
+
+	}
+
+	/*****
+	 * Function:calculate ParagraphScore
+	 * 
+	 * @param qid
+	 * @param q
+	 * @param qname
+	 * @param terms
+	 * @param runfile
+	 * @throws IOException
+	 * @throws ParseException
+	 */
+
+	public void calculateParagraphScore(String qid, Query q, String qname, ArrayList<TermQuery> terms, String runfile,
+			HashMap<TermQuery, Float> queryweights2) throws IOException, ParseException {
+
+		for (TermQuery queryterm : terms) { // For every Term
+
+			IndexReader reader = searcher.getIndexReader();
+
+			float DF = (reader.docFreq(queryterm.getTerm()) == 0) ? 1 : reader.docFreq(queryterm.getTerm());
+
+			float qTF = (float) ((queryweights2.get(queryterm)));
+
+			float qIDF = (float) ((reader.numDocs() / DF));
+			float qWeight = qTF * qIDF;
+
+			queryweights2.put(queryterm, qWeight);
+
+			TopDocs tpd = searcher.search(queryterm, numDocs);
+
+			List<Double> ls = doParagraphScoring(qid, qname, tpd, queryweights2, queryterm, runfile);
+
+		}
+
 	}
 
 	/**
-	 *
-	 * The name of the run file output to
-	 * @throws IOException,ParseException
+	 * Function: This function will return Paragraph Scoring. This also returns
+	 * the list of score .
 	 * 
+	 * @param :qid
+	 * @param :qname
+	 * @param tpd
+	 * @param :TopDocs
+	 * @param queryweights2
+	 * @param queryterm
+	 * @param runfile
+	 * @return :List for combined function
+	 * @throws ParseException
+	 * @throws IOException
 	 */
-	public void writeParagraphScore(String runfile) throws IOException, ParseException {
-		queryResults = new HashMap<>(); // Maps query to map of Documents with
-										// TF-IDF score
-        
-		//For every paragraph
-		for (Data.Page page : pageList) { 
-			HashMap<Document, Float> scores = new HashMap<>(); 
-			HashMap<Document, ResultQuery> docMap = new HashMap<>();
-			PriorityQueue<ResultQuery> docQueue = new PriorityQueue<>(new ParagraphResultComparator());
-			ArrayList<ResultQuery> docResults = new ArrayList<>();
-			// Mapping of  each term  to  its query  tf
-			HashMap<TermQuery, Float> queryweights = new HashMap<>(); 
-			
-			// List of every term in the query
-			ArrayList<TermQuery> terms = new ArrayList<>(); 
-			
-			// The full query containing all terms
-			Query q = parser.parse(page.getPageName()); 
-			String qid = page.getPageId();
-			String qname=page.getPageName();
 
-			for (String term : page.getPageName().split(" "))
+	public List<Double> doParagraphScoring(String qid, String qname, TopDocs tpd,
+			HashMap<TermQuery, Float> queryweights2, TermQuery queryterm, String runfile)
+			throws ParseException, IOException {
+		HashMap<Document, ResultQuery> docMap = new HashMap<>();
+		HashMap<Document, Float> scores = new HashMap<>(); // Mapping of each
+		ArrayList<ResultQuery> docResults = new ArrayList<>();
+		PriorityQueue<ResultQuery> docQueue = new PriorityQueue<>(new ParagraphResultComparator());
 
-			{
-				TermQuery tq = new TermQuery(new Term("text", term));
+		List<Double> ls1 = new ArrayList<Double>();
 
-				terms.add(tq);
+		Query q = parser.parse(qname);
 
-				
-				queryweights.put(tq, queryweights.getOrDefault(tq, 0.0f) + 1.0f);
+		for (int i = 0; i < tpd.scoreDocs.length; i++) { // For every
+
+			Document doc = searcher.doc(tpd.scoreDocs[i].doc); // Get
+
+			double score = tpd.scoreDocs[i].score * queryweights2.get(queryterm); // Calculate
+
+			ResultQuery dResults = docMap.get(doc);
+			if (dResults == null) {
+				dResults = new ResultQuery(doc);
 			}
-			for (TermQuery query : terms) { 
-              IndexReader reader = searcher.getIndexReader();
 
-				float DF = (reader.docFreq(query.getTerm()) == 0) ? 1 : reader.docFreq(query.getTerm());
-
-				float qTF = (float) (1 + Math.log10(queryweights.get(query))); // Logarithmic
-																				// term
-																				// frequency
-				float qIDF = (float) (Math.log10(reader.numDocs() / DF)); // Logarithmic
-																			// inverse
-																			// document
-																			// frequency
-				float qWeight = qTF * qIDF; 
-
-				queryweights.put(query, qWeight);
-                  
-				// Get the top 100 documents that match our query
-				TopDocs tpd = searcher.search(query, numDocs);
-				for (int i = 0; i < tpd.scoreDocs.length; i++) { // For every
-																	// returned
-																	// document...
-					Document doc = searcher.doc(tpd.scoreDocs[i].doc); // Get
-																		// the
-																		// document
-					double score = tpd.scoreDocs[i].score * queryweights.get(query); 
-					
-					
-					String docBody = doc.get("text");
-
-					ResultQuery dResults = docMap.get(doc);
-					if (dResults == null) {
-						dResults = new ResultQuery(doc);
-					}
-					float prevScore = dResults.getScore();
-					
+			String docBody = doc.get("text");
 			NGram ngram = new NGram(8);
-			     double score1=ngram.distance(qname,docBody);
-					
-					dResults.score((float) (prevScore + score));
-					dResults.queryId(qid);
-					dResults.paragraphId(doc.getField("paragraphid").stringValue());
-					dResults.teamName("Team1 ");
-					dResults.methodName("ParagraphSimilarity");
-					docMap.put(doc, dResults);
+			double score1 = ngram.distance(qname, docBody);
 
-					
-					scores.put(doc, (float) (prevScore + score+score1));
-				}
-			}
+			float prevScore = dResults.getScore();
+			dResults.score((float) (prevScore + score + score1));
+			dResults.queryId(qid);
+			dResults.paragraphId(doc.getField("paragraphid").stringValue());
+			dResults.teamName("Team1 ");
+			dResults.methodName("Paragraph-Similarity");
 
-			// Get cosine Length
-			float cosineLength = 0.0f;
-			for (Map.Entry<Document, Float> entry : scores.entrySet()) {
-				Document doc = entry.getKey();
-				Float score = entry.getValue();
+			docMap.put(doc, dResults);
 
-				cosineLength = (float) (cosineLength + Math.pow(score, 2));
-			}
-			cosineLength = (float) (Math.sqrt(cosineLength));
+			scores.put(doc, (float) (prevScore + score));
 
-			// Normalization of scores
-			for (Map.Entry<Document, Float> entry : scores.entrySet()) { // For every document and its corresponding score
-																			
-				Document doc = entry.getKey();
-				Float score = entry.getValue();
+		}
+		float cosineLength = 0.0f;
+		for (Map.Entry<Document, Float> entry : scores.entrySet()) {
+			Float score = entry.getValue();
 
-				// Normalize the score
-				scores.put(doc, score / scores.size());
-				ResultQuery dResults = docMap.get(doc);
-				dResults.score(dResults.getScore() / cosineLength);
+			cosineLength = (float) (cosineLength + Math.pow(score, 2));
+		}
+		cosineLength = (float) (Math.sqrt(cosineLength));
 
-				docQueue.add(dResults);
-			}
+		for (Map.Entry<Document, Float> entry : scores.entrySet()) {
 
-			int rankCount = 0;
-			ResultQuery current;
-			while ((current = docQueue.poll()) != null) {
-				current.rank(rankCount);
-				docResults.add(current);
-				rankCount++;
-			}
+			Document doc = entry.getKey();
+			Float score = entry.getValue();
 
-			queryResults.put(q, docResults);
+			scores.put(doc, score / scores.size());
+
+			ls1.add((double) (score / scores.size()));
+
+			ResultQuery dResults = docMap.get(doc);
+			dResults.score(dResults.getScore() / cosineLength);
+
+			docQueue.add(dResults);
 		}
 
-		System.out.println("Paragraph Similarity writing results to: \t\t" + runfile);
-		
+		int rankCount = 0;
+		ResultQuery current;
+		while ((current = docQueue.poll()) != null) {
+			current.rank(rankCount);
+			docResults.add(current);
+			rankCount++;
+		}
+
+		ParagraphqueryResults.put(q, docResults);
+		writeResults(ParagraphqueryResults, runfile);
+		return ls1;
+
+	}
+
+	/*****
+	 * Function:WriteResults
+	 * 
+	 * @param ParagraphqueryResults2
+	 * @param runfile
+	 * @throws IOException
+	 */
+
+	public void writeResults(HashMap<Query, ArrayList<ResultQuery>> ParagraphqueryResults2, String runfile)
+			throws IOException {
+		// TODO Auto-generated method stub
+
 		FileWriter runfileWriter = new FileWriter(new File(runfile));
-		for (Map.Entry<Query, ArrayList<ResultQuery>> results : queryResults.entrySet()) {
+		for (Map.Entry<Query, ArrayList<ResultQuery>> results : ParagraphqueryResults.entrySet()) {
 			ArrayList<ResultQuery> list = results.getValue();
 
 			for (int i = 0; i < list.size(); i++) {
@@ -232,6 +252,24 @@ public class ParagraphSimilarity{
 
 	}
 
+	/**
+	 * Function:writeParagraphScore
+	 * 
+	 * @param runfile
+	 * @Description:Main function of the Similarity which calculates similarity
+	 *                   score of paragraph
+	 * @throws IOException,ParseException
+	 */
+	public void writeParagraphScore(String runfile) throws IOException, ParseException {
+
+		ParagraphqueryResults = new HashMap<>(); // Maps query to map of
+													// Documents with
+
+		for (Data.Page page : pageList) {
+
+			SplitParagraph(page, runfile);
+		}
+		System.out.println("Paragraph Similarity writing results to: \t\t" + runfile);
+
+	}
 }
-
-
