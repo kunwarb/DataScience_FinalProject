@@ -20,6 +20,8 @@ import org.apache.lucene.index.Term
 import org.apache.lucene.search.*
 import org.apache.lucene.search.similarities.*
 import edu.unh.cs980.WordEmbedding.TFIDFSimilarity
+import org.apache.log4j.Level
+import org.apache.log4j.Logger
 import java.lang.Double.sum
 import java.util.*
 import kotlin.math.abs
@@ -203,6 +205,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
 
     // Runs associated query method
     fun runRanklibQuery(method: String, out: String) {
+        Logger.getRootLogger().level = Level.ERROR
         when (method) {
             "average_abstract" -> queryAverageAbstractScore()
             "hyperlink" -> queryHyperlinkLikelihood()
@@ -500,6 +503,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
      *              file for later use in training weights.
      */
     fun train(method: String, out: String) {
+        Logger.getRootLogger().level = Level.ERROR
         when (method) {
             "hyperlink" -> trainHyperlinkLikelihood()
             "abstract_sdm" -> trainAbstractSDM()
