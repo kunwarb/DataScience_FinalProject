@@ -184,7 +184,7 @@ program.jar ranklib_trainer [--out OUT] [--hyperlink_database HYPERLINK_DATABASE
  
  **--gram_index**: Location of gram index (stores -gram models for SDM). This defaults to the following location on the server: /trec_data/team_1/gram
  ___
-#### Document Entities Relevance Model + Query Expansion Variation:
+### Document Entities Relevance Model + Query Expansion Variation:
 Predict relevant entities  through entity linking paragraphs of the feedback run
 Expand query with top 5 entities, run against paragraph index using BM25.
 
@@ -204,7 +204,7 @@ Where:
  
  **--out**: Is the name of the trec_car compatible run file to create. Default: query_results.run
   ___
-#### Query Abstract Entiteis Relevance + Query Expansion Variation:
+### Query Abstract Entiteis Relevance + Query Expansion Variation:
 Predict relevant entities by annotated abstract of the entities from query
 Build expanded query = query + words from entity's page (like RM3/Relevance Model); run this query against paragraph index  
 
