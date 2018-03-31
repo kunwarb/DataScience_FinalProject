@@ -303,6 +303,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
     }
 
     private fun trainNatSDM() {
+        System.err.close()
         formatter.addBM25(normType = NormType.ZSCORE)
         val gramSearcher = getIndexSearcher(gramPath)
         val hGram = KotlinGramAnalyzer(gramSearcher)
