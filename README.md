@@ -184,11 +184,57 @@ program.jar ranklib_trainer [--out OUT] [--hyperlink_database HYPERLINK_DATABASE
  
  **--gram_index**: Location of gram index (stores -gram models for SDM). This defaults to the following location on the server: /trec_data/team_1/gram
  ___
+### Document Entities Relevance Model + Query Expansion Variation:
+Predict relevant entities  through entity linking paragraphs of the feedback run
+Expand query with top 5 entities, run against paragraph index using BM25.
+
+```bash
+program.jar doc_rm_qe query_type index query_file [--out query_results.run]
+```
+
+Where:
+
+**query_type** is one of:
+ - **page**: Page query using BM25
+ - **section**: Section path query using BM25
+ 
+ **index**: Is the location of the Lucene index directory.
+ 
+ **query_file**: Is the query (.cbor) file to be used in querying the Lucene index.
+ 
+ **--out**: Is the name of the trec_car compatible run file to create. Default: query_results.run
+  ___
+### Query Abstract Entiteis Relevance + Query Expansion Variation:
+Predict relevant entities by annotated abstract of the entities from query
+Build expanded query = query + words from entity's page (like RM3/Relevance Model); run this query against paragraph index  
+
+```bash
+program.jar query_rm_qe query_type mulit_thread index abstract query_file [--out query_results.run]
+```
+
+Where:
+
+**query_type** is one of:
+ - **page**: Page query
+ - **section**: Section path query
+ 
+ **multi_thread** is one of:
+ - **true**: Use multi-thread function to generate expanded query. (**Notice**: Due to virtual memory issue, this method is throwing error on Windows/Linus OS. Need to extend memory limits. More info: http://blog.thetaphi.de/2012/07/use-lucenes-mmapdirectory-on-64bit.html)
+ - **false**: Use normal function. (Recommended)
+ 
+ **index**: Is the location of the Lucene index directory.
+ 
+ **abstract**: Is the location of the Lucene abstract index directory. 
+ 
+ **query_file**: Is the query (.cbor) file to be used in querying the Lucene index.
+ 
+ **--out**: Is the name of the trec_car compatible run file to create. Default: query_results.run
+ ___
  
  ## Description of Primary RanklibQuery Methods and Training
  Each of these methods score the Top 100 documents obtained by running BM25 on the concatenated section path against the index.
  For all individual methods, the score from BM25 is added as an additional feature (in addition to those created by the methods) and the weights are trained using RankLib. **The features (including BM25) were normalized by Z-score.**
-
+ 
 #### sdm
 This represents my (hopefully decent) attempt at implementing the SDM model for the paragraphCorpus. Stemmed unigrams, bigrams, and windowed bigrams were indexed for 33% of the corpus (could not do more due to space limitations). Dirichlet smoothing was used for the language models (to do this, I ran RankLib a bunch of times with different versions of alpha (see KotlinFeatureSelector and the **sdm_alpha** method in ranklib_train) to determine what values of alpha work best). The three -gram scores were also waited according to training with RankLib (this is the **sdm_components** method in ranklib_train).
 
