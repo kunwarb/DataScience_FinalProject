@@ -39,13 +39,13 @@ ___
 The program is divided into the following subcommands:
 
  ___
- ### Ranklib Query (ranklib_quer)
+ ### Ranklib Query (ranklib_query)
 
 This command runs a query using linear combinations of features obtained by methods described in the methodology section further down.
 The weights of the features have been trained using RankLib. When run, ranklib_query will output a trec_eval compatible run file (default is to "query_results.run")
 
 ```bash
-ranklib_query [-h] [--out OUT] [--hyperlink_database HYPERLINK_DATABASE] [--abstract_index ABSTRACT_INDEX] [--gram_index GRAM_INDEX] method index query
+program.jar ranklib_query [-h] [--out OUT] [--hyperlink_database HYPERLINK_DATABASE] [--abstract_index ABSTRACT_INDEX] [--gram_index GRAM_INDEX] method index query
 ```
 
 Where:
