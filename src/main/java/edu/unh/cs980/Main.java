@@ -232,7 +232,7 @@ public class Main {
 
 		ranklibQueryParser.addArgument("method")
 				.help("The type of method to use when querying (see readme).")
-				.choices("average_abstract", "combined", "abstract_sdm", "sdm_components",
+				.choices("average_abstract", "combined", "abstract_sdm",
 						"hyperlink", "sdm", "section_component", "sdm_expansion", "sdm_section",
                         "tfidf_section", "nat_sdm");
 
