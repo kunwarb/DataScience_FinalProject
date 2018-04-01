@@ -393,9 +393,9 @@ public class Main {
 		try {
 			String indexLocation = params.getString("index");// Paragraph Corpus
 																// indexing
-			String queryLocation = params.getString("Outlinecborfile"); // outlines-cbor
+			String queryLocation = params.getString("query_file"); // outlines-cbor
 																		// file
-			String rankingOutputLocation = params.getString("OutputLocationFile");
+			String rankingOutputLocation = params.getString("out");
 
 			ArrayList<Data.Page> pagelist = getAllPageFromPath(indexLocation, queryLocation, rankingOutputLocation);
 
@@ -462,8 +462,8 @@ public class Main {
 			String indexLocation = params.getString("index"); // Paragraph
 																// Corpus
 																// indexing
-			String queryLocation = params.getString("Outlinecborfile");
-			String rankingOutputLocation = params.getString("OutputLocationFile"); // where
+			String queryLocation = params.getString("query_file");
+			String rankingOutputLocation = params.getString("out"); // where
 																					// Tf-IDF
 																					// output
 																					// should

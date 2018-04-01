@@ -14,6 +14,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -348,7 +350,7 @@ public class EntitySimilarity {
 								entityScore.put(entity.getSurfaceForm(), score);
 							}
 						} else {
-							System.out.println("Can't find any entities for term: ");
+							Logger.getRootLogger().debug("Can't find any entities for term: ");
 
 						}
 					}
