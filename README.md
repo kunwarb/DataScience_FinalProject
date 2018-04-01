@@ -16,23 +16,29 @@ The newest results for prototype 2 can be found in the results_prototype2 direct
 
 ___
 ## Installation Instructions
-A precompiled jar file can be found in bin/program.jar
+Because of the balloiining size of the precompiled jar, it is no longer being tracked on GitHub. You can find a precompiled version of prototype 2's program on the server at: **/trec_data/team_1/program.jar**
 
-You may also compile the source code by entering the following command or by running ./compile.sh while in the project directory:
+You may also compile the jar directly from the source code in this repository by entering the following command, or by running ./compile.sh while in the project directory:
 
 ```bash
 mvn clean compile assembly:single
 ```
 
-This will create a jar file in the target/ directory.
+This will create a jar file in the target/ directory (which can be used instead of program.jar).
 ___
 ## Running Methods
-The program.jar file contains subcommands for querying, indexing, and other relevant functions.
+The compiled jar file contains subcommands for querying, indexing, and other relevant functions.
 **If you are just interested in running our methods**, you can call the run.sh script and pass as an argument the jar file obtained during the installation step. For example:
 
 ```bash
-./run.sh bin/program.jar
+./run.sh /trec_data/team_1/program.jar
 ```
+
+or using the assembled jar:
+```bash
+./run.sh target/DataSciene_FinalProject-0.2.0-SNAPSHOT-jar-with-dependencies.jar 
+```
+
 
 This will create a new directory called method_results. Each subdirectory inside of method_results contains the results of a particular method. This includes a run file and the output of trec_eval -c
 
