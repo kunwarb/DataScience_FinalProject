@@ -14,6 +14,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -40,7 +42,8 @@ import edu.unh.cs980.utils.QueryBuilder;
 
 public class EntitySimilarity {
 
-	private static QueryParser parser = new QueryParser("parabody", new StandardAnalyzer());
+	private static QueryParser parser = new QueryParser("text", new StandardAnalyzer());
+//	private static QueryParser parser = new QueryParser("parabody", new StandardAnalyzer());
 	private static String abstract_index_dir;
 	private static Integer time_out = 5;
 	private static ExecutorService executors;
@@ -347,7 +350,7 @@ public class EntitySimilarity {
 								entityScore.put(entity.getSurfaceForm(), score);
 							}
 						} else {
-							System.out.println("Can't find any entities for term: ");
+							Logger.getRootLogger().debug("Can't find any entities for term: ");
 
 						}
 					}

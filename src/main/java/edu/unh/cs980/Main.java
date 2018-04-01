@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.search.IndexSearcher;
@@ -392,14 +393,14 @@ public class Main {
 		try {
 			String indexLocation = params.getString("index");// Paragraph Corpus
 																// indexing
-			String queryLocation = params.getString("Outlinecborfile"); // outlines-cbor
+			String queryLocation = params.getString("query_file"); // outlines-cbor
 																		// file
-			String rankingOutputLocation = params.getString("OutputLocationFile");
+			String rankingOutputLocation = params.getString("out");
 
 			ArrayList<Data.Page> pagelist = getAllPageFromPath(indexLocation, queryLocation, rankingOutputLocation);
 
 			ParagraphSimilarity ps = new ParagraphSimilarity(pagelist, 100, indexLocation);
-			ps.writeParagraphScore(rankingOutputLocation + "\\ParagraphSimilarity.run");
+			ps.writeParagraphScore(rankingOutputLocation);
 
 		} catch (Exception e) {
 			logger.error(e.getMessage());
@@ -461,8 +462,8 @@ public class Main {
 			String indexLocation = params.getString("index"); // Paragraph
 																// Corpus
 																// indexing
-			String queryLocation = params.getString("Outlinecborfile");
-			String rankingOutputLocation = params.getString("OutputLocationFile"); // where
+			String queryLocation = params.getString("query_file");
+			String rankingOutputLocation = params.getString("out"); // where
 																					// Tf-IDF
 																					// output
 																					// should
@@ -470,7 +471,7 @@ public class Main {
 			ArrayList<Data.Page> pagelist = getAllPageFromPath(indexLocation, queryLocation, rankingOutputLocation);
 
 			TfIdfSimilarity tfidf = new TfIdfSimilarity(pagelist, 100, indexLocation);
-			tfidf.writeTFIDFScoresTo(rankingOutputLocation + "\\Similarity_TFIDF_lnc.ltc.run");
+			tfidf.writeTFIDFScoresTo(rankingOutputLocation);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 
@@ -678,6 +679,7 @@ public class Main {
 	// Main class for project
 	public static void main(String[] args) {
 		System.setProperty("file.encoding", "UTF-8");
+		Logger.getRootLogger().setLevel(Level.ERROR);
 		ArgumentParser parser = createArgParser();
 
 		try {
