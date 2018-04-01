@@ -70,17 +70,29 @@ run_ranklib_query_method sdm
 # Jordan's Abstract SDM method 
 run_ranklib_query_method abstract_sdm
 
+# Jordan's SDM Section Method
+run_ranklib_query_method sdm_section
+
 # Jordan's Hyperlink method 
 run_ranklib_query_method hyperlink
 
 # Jordan's Average Abstract method 
 run_ranklib_query_method average_abstract
 
-# Jordan's Section Component Method
-run_ranklib_query_method section_component
+# Jordan's String Similarity Section Method
+run_ranklib_query_method string_similarity_section
 
 # Jordan's Combined Method
 run_ranklib_query_method combined
+
+# Jordan's TFIDF Section Method
+run_ranklib_query_method tfidf_section
+
+# Jordan's SDM Expanson Method
+run_ranklib_query_method sdm_expansion
+
+# Jordan's NAT SDM Method
+run_ranklib_query_method nat_sdm
 
 
 
