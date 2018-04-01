@@ -200,7 +200,7 @@ Where:
  
  **index**: Is the location of the Lucene index directory.
  
- **query_file**: Is the query (.cbor) file to be used in querying the Lucene index.
+ **query_file**: Is the query (.cbor) file to be used in querying the Lucene index. (benchmarkY1-train/train.pages.cbor)
  
  **--out**: Is the name of the trec_car compatible run file to create. Default: query_results.run
   ___
@@ -226,7 +226,7 @@ Where:
  
  **abstract**: Is the location of the Lucene abstract index directory. 
  
- **query_file**: Is the query (.cbor) file to be used in querying the Lucene index.
+ **query_file**: Is the query (.cbor) file to be used in querying the Lucene index. (benchmarkY1-train/train.pages.cbor)
  
  **--out**: Is the name of the trec_car compatible run file to create. Default: query_results.run
  ___
