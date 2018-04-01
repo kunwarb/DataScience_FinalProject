@@ -9,7 +9,10 @@ The newest results for prototype 2 can be found in the results_prototype2 direct
 
 **results_prototype2/bindu/**: Trec eval stats and run files for Bindu's methods.
  
- **results_prototype2/public_test/** Compressed run files for runs on benchmark_kY1_public_query test data.
+ **results_prototype2/public_test/** Compressed run files for runs on benchmark_kY1_public_query test data. Contains the following:
+ - **combined_method.run.gz**: This was run using the combined method (see ranklib_query combined method below)
+ - **sdm_section.run.gz**: This was run using the sdm_section method (see ranklib_query sdm_section method below)
+ - **alternative_to_prototype_1_run/sdm_run.run.gz**: If possible, we would like our third run file to be the run file from prototype 1 (**results/benchmark_kY1_public_query.run.gz**). If that is not allowed, then we will have our third run be **sdm_run.run.gz**, which was run using the sdm method (see ranklib_query sdm method below).
 
 ___
 ## Installation Instructions
