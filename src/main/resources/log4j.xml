@@ -17,6 +17,10 @@
 	<logger name="edu.unh.cs980.variations">
 		<level value="info" />
 	</logger>
+	
+	<logger name="edu.unh.cs980.entityLinking">
+		<level value="error" />
+	</logger>
 
 	<root>
 		<priority value="debug" />
