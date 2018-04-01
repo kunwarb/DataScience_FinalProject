@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import edu.unh.cs980.WordEmbedding.TfIdfSimilarity;
+import edu.unh.cs980.ranklib.*;
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.search.IndexSearcher;
@@ -28,10 +29,6 @@ import edu.unh.cs980.language.KotlinAbstractAnalyzer;
 import edu.unh.cs980.language.KotlinAbstractExtractor;
 import edu.unh.cs980.language.KotlinGram;
 import edu.unh.cs980.language.KotlinGramAnalyzer;
-import edu.unh.cs980.ranklib.KotlinFeatureSelector;
-import edu.unh.cs980.ranklib.KotlinRankLibTrainer;
-import edu.unh.cs980.ranklib.KotlinRanklibFormatter;
-import edu.unh.cs980.ranklib.NormType;
 import edu.unh.cs980.utils.ProjectUtils;
 import edu.unh.cs980.utils.QueryBuilder;
 import edu.unh.cs980.variations.Doc_RM_QE_variation;
@@ -260,9 +257,11 @@ public class Main {
 				.setDefault("func", new Exec(Main::runRanklibQuery))
 				.help("Runs queries using weighted combinations of features trained by RankLib.");
 
-		ranklibQueryParser.addArgument("method").help("The type of method to use when querying (see readme).").choices(
-				"average_abstract", "combined", "abstract_sdm", "hyperlink", "sdm", "section_component",
-				"sdm_expansion", "sdm_section", "tfidf_section", "nat_sdm");
+//		ranklibQueryParser.addArgument("method").help("The type of method to use when querying (see readme).").choices(
+//				"average_abstract", "combined", "abstract_sdm", "hyperlink", "sdm", "section_component",
+//				"sdm_expansion", "sdm_section", "tfidf_section", "nat_sdm");
+		ranklibQueryParser.addArgument("method").help("The type of method to use when querying (see readme).")
+				.choices(QueryEnum.Companion.getCommands());
 
 		ranklibQueryParser.addArgument("index").help("Location of Lucene index directory.");
 		ranklibQueryParser.addArgument("query").help("Location of query file (.cbor)");
@@ -281,10 +280,11 @@ public class Main {
 				.help("Scores using methods and writes features to a RankLib compatible file for use with training.");
 
 		ranklibTrainerParser.addArgument("method").help("The type of method to use when training (see readme).")
-				.choices("combined", "abstract_sdm", "sdm_alpha", "sdm_components", "section_path",
-						"string_similarities", "similarity_section", "average_abstract", "abstract_sdm_components",
-						"hyperlink", "abstract_alpha", "sdm", "section_component", "sdm_expansion",
-						"sdm_expansion_components", "sdm_section", "tfidf_section", "tfidf_component", "nat_sdm");
+                .choices(TrainEnum.Companion.getCommands());
+//				.choices("combined", "abstract_sdm", "sdm_alpha", "sdm_components", "section_path",
+//						"string_similarities", "similarity_section", "average_abstract", "abstract_sdm_components",
+//						"hyperlink", "abstract_alpha", "sdm", "section_component", "sdm_expansion",
+//						"sdm_expansion_components", "sdm_section", "tfidf_section", "tfidf_component", "nat_sdm");
 		ranklibTrainerParser.addArgument("index").help("Location of the Lucene index directory");
 		ranklibTrainerParser.addArgument("query").help("Location of query file (.cbor)");
 		ranklibTrainerParser.addArgument("qrel").help("Locations of matching qrel file.");

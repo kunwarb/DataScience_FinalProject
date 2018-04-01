@@ -1,3 +1,4 @@
+@file:JvmName("KotTrainEnum")
 package edu.unh.cs980.ranklib
 
 enum class TrainEnum(val value: String) : CharSequence by value {
@@ -36,5 +37,9 @@ enum class TrainEnum(val value: String) : CharSequence by value {
     companion object {
         private val map: Map<String, TrainEnum> = TrainEnum.values().associateBy(TrainEnum::value)
         fun fromString(string: String) = map[string]
+
+        fun getCommands() = TrainEnum.values()
+            .map(TrainEnum::value)
+            .sorted()
     }
 }

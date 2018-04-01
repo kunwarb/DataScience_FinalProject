@@ -20,15 +20,16 @@ import org.apache.lucene.index.Term
 import org.apache.lucene.search.*
 import org.apache.lucene.search.similarities.*
 import edu.unh.cs980.WordEmbedding.TfIdfSimilarity
+import edu.unh.cs980.ranklib.QueryEnum.*
 import org.apache.log4j.Level
 import org.apache.log4j.Logger
 import java.lang.Double.sum
 import java.util.*
 import kotlin.math.abs
 import edu.unh.cs980.ranklib.TrainEnum.*
-
-
-
+import edu.unh.cs980.ranklib.TrainEnum.SDM_SECTION
+import edu.unh.cs980.ranklib.TrainEnum.STRING_SIMILARITY_SECTION
+import edu.unh.cs980.ranklib.TrainEnum.TFIDF_SECTION
 
 
 /**
@@ -183,18 +184,6 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
                 normType = NormType.ZSCORE, weight = weights[1])
     }
 
-    /**
-     * Func: querySectionComponent
-     * Desc: This is an example a section-path version of BM25, where the query was broken into paths, and the
-     *       new scored is expressed as a weighted combination of BM25 on each of the sections.
-     *       In this prototype, it is now a single feature, which can be combined with other features.
-     */
-    private fun querySectionComponent() {
-        val weights = listOf(0.0, 1.0)
-        formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
-        formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE, weight = weights[1])
-    }
-
 
     /**
      * Func: querySDMSection
@@ -278,20 +267,34 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
     // Runs associated query method
     fun runRanklibQuery(method: String, out: String) {
         Logger.getRootLogger().level = Level.ERROR
-        when (method) {
-            "average_abstract" -> queryAverageAbstractScore()
-            "hyperlink" -> queryHyperlinkLikelihood()
-            "section_component" -> querySectionComponent()
-            "abstract_sdm" -> queryAbstractSDM()
-            "sdm" -> querySDM()
-            "nat_sdm" -> queryNatSDM()
-            "sdm_section" -> querySDMSection()
-            "sdm_expansion" -> querySDMExpansion()
-            "tfidf_section" -> queryTFIDFSection()
-            "string_similarity_section" -> queryTFIDFSection()
-            "combined" -> queryCombined()
-            else -> println("Unknown method!")
+        val queryMethod = QueryEnum.fromString(method)
+        when (queryMethod) {
+            AVERAGE_ABSTRACT                    -> queryAverageAbstractScore()
+            HYPERLINK                           -> queryHyperlinkLikelihood()
+            ABSTRACT_SDM                        -> queryAbstractSDM()
+            SDM                                 -> querySDM()
+            NAT_SDM                             -> queryNatSDM()
+            QueryEnum.SDM_SECTION               -> querySDMSection()
+            SDM_EXPANSION                       -> querySDMExpansion()
+            QueryEnum.TFIDF_SECTION             -> queryTFIDFSection()
+            QueryEnum.STRING_SIMILARITY_SECTION -> queryStringSimilaritySection()
+            COMBINED                            -> queryCombined()
+            null                                -> {println("Unknown method!"); return}
         }
+//        when (method) {
+//            "average_abstract" -> queryAverageAbstractScore()
+//            "hyperlink" -> queryHyperlinkLikelihood()
+//            "section_component" -> querySectionComponent()
+//            "abstract_sdm" -> queryAbstractSDM()
+//            "sdm" -> querySDM()
+//            "nat_sdm" -> queryNatSDM()
+//            "sdm_section" -> querySDMSection()
+//            "sdm_expansion" -> querySDMExpansion()
+//            "tfidf_section" -> queryTFIDFSection()
+//            "string_similarity_section" -> queryTFIDFSection()
+//            "combined" -> queryCombined()
+//            else -> println("Unknown method!")
+//        }
 
         // After scoring according to method, rerank the queries and write them to a run file
         formatter.rerankQueries()
@@ -698,10 +701,6 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
     fun train(method: String, out: String) {
         Logger.getRootLogger().level = Level.ERROR
         val trainMethod = TrainEnum.fromString(method)
-//        if (trainMethod == null) {
-//            println("Unknown method!: $method")
-//            return
-//        }
 
         when (trainMethod) {
             HYPERLINK_QUERY -> trainHyperlinkLikelihood()                               // hyperlink + bm25
