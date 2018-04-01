@@ -82,8 +82,7 @@ average_abstract,combined,abstract_sdm,sdm_components,hyperlink,sdm,section_comp
 
 ___
 ### Indexer (index)
-Creates a bipartite graph between entities and paragraphs based on entities linked by Spotlight.  
-The graph is stored in the MapDB database: graph_database.db  
+Creates a Lucene index from a given paragraph corpus. Also annotates paragraphs with entities using Spotlight if relevant spotlight directory is given. **Note that an existing copy of this index is already on the server at: /trec_data/team_1/myindex**
 
 ```bash
 program.jar index corpus [--spotlight_folder ""] [--out "index"]
@@ -94,7 +93,7 @@ Where:
 
 **--out**: Is the name of the directory that the Lucene index will be created in. Default: "index"
 
-**--spotlight_folder**: Is the directory where a runnable DBPedia Spotlight Jar and model are located. If the folder does not contain the required files, the contents are automatically downloaded and unpacked to the folder. If no folder is specified, then entity-linking with Spotlight is skipped during indexing. 
+**--spotlight_folder**: Is the directory where a runnable DBPedia Spotlight Jar and model are located. If the folder does not contain the required files, the contents are automatically downloaded and unpacked to the folder. If no folder is specified, then entity-linking with Spotlight is skipped during indexing. **A copy of the spotlight_folder is available at: /trec_data/team_1/spotlight_server**
 
 ___
 #### Abstract Indexer (abstract_indexer)
@@ -161,21 +160,26 @@ program.jar ranklib_trainer [--out OUT] [--hyperlink_database HYPERLINK_DATABASE
  Where:
 
 **method**: Is one of the following methods:
- (Primary Methods)
- - **abstract_sdm**: Training for abstract SDM model (see full description later)
- - **sdm**: Training for SDM model (see full description later)
- - **string_similarities**: Training for string_similarity model (see full description later)
- - **average_abstract**: Training for average_abstract model (see full description later)
- - **hyperlink**: Training for hyperlink model (see full description later)
- - **combined**: All methods are combined in this training method, and the FeatureSelection class is used to do subset selection on the features to determine which are the best features to be combined.
- 
- (Secondary Methods)
-  - **sdm_alpha**: Generates SDM at various alpha values (used to determine best alpha parameter)
-  - **abstract_alpha**: Generates abstract SDM at various alpha values (used to determine best alpha paramter)
-  - **similarity_section**: Weighted section version of the string_similarities method
-  - **section_path**: Learns weights for section paths (BM25): used to create a single section path feature.
-  - **abstract_sdm_components**: Learns abstract SDM weights for unigram/bigram/windowed bigram scores
-  - **sdm_components**: Learns SDM weights for unigram/bigram/windowed bigram scores
+ - **hyperlink_query**: Weighted combination of BM25 + hyperlink method.
+ - **average_abstract_query**: Weighted combination of BM25 + average_abstract method.
+ - **sdm_alpha**: Creates an instance of the sdm method for a range of alpha values. These features are used in RankLib (see KotlinFeatureSelector) to determine what the best alpha parameter is.
+ - **sdm_components**: Adds the individual scoring components of the SDM (unigram, bigram, and windowed bigram) as features. Used with RankLib to determine the best combination of scoring components in SDM.
+ - **sdm_query**: Weighted combination of BM25 + sdm method
+ - **sdm_section**: Applies sdm method to each section individually and learns best weighted combination.
+ - **abstract_sdm**: As sdm_alpha, except for the abstract_sdm method.
+ - **abstract_sdm_components**: as sdm_components, except for the abstract_sdm method.
+ - **abstract_sdm_query**: Weights combination of BM25 + abstract_sdm method
+ - **bm25_section**: Applies BM25 to each section and learns weighted combination of sections
+ - **sdm_expansion_components**: As sdm_components, except for sdm_expansion method.
+ - **sdm_expansion_query**: Weighted combination of BM25 + sdm_expansion method.
+ - **nat_sdm_query**: Weighted combination of BM25 + nat_sdm method.
+ - **string_similarity_components**: Learns best weighted combination of Jaccard, Jaro Winkler, Normalized Levenshtein, and Sorensen Dice string similarities.
+ - **string_similarity_section**: Using best combination of string similarity functions, learns best weighted combination of feature when scoring each section independently.
+ - **string_similarity_query**: Weighted combination of BM25 + string_similarity_section method.
+ - **tfidf_section**: Learns best linear combination of sections scored by TFIDF feature derived from Bindu's method.
+ - **tfidf_section_query**: Weighted combination of BM25 + tfidf_section method.
+ - **super_awesome_teamwork_query**: Finds best weighted combination of teamwork methods: sdm_expansion, tfidf_section, and nat_sdm (note that BM25 isn't added as an additional feature!).
+ - **combined_query**: Adds many of the aforementioned features, where the best combination is determined with RankLib and KotlinFeatureSelector.
  
  
  **index**: Is the location of the Lucene index directory. Should be /trec_data/team_1/myindex if you do not want to generate a new Lucene index from scratch.
