@@ -25,6 +25,10 @@ import org.apache.log4j.Logger
 import java.lang.Double.sum
 import java.util.*
 import kotlin.math.abs
+import edu.unh.cs980.ranklib.TrainEnum.*
+
+
+
 
 
 /**
@@ -253,6 +257,24 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
         }, normType = NormType.ZSCORE, weight = weights[1])
     }
 
+    /**
+     * Func: queryStringSimilaritySection
+     * Desc: The Jaccard, Jaro Winkler, Normalized Levenshtein, and Sorensen Dice string similarity metrics were used to
+     *       score a document according to the average similarity of a document's entity names to the term queries.
+     *       Weights were trained for this combination using RankLib.
+     *       The new feature was then used to score each section in a query, wherein a document's score is now the
+     *       weighted sum of sections scored according to this feature. The weights were again trained using RankLib and
+     *       the final string_similarity_section feature was generated (used below).
+     */
+    private fun queryStringSimilaritySection() {
+        val weights = listOf(1.0, 1.0)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
+
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featStringSimilarityComponent(query, tops, indexSearcher)
+        }, normType = NormType.ZSCORE, weight = weights[1])
+    }
+
     // Runs associated query method
     fun runRanklibQuery(method: String, out: String) {
         Logger.getRootLogger().level = Level.ERROR
@@ -266,6 +288,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
             "sdm_section" -> querySDMSection()
             "sdm_expansion" -> querySDMExpansion()
             "tfidf_section" -> queryTFIDFSection()
+            "string_similarity_section" -> queryTFIDFSection()
             "combined" -> queryCombined()
             else -> println("Unknown method!")
         }
@@ -279,11 +302,11 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
 
 
     /**
-     * Function: trainCombined
+     * Function: trainCombinedQuery
      * Description: training for combined method.
      * @see queryCombined
      */
-    private fun trainCombined() {
+    private fun trainCombinedQuery() {
         val gramIndexSearcher = getIndexSearcher(gramPath)
         val hLinker = HyperlinkIndexer(hyperlinkPath)
         val hGram = KotlinGramAnalyzer(gramIndexSearcher)
@@ -356,11 +379,11 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
 
 
     /**
-     * Func: trainSDM
+     * Func: trainSDMQuery
      * Desc: Combining SDM and BM25 to determine weights for method.
      * @see querySDM
      */
-    private fun trainSDM() {
+    private fun trainSDMQuery() {
         formatter.addBM25(normType = NormType.ZSCORE)
         val gramSearcher = getIndexSearcher(gramPath)
         val hGram = KotlinGramAnalyzer(gramSearcher)
@@ -371,11 +394,11 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
 
 
     /**
-     * Func: trainNatSDM
+     * Func: trainNatSDMQuery
      * Desc: Combining Nat SDM and BM25 to determine weights for method.
      * @see queryNatSDM
      */
-    private fun trainNatSDM() {
+    private fun trainNatSDMQuery() {
         System.err.close() // Stanford NLP needs to shut the hell up
         formatter.addBM25(normType = NormType.ZSCORE)
         val gramSearcher = getIndexSearcher(gramPath)
@@ -387,11 +410,11 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
 
 
     /**
-     * Func: trainAbstractSDM
+     * Func: trainAbstractSDMQuery
      * Desc: Combining Abstract SDM and BM25 to determine weights for method.
      * @see queryAbstractSDM
      */
-    private fun trainAbstractSDM() {
+    private fun trainAbstractSDMQuery() {
         formatter.addBM25(normType = NormType.ZSCORE)
         val abstractIndexer = getIndexSearcher(abstractPath)
         val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
@@ -461,7 +484,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
      * @see trainSectionPath
      * @see querySectionComponent
      */
-    private fun trainSectionComponent() {
+    private fun trainBM25Section() {
         formatter.addBM25(normType = NormType.ZSCORE)
         formatter.addFeature(::featSectionComponent, normType = NormType.ZSCORE)
     }
@@ -491,9 +514,9 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
 
     /**
      * Func: trainStringSimilaritySection
-     * Desc: After the best combination of string similarity scores are learned, and a feature is created from this
-     *       combination, the new feature is evaluated on each of the query's sections and a new weighted score
-     *       is determined (again, just another kind of section-path feature).
+     * Desc: Using a weighted combination of string similarity functions (tained with RankLib),
+     *       a new feature is created from this by scoring each of the query's sections and learning a new
+     *       set of weights.
      * @see trainStringSimilarityComponents
      */
     private fun trainStringSimilaritySection() {
@@ -509,6 +532,20 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
         formatter.addFeature({ query, tops, indexSearcher ->
             featSplitSim(query, tops, indexSearcher, ::featStringSimilarityComponent,
                     secWeights = listOf(0.0, 0.0, 0.0, 1.0))}, normType = NormType.NONE)
+    }
+
+    /**
+     * Func: trainStringSimilaritySectionQuery
+     * Desc: The finished string_similarity_section method is combined with BM25 and the best linear combination
+     *       is learned according to RankLib.
+     * @see trainStringSimilarityComponents
+     * @see trainStringSimilaritySection
+     */
+    private fun trainStringSimilaritySectionQuery() {
+        formatter.addBM25(normType = NormType.ZSCORE)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featStringSimilarityComponent(query, tops, indexSearcher)
+        }, normType = NormType.ZSCORE)
     }
 
 
@@ -541,11 +578,11 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
 
 
     /**
-     * Func: trainSDMExpansion
+     * Func: trainSDMExpansionQuery
      * Desc: This is training for the SDM expansion method.
      * @see querySDMExpansion
      */
-    private fun trainSDMExpansion() {
+    private fun trainSDMExpansionQuery() {
         formatter.addBM25(normType = NormType.ZSCORE)
         val gramSearcher = getIndexSearcher(gramPath)
         val hGram = KotlinGramAnalyzer(gramSearcher)
@@ -611,7 +648,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
      * @see queryTFIDFSection
      * @see trainSectionTFIDF
      */
-    private fun trainTFIDFComponent() {
+    private fun trainSectionTFIDFQuery() {
         val tifdSearcher = getIndexSearcher(indexPath)
         val tifd = TfIdfSimilarity(100, tifdSearcher)
         val bindTIFD = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
@@ -660,28 +697,83 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
      */
     fun train(method: String, out: String) {
         Logger.getRootLogger().level = Level.ERROR
-        when (method) {
-            "hyperlink" -> trainHyperlinkLikelihood()
-            "abstract_sdm" -> trainAbstractSDM()
-            "abstract_sdm_components" -> trainAbstractSDMComponents()
-            "abstract_alpha" -> trainAbstractSDMAlpha()
-            "average_abstract" -> trainAverageAbstractScore()
-            "nat_sdm" -> trainNatSDM()
-            "sdm" -> trainSDM()
-            "sdm_alpha" -> trainDirichletAlpha()
-            "sdm_components" -> trainSDMComponents()
-            "section_path" -> trainSectionPath()
-            "tfidf_section" -> trainSectionTFIDF()
-            "tfidf_component" -> trainTFIDFComponent()
-            "section_component" -> trainSectionComponent()
-            "string_similarities" -> trainStringSimilarityComponents()
-            "similarity_section" -> trainStringSimilaritySection()
-            "sdm_expansion_components" -> trainSDMEntityQueryExpansionComponents()
-            "sdm_expansion" -> trainSDMExpansion()
-            "sdm_section" -> trainSectionSDM()
-            "combined" -> trainCombined()
-            else -> println("Unknown method!")
+        val trainMethod = TrainEnum.fromString(method)
+//        if (trainMethod == null) {
+//            println("Unknown method!: $method")
+//            return
+//        }
+
+        when (trainMethod) {
+            HYPERLINK_QUERY -> trainHyperlinkLikelihood()                               // hyperlink + bm25
+
+            AVERAGE_ABSTRACT_QUERY -> trainAverageAbstractScore()                       // average_abstract + bm25
+
+            ABSTRACT_SDM_COMPONENTS -> trainAbstractSDMComponents()                     // learn -gram score weights
+            ABSTRACT_SDM_ALPHA -> trainAbstractSDMAlpha()                               // learn alpha param
+            ABSTRACT_SDM_QUERY -> trainAbstractSDMQuery()                               // abstract_sdm + bm25
+
+            NAT_SDM_QUERY -> trainNatSDMQuery()                                         // nat_sdm + bm25
+
+            SDM_ALPHA -> trainDirichletAlpha()                                          // learn alpha param
+            SDM_COMPONENTS -> trainSDMComponents()                                      // learn -gram score weights
+            SDM_SECTION -> trainSectionSDM()                                            // section version of sdm
+            SDM_QUERY -> trainSDMQuery()                                                // sdm + bm25
+
+            TFIDF_SECTION -> trainSectionTFIDF()                                        // section version of TFIDF
+            TFIDF_SECTION_QUERY -> trainSectionTFIDFQuery()                             // section TFIDF + bm25
+
+            BM25_SECTION -> trainBM25Section()                                          // section BM25 + bm25
+
+            SDM_EXPANSION_COMPONENTS -> trainSDMEntityQueryExpansionComponents()        // sdm_expansion -gram weights
+            SDM_EXPANSION_QUERY -> trainSDMExpansionQuery()                             // sdm_expansion + bm25
+
+            STRING_SIMILARITY_COMPONENTS -> trainStringSimilarityComponents()           // learn similarity weights
+            STRING_SIMILARITY_SECTION -> trainStringSimilaritySection()                 // learn section weights
+            STRING_SIMILARITY_QUERY -> trainStringSimilaritySectionQuery()              // string_sim_sec + bm25
+
+            COMBINED_QUERY -> trainCombinedQuery()                                      // combines various methods
+
+            null -> {println("Unknown method!"); return}
         }
+
+
+//        when (method) {
+//            "hyperlink_query" -> trainHyperlinkLikelihood()
+//
+//            "average_abstract_query" -> trainAverageAbstractScore()
+//
+//            "abstract_sdm_components" -> trainAbstractSDMComponents()
+//            "abstract_sdm_alpha" -> trainAbstractSDMAlpha()
+//            "abstract_sdm_query" -> trainAbstractSDMQuery()
+//
+//            "nat_sdm_query" -> trainNatSDMQuery()
+//
+//            "sdm_alpha" -> trainDirichletAlpha()
+//            "sdm_components" -> trainSDMComponents()
+//            "sdm_section" -> trainSectionSDM()
+//            "sdm_query" -> trainSDMQuery()
+//
+//
+//            "tfidf_section_components" -> trainSectionTFIDF()
+//            "tfidf_section_query" -> trainSectionTFIDFQuery()
+//
+//            "bm25_section" -> trainSectionPath()
+//            "bm25_section_query" -> trainBM25Section()
+//
+//            "sdm_expansion_components" -> trainSDMEntityQueryExpansionComponents()
+//            "sdm_expansion_query" -> trainSDMExpansionQuery()
+//
+//            "string_similarity_components" -> trainStringSimilarityComponents()
+//            "string_similarity_section" -> trainStringSimilaritySection()
+//            "string_similarity_query" -> trainStringSimilaritySectionQuery()
+//
+//            "combined_query" -> trainCombinedQuery()
+//
+//            else -> println("Unknown method!")
+//        }
         formatter.writeToRankLibFile(out)
     }
 }
+
+
+
