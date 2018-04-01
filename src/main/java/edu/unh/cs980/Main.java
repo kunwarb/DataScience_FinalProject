@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import edu.unh.cs980.WordEmbedding.TfIdfSimilarity;
+import edu.unh.cs980.ranklib.*;
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.search.IndexSearcher;
@@ -28,10 +29,6 @@ import edu.unh.cs980.language.KotlinAbstractAnalyzer;
 import edu.unh.cs980.language.KotlinAbstractExtractor;
 import edu.unh.cs980.language.KotlinGram;
 import edu.unh.cs980.language.KotlinGramAnalyzer;
-import edu.unh.cs980.ranklib.KotlinFeatureSelector;
-import edu.unh.cs980.ranklib.KotlinRankLibTrainer;
-import edu.unh.cs980.ranklib.KotlinRanklibFormatter;
-import edu.unh.cs980.ranklib.NormType;
 import edu.unh.cs980.utils.ProjectUtils;
 import edu.unh.cs980.utils.QueryBuilder;
 import edu.unh.cs980.variations.Doc_RM_QE_variation;
@@ -176,7 +173,7 @@ public class Main {
 				
 		
 				Subparser paragraphwithwordnet;
-					paragraphwithwordnet = subparsers.addParser("query_heading")
+					paragraphwithwordnet = subparsers.addParser("paragraph_wordnet")
 							.setDefault("func", new Exec(Main::runParagraphWordnet)).help("Paragraph Wordnet Similarity");
 				paragraphwithwordnet.addArgument("index").help("Location of Lucene index directory.");
 				paragraphwithwordnet.addArgument("query_file").help("Location of the query file (.cbor)");
@@ -247,22 +244,14 @@ public class Main {
 				// query_results.txt
 				.help("The name of the trec_eval compatible run file to write. (default: doc_rm_qe_results.run)");
 
-		// Graph Builder
-		Subparser graphBuilderParser = subparsers.addParser("graph_builder")
-				.setDefault("func", new Exec(Main::runGraphBuilder))
-				.help("Creates bipartite graph between entities and paragraphs, stored in a MapDB file:"
-						+ "graph_database.db");
-
-		graphBuilderParser.addArgument("index").help("Location of the Lucene index directory");
 
 		// Ranklib Query
 		Subparser ranklibQueryParser = subparsers.addParser("ranklib_query")
 				.setDefault("func", new Exec(Main::runRanklibQuery))
 				.help("Runs queries using weighted combinations of features trained by RankLib.");
 
-		ranklibQueryParser.addArgument("method").help("The type of method to use when querying (see readme).").choices(
-				"average_abstract", "combined", "abstract_sdm", "hyperlink", "sdm", "section_component",
-				"sdm_expansion", "sdm_section", "tfidf_section", "nat_sdm");
+		ranklibQueryParser.addArgument("method").help("The type of method to use when querying (see readme).")
+				.choices(QueryEnum.Companion.getCommands());
 
 		ranklibQueryParser.addArgument("index").help("Location of Lucene index directory.");
 		ranklibQueryParser.addArgument("query").help("Location of query file (.cbor)");
@@ -281,21 +270,18 @@ public class Main {
 				.help("Scores using methods and writes features to a RankLib compatible file for use with training.");
 
 		ranklibTrainerParser.addArgument("method").help("The type of method to use when training (see readme).")
-				.choices("combined", "abstract_sdm", "sdm_alpha", "sdm_components", "section_path",
-						"string_similarities", "similarity_section", "average_abstract", "abstract_sdm_components",
-						"hyperlink", "abstract_alpha", "sdm", "section_component", "sdm_expansion",
-						"sdm_expansion_components", "sdm_section", "tfidf_section", "tfidf_component", "nat_sdm");
+                .choices(TrainEnum.Companion.getCommands());
 		ranklibTrainerParser.addArgument("index").help("Location of the Lucene index directory");
 		ranklibTrainerParser.addArgument("query").help("Location of query file (.cbor)");
 		ranklibTrainerParser.addArgument("qrel").help("Locations of matching qrel file.");
 		ranklibTrainerParser.addArgument("--out").setDefault("ranklib_features.txt")
 				.help("Output name for the RankLib compatible feature file.");
 		ranklibTrainerParser.addArgument("--hyperlink_database").setDefault("/trec_data/team_1/entity_mentions.db")
-				.help("Location to MapDB indexed by Hyperlink Indexer (default: entity_mentions.db)");
+				.help("Location to MapDB indexed by Hyperlink Indexer (default: /trec_data/team1/entit_mentions.db)");
 		ranklibTrainerParser.addArgument("--abstract_index").setDefault("/trec_data/team_1/abstract")
-				.help("Location of Lucene index for entity abstracts (default: abstract/)");
+				.help("Location of Lucene index for entity abstracts (default: /trec_data/team_1/abstract/)");
 		ranklibTrainerParser.addArgument("--gram_index").setDefault("/trec_data/team_1/gram")
-				.help("Location of Lucene index for -grams used in SDM (default: gram/");
+				.help("Location of Lucene index for -grams used in SDM (default: /trec_data/team_1/gram/");
 
 		// Gram
 		Subparser gramParser = subparsers.addParser("gram_indexer").setDefault("func", new Exec(Main::runGram))
@@ -326,20 +312,6 @@ public class Main {
 		featureParser.addArgument("--features").setDefault("ranklib_features.txt")
 				.help("Location of ranklib features file (default: ranklib_features.txt");
 
-		// // Abstract Analyzer
-		// Subparser abstractAnalyzerParser =
-		// subparsers.addParser("abstract_analyzer")
-		// .setDefault("func", new Exec(Main::runAbstractAnalyzer))
-		// .help("");
-		// abstractAnalyzerParser.addArgument("index")
-		// .help("Location of abstract index.");
-		//
-		// // Gram Analyzer
-		// Subparser gramAnalyzerParser = subparsers.addParser("gram_analyzer")
-		// .setDefault("func", new Exec(Main::runGramAnalyzer))
-		// .help("");
-		// gramAnalyzerParser.addArgument("index")
-		// .help("Location of abstract index.");
 
 		// Hyperlink Indexer
 		Subparser hyperlinkIndexerParser = subparsers.addParser("hyperlink_indexer")
@@ -672,12 +644,6 @@ public class Main {
 		}
 	}
 
-	// Runs Jordan's Graph Builder
-	private static void runGraphBuilder(Namespace namespace) {
-		String indexLocation = namespace.getString("index");
-		KotlinGraphBuilder graphBuilder = new KotlinGraphBuilder(indexLocation);
-		graphBuilder.run();
-	}
 
 	// Runs Jordan's Ranklib Trainer
 	private static void runRanklibTrainer(Namespace namespace) {
@@ -707,34 +673,6 @@ public class Main {
 		KotlinRankLibTrainer kotTrainer = new KotlinRankLibTrainer(indexLocation, queryLocation, "", hyperLoc,
 				abstractLoc, gramLoc);
 		kotTrainer.runRanklibQuery(method, out);
-	}
-
-	private static void runDemo(Namespace params) {
-		String indexLocation = params.getString("index");
-		String queryLocation = params.getString("query");
-		String method = params.getString("method");
-
-		KotlinRanklibFormatter formatter = new KotlinRanklibFormatter(queryLocation, "", indexLocation);
-
-		// Your function must be cast using the signature below
-		Function3<? super String, ? super TopDocs, ? super IndexSearcher, ? extends List<Double>> exampleFunction = Main::testFunction;
-
-		// This adds BM25's scores as a feature
-		formatter.addBM25(1.0, NormType.NONE);
-
-		// And this adds your custom function/method that has the Function3
-		// signature listed above (just cast it)
-		formatter.addFeature(exampleFunction, 1.0, NormType.NONE);
-
-		// This will rerank queries by doing the following: sum the added
-		// features together (multiplied by weights)
-		// And then using these new scores, sort the TopDocs from highest to
-		// lowest
-		formatter.rerankQueries();
-
-		// This will write the reranked queries to a new trec_car compatible run
-		// file
-		formatter.writeQueriesToFile("test.run");
 	}
 
 	// This is an example of a method that is compatible with
