@@ -57,9 +57,14 @@ average_abstract,combined,abstract_sdm,sdm_components,hyperlink,sdm,section_comp
 **method**: Is the type of method to use when querying. The choices are:
  - **abstract_sdm**: Query using trained abstract SDM model (see full description later)
  - **sdm**: Query using trained SDM model (see full description later)
- - **section_component**: Query using a trained version of BM25 (reweighted according to section paths)
+ - **string_similarity_section**: Query using a weighted combination of string similarity functions on a weighted combination of query sections (see full description later)
  - **average_abstract**: Query using trained average abstract model (see full description later)
  - **hyperlink**: Query using trained hyperlink model (see full description later)
+ - **nat_sdm**: Query using variant of SDM (based on Kevin's natural language methods) (see full description later)
+ - **tfidf_section**: Query using variant of Bindu's TFIDF on a weighted combination of sections (see full description later)
+ - **sdm_section**: Query using sdm method on a weighted combination of query sections (see full description later)
+ - **sdm_expansion**: Query using sdm with where queries have been expanded with Kevin's entity query expansion method (see full description later)
+ - **super_awesome_teamwork**: Query using combination of methods derived from teammate's methods (nat_sdm, tfidf_section, sdm_expansion)
  - **combined**: Query using weighted combination of methods (see full description later)
  
  
