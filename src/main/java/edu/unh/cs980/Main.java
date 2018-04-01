@@ -136,10 +136,10 @@ public class Main {
 		paragraphSimilarityParser.addArgument("query_file").help("Location of the query file (.cbor)");
 		paragraphSimilarityParser.addArgument("--out") // -- means it's not
 														// positional
-				.setDefault("query_results.run") // If no --out is supplied,
+				.setDefault("paragraph_similarity.run") // If no --out is supplied,
 													// defaults to
-													// query_results.txt
-				.help("The name of the trec_eval compatible run file to write. (default: query_results.run)");
+													// paragraph_similarity.txt
+				.help("The name of the trec_eval compatible run file to write. (default: paragraph_similarity.run)");
 
 		// Argument parser for TFIDF Similarity (Added By Bindu)
 
@@ -150,10 +150,10 @@ public class Main {
 		tfidfSimilarityParser.addArgument("query_file").help("Location of the query file (.cbor)");
 		tfidfSimilarityParser.addArgument("--out") // -- means it's not
 													// positional
-				.setDefault("query_results.run") // If no --out is supplied,
+				.setDefault("tfidf_similarity.run") // If no --out is supplied,
 													// defaults to
 													// query_results.txt
-				.help("The name of the trec_eval compatible run file to write. (default: query_results.run)");
+				.help("The name of the trec_eval compatible run file to write. (default: tfidf_similarity.run)");
 
 		// Argument parser for Entity Similarity
 		Subparser entitySimilarityParser = subparsers.addParser("entitySimilarity")
@@ -167,7 +167,7 @@ public class Main {
 		entitySimilarityParser.addArgument("abstract").help("Location of Lucene entity abstract index directory.");
 		entitySimilarityParser.addArgument("query_file").help("Location of the query file (.cbor)");
 		entitySimilarityParser.addArgument("--out").setDefault("Entity-Similarity.run")
-				.help("The name of the trec_eval compatible run file to write. (default: EntitySimilarity.run)");
+				.help("The name of the trec_eval compatible run file to write. (default: Entity-Similarity.run)");
 
 		Subparser paragraphwithwordnet;
 		paragraphwithwordnet = subparsers.addParser("paragraph_wordnet")
@@ -176,7 +176,7 @@ public class Main {
 		paragraphwithwordnet.addArgument("query_file").help("Location of the query file (.cbor)");
 		paragraphwithwordnet.addArgument("outputLocation") // -- means it's not
 															// positional
-				.help("The name of the trec_eval compatible run file to write. (default: query_results.run)");
+				.help("The name of the trec_eval compatible run file to write. (default:paragraph_wordnet.run)");
 
 		// Argument parser for Query Expansion
 		Subparser queryExpansionParser = subparsers.addParser("query_expansion")
