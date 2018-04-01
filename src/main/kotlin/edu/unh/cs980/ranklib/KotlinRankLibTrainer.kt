@@ -256,7 +256,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
      *       the final string_similarity_section feature was generated (used below).
      */
     private fun queryStringSimilaritySection() {
-        val weights = listOf(1.0, 1.0)
+        val weights = listOf(0.8795315, 0.1203685)
         formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
 
         formatter.addFeature({ query, tops, indexSearcher ->
@@ -281,20 +281,6 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
             COMBINED                            -> queryCombined()
             null                                -> {println("Unknown method!"); return}
         }
-//        when (method) {
-//            "average_abstract" -> queryAverageAbstractScore()
-//            "hyperlink" -> queryHyperlinkLikelihood()
-//            "section_component" -> querySectionComponent()
-//            "abstract_sdm" -> queryAbstractSDM()
-//            "sdm" -> querySDM()
-//            "nat_sdm" -> queryNatSDM()
-//            "sdm_section" -> querySDMSection()
-//            "sdm_expansion" -> querySDMExpansion()
-//            "tfidf_section" -> queryTFIDFSection()
-//            "string_similarity_section" -> queryTFIDFSection()
-//            "combined" -> queryCombined()
-//            else -> println("Unknown method!")
-//        }
 
         // After scoring according to method, rerank the queries and write them to a run file
         formatter.rerankQueries()
@@ -335,6 +321,10 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
 
         formatter.addFeature({ query, tops, indexSearcher ->
             featAbstractSDM(query, tops, indexSearcher, abstractAnalyzer, 2.0)
+        }, normType = NormType.ZSCORE)
+
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featAverageAbstractScoreByQueryRelevance(query, tops, indexSearcher, abstractAnalyzer)
         }, normType = NormType.ZSCORE)
 
         formatter.addFeature({ query, tops, indexSearcher ->
@@ -735,41 +725,6 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
             null -> {println("Unknown method!"); return}
         }
 
-
-//        when (method) {
-//            "hyperlink_query" -> trainHyperlinkLikelihood()
-//
-//            "average_abstract_query" -> trainAverageAbstractScore()
-//
-//            "abstract_sdm_components" -> trainAbstractSDMComponents()
-//            "abstract_sdm_alpha" -> trainAbstractSDMAlpha()
-//            "abstract_sdm_query" -> trainAbstractSDMQuery()
-//
-//            "nat_sdm_query" -> trainNatSDMQuery()
-//
-//            "sdm_alpha" -> trainDirichletAlpha()
-//            "sdm_components" -> trainSDMComponents()
-//            "sdm_section" -> trainSectionSDM()
-//            "sdm_query" -> trainSDMQuery()
-//
-//
-//            "tfidf_section_components" -> trainSectionTFIDF()
-//            "tfidf_section_query" -> trainSectionTFIDFQuery()
-//
-//            "bm25_section" -> trainSectionPath()
-//            "bm25_section_query" -> trainBM25Section()
-//
-//            "sdm_expansion_components" -> trainSDMEntityQueryExpansionComponents()
-//            "sdm_expansion_query" -> trainSDMExpansionQuery()
-//
-//            "string_similarity_components" -> trainStringSimilarityComponents()
-//            "string_similarity_section" -> trainStringSimilaritySection()
-//            "string_similarity_query" -> trainStringSimilaritySectionQuery()
-//
-//            "combined_query" -> trainCombinedQuery()
-//
-//            else -> println("Unknown method!")
-//        }
         formatter.writeToRankLibFile(out)
     }
 }
