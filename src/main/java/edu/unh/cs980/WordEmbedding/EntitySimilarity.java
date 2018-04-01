@@ -40,7 +40,8 @@ import edu.unh.cs980.utils.QueryBuilder;
 
 public class EntitySimilarity {
 
-	private static QueryParser parser = new QueryParser("parabody", new StandardAnalyzer());
+	private static QueryParser parser = new QueryParser("text", new StandardAnalyzer());
+//	private static QueryParser parser = new QueryParser("parabody", new StandardAnalyzer());
 	private static String abstract_index_dir;
 	private static Integer time_out = 5;
 	private static ExecutorService executors;
