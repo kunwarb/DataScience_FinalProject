@@ -8,8 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-import edu.unh.cs980.WordEmbedding.TfIdfSimilarity;
-import edu.unh.cs980.ranklib.*;
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.search.IndexSearcher;
@@ -24,18 +22,22 @@ import edu.unh.cs980.WordEmbedding.EntitySimilarity;
 import edu.unh.cs980.WordEmbedding.Lucene_Query_Creator;
 import edu.unh.cs980.WordEmbedding.ParagraphSimilarity;
 import edu.unh.cs980.WordEmbedding.ParagraphWithWordnet;
+import edu.unh.cs980.WordEmbedding.TfIdfSimilarity;
 import edu.unh.cs980.context.HyperlinkIndexer;
 import edu.unh.cs980.language.KotlinAbstractAnalyzer;
 import edu.unh.cs980.language.KotlinAbstractExtractor;
 import edu.unh.cs980.language.KotlinGram;
 import edu.unh.cs980.language.KotlinGramAnalyzer;
+import edu.unh.cs980.ranklib.KotlinFeatureSelector;
+import edu.unh.cs980.ranklib.KotlinRankLibTrainer;
+import edu.unh.cs980.ranklib.QueryEnum;
+import edu.unh.cs980.ranklib.TrainEnum;
 import edu.unh.cs980.utils.ProjectUtils;
 import edu.unh.cs980.utils.QueryBuilder;
 import edu.unh.cs980.variations.Doc_RM_QE_variation;
 import edu.unh.cs980.variations.FreqBigram_variation;
 import edu.unh.cs980.variations.QueryExpansion_variation;
 import edu.unh.cs980.variations.Query_RM_QE_variation;
-import kotlin.jvm.functions.Function3;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
@@ -152,35 +154,29 @@ public class Main {
 													// defaults to
 													// query_results.txt
 				.help("The name of the trec_eval compatible run file to write. (default: query_results.run)");
-		
-		
+
 		// Argument parser for Entity Similarity
-				Subparser entitySimilarityParser = subparsers.addParser("entitySimilarity")
-						.setDefault("func", new Exec(Main::runEntitySimilarity))
-						.help("Use EntitySimilarity");
-				entitySimilarityParser.addArgument("query_choice").choices("page", "section")
-						.help("\tpage: Page of paragraph corpus\n" + "\tsection: Section of paragraph corpus\n");
-				entitySimilarityParser.addArgument("multi_thread").choices("true", "false").setDefault("false")
-						.help("\ttrue: Run Multi Thread function. (Not Stable)\n" + "\tfalse: Use normal function\n");
+		Subparser entitySimilarityParser = subparsers.addParser("entitySimilarity")
+				.setDefault("func", new Exec(Main::runEntitySimilarity)).help("Use EntitySimilarity");
+		entitySimilarityParser.addArgument("query_choice").choices("page", "section")
+				.help("\tpage: Page of paragraph corpus\n" + "\tsection: Section of paragraph corpus\n");
+		entitySimilarityParser.addArgument("multi_thread").choices("true", "false").setDefault("false")
+				.help("\ttrue: Run Multi Thread function. (Not Stable)\n" + "\tfalse: Use normal function\n");
 
-				entitySimilarityParser.addArgument("index").help("Location of Lucene index directory.");
-				entitySimilarityParser.addArgument("abstract").help("Location of Lucene entity abstract index directory.");
-				entitySimilarityParser.addArgument("query_file").help("Location of the query file (.cbor)");
-				entitySimilarityParser.addArgument("--out") .setDefault("Entity-Similarity.run") 
-						.help("The name of the trec_eval compatible run file to write. (default: EntitySimilarity.run)");
-		
-				
-				
-		
-				Subparser paragraphwithwordnet;
-					paragraphwithwordnet = subparsers.addParser("paragraph_wordnet")
-							.setDefault("func", new Exec(Main::runParagraphWordnet)).help("Paragraph Wordnet Similarity");
-				paragraphwithwordnet.addArgument("index").help("Location of Lucene index directory.");
-				paragraphwithwordnet.addArgument("query_file").help("Location of the query file (.cbor)");
-				paragraphwithwordnet.addArgument("outputLocation") // -- means it's not positional
-												.help("The name of the trec_eval compatible run file to write. (default: query_results.run)");
+		entitySimilarityParser.addArgument("index").help("Location of Lucene index directory.");
+		entitySimilarityParser.addArgument("abstract").help("Location of Lucene entity abstract index directory.");
+		entitySimilarityParser.addArgument("query_file").help("Location of the query file (.cbor)");
+		entitySimilarityParser.addArgument("--out").setDefault("Entity-Similarity.run")
+				.help("The name of the trec_eval compatible run file to write. (default: EntitySimilarity.run)");
 
-
+		Subparser paragraphwithwordnet;
+		paragraphwithwordnet = subparsers.addParser("paragraph_wordnet")
+				.setDefault("func", new Exec(Main::runParagraphWordnet)).help("Paragraph Wordnet Similarity");
+		paragraphwithwordnet.addArgument("index").help("Location of Lucene index directory.");
+		paragraphwithwordnet.addArgument("query_file").help("Location of the query file (.cbor)");
+		paragraphwithwordnet.addArgument("outputLocation") // -- means it's not
+															// positional
+				.help("The name of the trec_eval compatible run file to write. (default: query_results.run)");
 
 		// Argument parser for Query Expansion
 		Subparser queryExpansionParser = subparsers.addParser("query_expansion")
@@ -244,7 +240,6 @@ public class Main {
 				// query_results.txt
 				.help("The name of the trec_eval compatible run file to write. (default: doc_rm_qe_results.run)");
 
-
 		// Ranklib Query
 		Subparser ranklibQueryParser = subparsers.addParser("ranklib_query")
 				.setDefault("func", new Exec(Main::runRanklibQuery))
@@ -270,7 +265,7 @@ public class Main {
 				.help("Scores using methods and writes features to a RankLib compatible file for use with training.");
 
 		ranklibTrainerParser.addArgument("method").help("The type of method to use when training (see readme).")
-                .choices(TrainEnum.Companion.getCommands());
+				.choices(TrainEnum.Companion.getCommands());
 		ranklibTrainerParser.addArgument("index").help("Location of the Lucene index directory");
 		ranklibTrainerParser.addArgument("query").help("Location of query file (.cbor)");
 		ranklibTrainerParser.addArgument("qrel").help("Locations of matching qrel file.");
@@ -311,7 +306,6 @@ public class Main {
 
 		featureParser.addArgument("--features").setDefault("ranklib_features.txt")
 				.help("Location of ranklib features file (default: ranklib_features.txt");
-
 
 		// Hyperlink Indexer
 		Subparser hyperlinkIndexerParser = subparsers.addParser("hyperlink_indexer")
@@ -412,54 +406,53 @@ public class Main {
 		}
 
 	}
-	
-	//Run for Entity Similarity
-	
-		private static void runEntitySimilarity(Namespace params) {
-			try {
-				String indexLocation = params.getString("index");
-				String abstract_indexLocation = params.getString("abstract");
-				String queryFile = params.getString("query_file");
-				String queryChoice = params.getString("query_choice");
-				String multi = params.getString("multi_thread");
-				Boolean runMultiThread = Boolean.valueOf(multi.toLowerCase());
-				String out = params.getString("out");
-				QueryBuilder queryBuilder = new QueryBuilder(queryFile);
-				if (queryChoice.equalsIgnoreCase("page")) {
-					ArrayList<String> pages_queries = queryBuilder.getAllpageQueries();
-				
-					if (runMultiThread) {
-						ArrayList<String> page_run = EntitySimilarity.getResultsWithMultiThread(pages_queries, indexLocation,
-								abstract_indexLocation);
-						ProjectUtils.writeToFile(out, page_run);
-					} else {
-						ArrayList<String> page_run = EntitySimilarity.getEntityResults(pages_queries, indexLocation, abstract_indexLocation);
-						ProjectUtils.writeToFile(out, page_run);
-					}
 
-				} else if (queryChoice.equalsIgnoreCase("section")) {
-					ArrayList<String> section_queries = queryBuilder.getAllSectionQueries();
-				
-					if (runMultiThread) {
-						ArrayList<String> section_run = EntitySimilarity.getResultsWithMultiThread(section_queries,
-								indexLocation, abstract_indexLocation);
-						ProjectUtils.writeToFile(out, section_run);
-					} else {
-						ArrayList<String> section_run = EntitySimilarity.getEntityResults(section_queries, indexLocation,
-								abstract_indexLocation);
-						ProjectUtils.writeToFile(out, section_run);
-					}
+	// Run for Entity Similarity
 
+	private static void runEntitySimilarity(Namespace params) {
+		try {
+			String indexLocation = params.getString("index");
+			String abstract_indexLocation = params.getString("abstract");
+			String queryFile = params.getString("query_file");
+			String queryChoice = params.getString("query_choice");
+			String multi = params.getString("multi_thread");
+			Boolean runMultiThread = Boolean.valueOf(multi.toLowerCase());
+			String out = params.getString("out");
+			QueryBuilder queryBuilder = new QueryBuilder(queryFile);
+			if (queryChoice.equalsIgnoreCase("page")) {
+				ArrayList<String> pages_queries = queryBuilder.getAllpageQueries();
+
+				if (runMultiThread) {
+					ArrayList<String> page_run = EntitySimilarity.getResultsWithMultiThread(pages_queries,
+							indexLocation, abstract_indexLocation);
+					ProjectUtils.writeToFile(out, page_run);
 				} else {
-					System.out.println("Error: QueryChoice was not recognized");
+					ArrayList<String> page_run = EntitySimilarity.getEntityResults(pages_queries, indexLocation,
+							abstract_indexLocation);
+					ProjectUtils.writeToFile(out, page_run);
 				}
 
-			} catch (Throwable e) {
-				logger.error(e.getMessage());
+			} else if (queryChoice.equalsIgnoreCase("section")) {
+				ArrayList<String> section_queries = queryBuilder.getAllSectionQueries();
+
+				if (runMultiThread) {
+					ArrayList<String> section_run = EntitySimilarity.getResultsWithMultiThread(section_queries,
+							indexLocation, abstract_indexLocation);
+					ProjectUtils.writeToFile(out, section_run);
+				} else {
+					ArrayList<String> section_run = EntitySimilarity.getEntityResults(section_queries, indexLocation,
+							abstract_indexLocation);
+					ProjectUtils.writeToFile(out, section_run);
+				}
+
+			} else {
+				System.out.println("Error: QueryChoice was not recognized");
 			}
+
+		} catch (Throwable e) {
+			logger.error(e.getMessage());
 		}
-
-
+	}
 
 	// Runs Bindu Tfidf(lnc.ltc) SImilarity Variation
 
@@ -483,33 +476,27 @@ public class Main {
 
 		}
 	}
-	
-	
-	 //This function is being used for running query
-    public static void runParagraphWordnet(Namespace params ) {
-    	try{
-    	String index = params.getString("index");
-		String queryLocation= params.getString("query_file");
-		String rankingOutputLocation = params.getString("outputLocation");
-		   	
-    	ParagraphWithWordnet qbuilder = getQueryBuilder( index, queryLocation, rankingOutputLocation);
-		qbuilder.writeRankings(queryLocation, rankingOutputLocation);
-    	}
-    	catch(IOException e)
-    	{
-    		e.printStackTrace();
-    	}
-	}
-	
-	
-	
 
-		  //This function is being used for creating 
-  	public static ParagraphWithWordnet getQueryBuilder( String indexLocation, String queryLocation,
-  			String rankingOutputLocation) throws IOException {
-  	
-     return new ParagraphWithWordnet( new StandardAnalyzer(), new BM25Similarity(), indexLocation);
-  	}
+	// This function is being used for running query
+	public static void runParagraphWordnet(Namespace params) {
+		try {
+			String index = params.getString("index");
+			String queryLocation = params.getString("query_file");
+			String rankingOutputLocation = params.getString("outputLocation");
+
+			ParagraphWithWordnet qbuilder = getQueryBuilder(index, queryLocation, rankingOutputLocation);
+			qbuilder.writeRankings(queryLocation, rankingOutputLocation);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	// This function is being used for creating
+	public static ParagraphWithWordnet getQueryBuilder(String indexLocation, String queryLocation,
+			String rankingOutputLocation) throws IOException {
+
+		return new ParagraphWithWordnet(new StandardAnalyzer(), new BM25Similarity(), indexLocation);
+	}
 
 	// Runs Kevin's Query Expansion Variation
 	private static void runQueryExpansion(Namespace params) {
@@ -643,7 +630,6 @@ public class Main {
 			logger.error(e.getMessage());
 		}
 	}
-
 
 	// Runs Jordan's Ranklib Trainer
 	private static void runRanklibTrainer(Namespace namespace) {
