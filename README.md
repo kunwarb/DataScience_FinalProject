@@ -273,7 +273,7 @@ ___
 
 
  
- ## Description of Primary RanklibQuery Methods and Training
+ ## Description of Primary RanklibQuery Methods
  Each of these methods score the Top 100 documents obtained by running BM25 on the concatenated section path against the index.
  For all individual methods, the score from BM25 is added as an additional feature (in addition to those created by the methods) and the weights are trained using RankLib. **The features (including BM25) were normalized by Z-score.**
  
