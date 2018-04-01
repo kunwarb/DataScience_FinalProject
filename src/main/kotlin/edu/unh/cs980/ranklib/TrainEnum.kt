@@ -1,6 +1,10 @@
 @file:JvmName("KotTrainEnum")
 package edu.unh.cs980.ranklib
 
+/**
+ * Class: TrainEnum
+ * Desc: Contains training method names (used for type safety)
+ */
 enum class TrainEnum(val value: String) : CharSequence by value {
     HYPERLINK_QUERY("hyperlink_query"),
 
@@ -37,8 +41,11 @@ enum class TrainEnum(val value: String) : CharSequence by value {
 
     companion object {
         private val map: Map<String, TrainEnum> = TrainEnum.values().associateBy(TrainEnum::value)
+
+        // Converts a string method name to the corresponding enum class (if it exists)
         fun fromString(string: String) = map[string]
 
+        // Gets all of the enum method's corresponding string names
         fun getCommands() = TrainEnum.values()
             .map(TrainEnum::value)
             .sorted()

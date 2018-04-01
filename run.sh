@@ -5,6 +5,14 @@
 #           the required files are stored. If not, you will need to change the paths 
 #           for the variables pointing to trec_data/ (see comments below)
 
+# Note:     For Kevin's and Bindu's methods, when given a choice between page or section variants,
+#           I only demonstrate their page variants below. This is because the section variants are taking
+#           too long to run (and may not work) on the server.
+
+#           If you want to evaluate the section variants for query_rm_qe, entitySimilarity, and doc_rm_qe,
+#           Then change the page type to section (see my comments for those methods below)
+#           This also means that they should be evaluated with hierarchical, not article, qrels.
+
 # Argument: Location of Team 1's JAR file (either in target/ after compiling or in /bin)
 
 JAR=$1
@@ -32,6 +40,9 @@ TREC_EVAL=/trec_data/trec_eval
 
 # Pathway to benchmarkY1's hierarchical qrels file
 TRAIN_HIER_QRELS=/trec_data/benchmarkY1-train/train.pages.cbor-hierarchical.qrels
+
+# Pathway to articles qrels file
+TRAIN_ARTICLE_QRELS=/trec_data/benchmarkY1-train/train.pages.cbor-article.qrels
 
 # Pathway to benchmarkY1's train.pages.cbor-outlines file
 TRAIN_OUTLINE_CBOR=/trec_data/benchmarkY1-train/train.pages.cbor-outlines.cbor
@@ -98,5 +109,95 @@ run_ranklib_query_method nat_sdm
 run_ranklib_query_method super_awesome_teamwork
 
 
+# Adding Kevin's doc_rm_qe (switch page to section for section variant)
+echo "=== Running doc_rm_qe (this will take a while) ==="
+mkdir -p method_results/doc_rm_qe
+java -jar $JAR doc_rm_qe\
+    page\
+    $INDEX\
+    $TRAIN_OUTLINE_CBOR\
+    --out method_results/doc_rm_qe/query_results.run
+
+echo "=== Evaluating Method: doc_rm_qe (only on article qrels) ==="
+ERESULT=method_results/doc_rm_qe/trec_eval_stats.txt
+$TREC_EVAL -c $TRAIN_ARTICLE_QRELS method_results/doc_rm_qe/query_results.run > $ERESULT
+echo -e Trec eval results stored in $ERESULT \\n\\n
+
+
+# Adding Kevin's query_rm_qe (switch page to section for section variant)
+echo "=== Running query_rm_qe  ==="
+mkdir -p method_results/query_rm_qe
+java -jar $JAR query_rm_qe\
+    page\
+    false\
+    $INDEX\
+    $ABSTRACT\
+    $TRAIN_OUTLINE_CBOR\
+    --out method_results/query_rm_qe/query_results.run
+
+echo "=== Evaluating Method: query_rm_qe (only on article qrels) ==="
+ERESULT=method_results/query_rm_qe/trec_eval_stats.txt
+$TREC_EVAL -c $TRAIN_ARTICLE_QRELS method_results/query_rm_qe/query_results.run > $ERESULT
+echo -e Trec eval results stored in $ERESULT \\n\\n
+
+# Adding Bindu's paragraph_wordnet
+echo "=== Running paragraph_wordnet (this will take a while) ==="
+mkdir -p method_results/paragraph_wordnet
+java -jar $JAR paragraph_wordnet\
+    $INDEX\
+    $TRAIN_OUTLINE_CBOR\
+    method_results/paragraph_wordnet/query_results.run
+
+
+echo "=== Evaluating Method: paragraph_wordnet (only on article qrels) ==="
+ERESULT=method_results/paragraph_wordnet/trec_eval_stats.txt
+$TREC_EVAL -c $TRAIN_ARTICLE_QRELS method_results/paragraph_wordnet/query_results.run > $ERESULT
+echo -e Trec eval results stored in $ERESULT \\n\\n
+
+
+# Adding Bindu's entitySimilarity method (switch page to section for section variant)
+echo "=== Running entitySimilarity ==="
+mkdir -p method_results/entitySimilarity
+java -jar $JAR entitySimilarity\
+    page\
+    false\
+    $INDEX\
+    $ABSTRACT\
+    $TRAIN_OUTLINE_CBOR\
+    --out method_results/entitySimilarity/query_results.run
+
+echo "=== Evaluating Method: entitySimilarity (only on article qrels) ==="
+ERESULT=method_results/entitySimilarity/trec_eval_stats.txt
+$TREC_EVAL -c $TRAIN_ARTICLE_QRELS method_results/entitySimilarity/query_results.run > $ERESULT
+echo -e Trec eval results stored in $ERESULT \\n\\n
+
+
+# Adding Bindu's tfidf_similarity
+echo "=== Running tfidf_similarity  ==="
+mkdir -p method_results/tfidf_similarity
+java -jar $JAR tfidf_similarity\
+    $INDEX\
+    $TRAIN_OUTLINE_CBOR\
+    --out method_results/tfidf_similarity/query_results.run
+
+
+echo "=== Evaluating Method: tfidf_similarity (only on article qrels) ==="
+ERESULT=method_results/tfidf_similarity/trec_eval_stats.txt
+$TREC_EVAL -c $TRAIN_ARTICLE_QRELS method_results/tfidf_similarity/query_results.run > $ERESULT
+echo -e Trec eval results stored in $ERESULT \\n\\n
+
+# Adding Bindu's tfidf_similarity
+echo "=== Running paragraph_similarity  ==="
+mkdir -p method_results/paragraph_similarity
+java -jar $JAR paragraph_similarity\
+    $INDEX\
+    $TRAIN_OUTLINE_CBOR\
+    --out method_results/paragraph_similarity/query_results.run
+
+
+echo "=== Evaluating Method: paragraph_similarity (only on article qrels) ==="
+ERESULT=method_results/paragraph_similarity/trec_eval_stats.txt
+$TREC_EVAL -c $TRAIN_ARTICLE_QRELS method_results/paragraph_similarity/query_results.run > $ERESULT
+echo -e Trec eval results stored in $ERESULT \\n\\n
 
 

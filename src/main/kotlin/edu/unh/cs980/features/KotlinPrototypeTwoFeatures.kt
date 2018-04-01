@@ -31,18 +31,21 @@ fun featSplitSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                  func: (String, TopDocs, IndexSearcher) -> List<Double>,
                  secWeights: List<Double> = listOf(1.0, 1.0, 1.0, 1.0, 1.0, 1.0)): List<Double> {
 
+    // Splits query into sections and turns into filtered token list
     val sections = query.split("/")
         .map { section -> AnalyzerFunctions
             .createTokenList(section, useFiltering = true)
             .joinToString(" ")}
         .toList()
 
+    // Given section weights, applies scoring function to each section
     val results = secWeights.zip(sections)
         .filter { (weight, section) -> weight != 0.0 }
         .map { (weight, section) ->
                     func(section, tops, indexSearcher).map { result -> result * weight}}
 
-    val finalList = try{results.reduce { acc, list ->  acc.zip(list).map { (l1, l2) -> l1 + l2 }} }
+    // Folds each list of section scores (for each document) into a single list of scores for each document
+    val finalList = try{ results.reduce { acc, list ->  acc.zip(list).map { (l1, l2) -> l1 + l2 }} }
                     catch(e: UnsupportedOperationException) { (0 until tops.scoreDocs.size).map { 0.0 }}
     return finalList
 }
@@ -52,6 +55,7 @@ fun featSplitSim(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
  * Desc: Reweights BM25 score of sections in query and returns a score that is a sum of these reweighted scores.
  */
 fun featSectionComponent(query: String, tops: TopDocs, indexSearcher: IndexSearcher): List<Double> {
+    // Parse into sections and turn into a list of boolean queries
     val termQueries = query.split("/")
         .map { section -> AnalyzerFunctions
             .createTokenList(section, useFiltering = true)
@@ -59,9 +63,11 @@ fun featSectionComponent(query: String, tops: TopDocs, indexSearcher: IndexSearc
         .map { section -> AnalyzerFunctions.createQuery(section)}
         .toList()
 
+    // Zip section queries with weights
     val weights = listOf(0.200983, 0.099785, 0.223777, 0.4754529531)
     val validQueries = weights.zip(termQueries)
 
+    // Apply BM25 to each section and sum up the results according to weights on each section
     return tops.scoreDocs
         .map { scoreDoc ->
             validQueries.map { (weight, boolQuery) ->
@@ -81,11 +87,13 @@ fun featStringSimilarityComponent(query: String, tops: TopDocs, indexSearcher: I
     val sims = listOf<StringDistance>(Jaccard(), JaroWinkler(), NormalizedLevenshtein(), SorensenDice())
     val simTrials = weights.zip(sims)
 
+    // Apply list of string similarity functions to query and documents get results
     val simResults = simTrials.map { (weight, sim) ->
         featAddStringDistanceFunction(query, tops, indexSearcher, sim)
             .map { score -> score * weight }
     }
 
+    // Fold each string similarity function's document scores into a single list of document scores
     return simResults.reduce { acc, scores -> acc.zip(scores).map { (l1, l2) -> l1 + l2 } }
 }
 
@@ -102,14 +110,14 @@ fun featLikehoodOfQueryGivenEntityMention(query: String, tops: TopDocs, indexSea
         val doc = indexSearcher.doc(scoreDoc.doc)
         val entities = doc.getValues("spotlight").toList()
         queryTokens
-            .map    { queryToken ->
+            .map    { queryToken -> // retrieve mention likelihood for each entity (given query tokens)
                          entities
                             .map { entity ->
                                 val like = hIndexer.getMentionLikelihood(queryToken.toLowerCase(), entity.toLowerCase())
                                 ln(like).defaultWhenNotFinite(0.0)
                             }
-                            .sum()
-                    }.average().defaultWhenNotFinite(0.0)
+                            .sum() // sum up the log likelihoods obtained from a particular query token
+                    }.average().defaultWhenNotFinite(0.0) // average results of each query token
     }.toList()
 }
 
@@ -123,6 +131,8 @@ fun featLikehoodOfQueryGivenEntityMention(query: String, tops: TopDocs, indexSea
 fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
             gramAnalyzer: KotlinGramAnalyzer, alpha: Double,
             gramType: GramStatType? = null): List<Double> {
+
+    // Parse query and retrieve a language model for it
     val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
     val cleanQuery = tokens.toList().joinToString(" ")
     val queryCorpus = gramAnalyzer.getCorpusStatContainer(cleanQuery)
@@ -134,10 +144,6 @@ fun featSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
         // Generate a language model for the given document's text
         val docStat = gramAnalyzer.getLanguageStatContainer(text)
         val (uniLike, biLike, windLike) = gramAnalyzer.getQueryLikelihood(docStat, queryCorpus, alpha)
-//        val queryLikelihood = docStat.getLikelihoodGivenQuery(queryCorpus, alpha)
-//        val v1 = queryLikelihood.unigramLikelihood
-//        val v2 = queryLikelihood.bigramLikelihood
-//        val v3 = queryLikelihood.bigramWindowLikelihood
 
         // If gram type is given, only return the score of a particular -gram method.
         // Otherwise, used the weights that were learned and combine all three types into a score.
@@ -165,11 +171,15 @@ fun featSDMWithEntityQueryExpansion(query: String, tops: TopDocs, indexSearcher:
             gramType: GramStatType? = null): List<Double> {
     val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
     val expandedQueryResults = tokens
+            // Apply Kevin's entity expansion to each token, retrieving associated list of entity names
         .map { token ->
             token to Query_RM_QE_variation.getExpandedEntitiesFromPageQuery(token, 1, abstractSearcher) }
+            // Join these entity names with the original query token
         .map { (token, expandedResults) -> token + " " + expandedResults.joinToString(" ")  }
+            // With expanded query tokens, generate an SDM model for each
         .map { expandedQuery -> featSDM(expandedQuery, tops, indexSearcher, gramAnalyzer, alpha, gramType) }
 
+    // Collapse all of the SDM models (list of lists) into a single list of document scores based on average
     return expandedQueryResults
         .reduce { acc, list -> acc.zip(list).map { (l1, l2) -> l1 + l2 } }
         .map { finalResult -> finalResult / expandedQueryResults.size }
@@ -190,6 +200,7 @@ fun featTFIFDAverage(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
     val results: List<List<Double>> = tifd.getQueryScore(termQueries, tops)
 
     return results
+            // fold TIFD stats for each query token into a single list of scores
         .reduce { acc, list ->
                     acc.zip(list).map { (l1, l2) -> l1 + l2 } }
         .map { reducedScore -> reducedScore / results.size }
@@ -256,12 +267,16 @@ fun featAverageAbstractScoreByQueryRelevance(query: String, tops: TopDocs, index
     val relevantEntities = abstractAnalyzer.getRelevantEntities(cleanQuery)
 
     return tops.scoreDocs.map { scoreDoc ->
+        // Extract corresponding Lucene document from scoreDoc
         val doc = indexSearcher.doc(scoreDoc.doc)
         val entities = doc.getValues("spotlight")
+
+        // Find relevant entities in document (those that were in the top 20 hits from the abstract index)
         val rels = entities.mapNotNull { entity ->
             abstractAnalyzer.getMostSimilarRelevantEntity(entity.toLowerCase(), relevantEntities)
         }
 
+        // Express document's new score as the average of these relevant entity scores
         rels.map { (sim, relEntity) -> sim * relEntity.score }
             .average()
             .defaultWhenNotFinite(0.0)
