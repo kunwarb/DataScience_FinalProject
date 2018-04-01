@@ -94,6 +94,9 @@ run_ranklib_query_method sdm_expansion
 # Jordan's NAT SDM Method
 run_ranklib_query_method nat_sdm
 
+# Jordan's Super Awesome Teamwork Method
+run_ranklib_query_method super_awesome_teamwork
+
 
 
 
