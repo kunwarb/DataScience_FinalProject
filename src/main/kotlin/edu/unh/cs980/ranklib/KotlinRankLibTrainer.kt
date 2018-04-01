@@ -653,6 +653,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
      * @see trainSectionTFIDF
      */
     private fun trainSectionTFIDFQuery() {
+        // Initialize a new index searcher (Bindu's method sets its similarity to something different)
         val tifdSearcher = getIndexSearcher(indexPath)
         val tifd = TfIdfSimilarity(100, tifdSearcher)
         val bindTIFD = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->

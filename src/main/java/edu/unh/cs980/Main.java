@@ -109,24 +109,6 @@ public class Main {
 		indexParser.addArgument("--out").setDefault("index")
 				.help("Directory name to create for Lucene index (default: index)");
 
-		// You can add more subcommands below by calling subparsers.addparser
-		// and following the examples above
-		Subparser queryHeadingParser = subparsers.addParser("query_heading")
-				.setDefault("func", new Exec(Main::runQueryHeadingWeights)).help("Queries Lucene database.");
-		queryHeadingParser.addArgument("query_type")
-				.choices("page", "section", "just_the_page", "just_the_lowest_heading", "interior_heading",
-						"word_embedding")
-				.help("\tpage: Page of paragraph corpus\n" + "\tsection: Section of paragraph corpus\n"
-						+ "\tjust_the_page: Page name query.\n" + "\tlowest_heading: Lowest heading of query\n"
-						+ "\tinterior_heading: Interior heading of query.\n"
-						+ "\tword_embedding: Word embedding on the query headers.");
-		queryHeadingParser.addArgument("index").help("Location of Lucene index directory.");
-		queryHeadingParser.addArgument("query_file").help("Location of the query file (.cbor)");
-		queryHeadingParser.addArgument("--out") // -- means it's not positional
-				.setDefault("query_results.run") // If no --out is supplied,
-													// defaults to
-													// query_results.txt
-				.help("The name of the trec_eval compatible run file to write. (default: query_results.run)");
 
 		// Argument parser for Paragraph Similarity (Added By Bindu)
 
@@ -143,7 +125,6 @@ public class Main {
 				.help("The name of the trec_eval compatible run file to write. (default: paragraph_similarity.run)");
 
 		// Argument parser for TFIDF Similarity (Added By Bindu)
-
 		Subparser tfidfSimilarityParser = subparsers.addParser("tfidf_similarity")
 				.setDefault("func", new Exec(Main::runTfidfSimilarity)).help("Queries Lucene database.");
 
@@ -193,18 +174,6 @@ public class Main {
 				// query_results.txt
 				.help("The name of the trec_eval compatible run file to write. (default: query_results.run)");
 
-		Subparser bigramParser = subparsers.addParser("frequent_bigram")
-				.setDefault("func", new Exec(Main::runFreqBigram)).help("Queries Lucene database.");
-		bigramParser.addArgument("query_type").choices("page", "section")
-				.help("\tpage: Page of paragraph corpus\n" + "\tsection: Section of paragraph corpus\n");
-		bigramParser.addArgument("index").help("Location of Lucene index directory.");
-		bigramParser.addArgument("query_file").help("Location of the query file (.cbor)");
-		bigramParser.addArgument("--out") // -- means it's not
-											// positional
-				.setDefault("query_results.run") // If no --out is supplied,
-				// defaults to
-				// query_results.txt
-				.help("The name of the trec_eval compatible run file to write. (default: query_results.run)");
 
 		// Argument parser for Query RM Query Expansion
 		Subparser query_RM_QE_Parser = subparsers.addParser("query_rm_qe")
