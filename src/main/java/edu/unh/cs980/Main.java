@@ -400,7 +400,7 @@ public class Main {
 			ArrayList<Data.Page> pagelist = getAllPageFromPath(indexLocation, queryLocation, rankingOutputLocation);
 
 			ParagraphSimilarity ps = new ParagraphSimilarity(pagelist, 100, indexLocation);
-			ps.writeParagraphScore(rankingOutputLocation + "\\ParagraphSimilarity.run");
+			ps.writeParagraphScore(rankingOutputLocation);
 
 		} catch (Exception e) {
 			logger.error(e.getMessage());
@@ -471,7 +471,7 @@ public class Main {
 			ArrayList<Data.Page> pagelist = getAllPageFromPath(indexLocation, queryLocation, rankingOutputLocation);
 
 			TfIdfSimilarity tfidf = new TfIdfSimilarity(pagelist, 100, indexLocation);
-			tfidf.writeTFIDFScoresTo(rankingOutputLocation + "\\Similarity_TFIDF_lnc.ltc.run");
+			tfidf.writeTFIDFScoresTo(rankingOutputLocation);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 
