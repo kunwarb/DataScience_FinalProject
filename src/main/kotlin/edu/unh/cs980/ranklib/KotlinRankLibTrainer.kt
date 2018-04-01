@@ -264,6 +264,14 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
         }, normType = NormType.ZSCORE, weight = weights[1])
     }
 
+    /**
+     * Func: querySuperAwesomeTeamworkQuery
+     * Desc:
+     */
+    private fun querySuperAwesomeTeamworkQuery() {
+        addTeamworkFeatures(listOf(1.0, 1.0, 1.0))
+    }
+
     // Runs associated query method
     fun runRanklibQuery(method: String, out: String) {
         Logger.getRootLogger().level = Level.ERROR
@@ -279,6 +287,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
             QueryEnum.TFIDF_SECTION             -> queryTFIDFSection()
             QueryEnum.STRING_SIMILARITY_SECTION -> queryStringSimilaritySection()
             COMBINED                            -> queryCombined()
+            SUPER_AWESOME_TEAMWORK              -> querySuperAwesomeTeamworkQuery()
             null                                -> {println("Unknown method!"); return}
         }
 
@@ -682,6 +691,46 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
     }
 
 
+    /**
+     * Func: trainSuperAwesomeTeamworkQuery
+     * Desc:
+     */
+    private fun trainSuperAwesomeTeamworkQuery() {
+        addTeamworkFeatures(listOf(1.0, 1.0, 1.0))
+    }
+
+    private fun addTeamworkFeatures(weights: List<Double>) {
+        System.err.close() // Stanford NLP needs to shut the hell up
+        val gramSearcher = getIndexSearcher(gramPath)
+        val hGram = KotlinGramAnalyzer(gramSearcher)
+        val abstractIndexer = getIndexSearcher(abstractPath)
+        val abstractAnalyzer = KotlinAbstractAnalyzer(abstractIndexer)
+
+        // Adding Entity Query Expansion feature (sdm_expansion) derived from Kevin's methods
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSDMWithEntityQueryExpansion(query, tops, indexSearcher, hGram, abstractAnalyzer.indexSearcher, 4.0)
+        }, normType = NormType.ZSCORE, weight = weights[0])
+
+
+        // Adding Nat SDM feature (nat_sdm) derived from Kevin's methods
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featNatSDM(query, tops, indexSearcher, hGram, 4.0)
+        }, normType = NormType.ZSCORE, weight = weights[1])
+
+        // Adding TIFD feature derived from Bindu's feature
+        val tifdSearcher = getIndexSearcher(indexPath)
+        val tifd = TfIdfSimilarity(100, tifdSearcher)
+        val bindTIFD = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
+            featTFIFDAverage(query, tops, indexSearcher, tifd)
+        }
+
+
+        val tifdWeights = listOf(0.0000484, 0.000018545, 0.00244388, 0.996917, 0.000001823081, 0.000001823081)
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSplitSim(query, tops, indexSearcher, bindTIFD, secWeights = tifdWeights)},
+                normType = NormType.ZSCORE, weight = weights[1])
+    }
+
 
     /**
      * Function: train
@@ -721,6 +770,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
             STRING_SIMILARITY_QUERY -> trainStringSimilaritySectionQuery()              // string_sim_sec + bm25
 
             COMBINED_QUERY -> trainCombinedQuery()                                      // combines various methods
+            SUPER_AWESOME_TEAMWORK_QUERY -> trainSuperAwesomeTeamworkQuery()
 
             null -> {println("Unknown method!"); return}
         }

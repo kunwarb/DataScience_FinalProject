@@ -12,6 +12,7 @@ enum class QueryEnum(val value: String) : CharSequence by value {
     TFIDF_SECTION("tfidf_section"),
     STRING_SIMILARITY_SECTION("string_similarity_section"),
     COMBINED("combined"),
+    SUPER_AWESOME_TEAMWORK("super_awesome_teamwork"),
     ;
 
     override fun toString() = value
