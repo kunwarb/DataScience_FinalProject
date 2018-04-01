@@ -30,6 +30,7 @@ enum class TrainEnum(val value: String) : CharSequence by value {
     STRING_SIMILARITY_QUERY("string_similarity_query"),
 
     COMBINED_QUERY("combined_query"),
+    SUPER_AWESOME_TEAMWORK_QUERY("super_awesome_teamwork_query"),
     ;
 
     override fun toString() = value
