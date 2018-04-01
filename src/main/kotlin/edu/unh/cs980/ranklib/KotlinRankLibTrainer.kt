@@ -266,7 +266,9 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
 
     /**
      * Func: querySuperAwesomeTeamworkQuery
-     * Desc:
+     * Desc: This lovingly crafted feature contains the combined prowess of each teammate. It's sure to be a winner!...
+     *       ... this is a RankLib trained combination of nat_sdm, tfidf_section, and sdm_expansion (no bm25 included!)
+     * @see trainSuperAwesomeTeamworkQuery
      */
     private fun querySuperAwesomeTeamworkQuery() {
         addTeamworkFeatures(listOf(0.35881632866737, 0.5789712, 0.062212395))
@@ -693,12 +695,19 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
 
     /**
      * Func: trainSuperAwesomeTeamworkQuery
-     * Desc:
+     * Desc: We gave our very best features to our fleet of worker gnomes who worked non-stop to
+     *       combine them in the most awesome ways possible ... also RankLib might have helped.
      */
     private fun trainSuperAwesomeTeamworkQuery() {
         addTeamworkFeatures(listOf(1.0, 1.0, 1.0))
     }
 
+
+    /**
+     * Func: addTeamworkFeatures
+     * Desc: Adds sdm_nat, sdm_expansion, and tfidf_section methods as features. Used for training with RankLib, and
+     *       also with querying.
+     */
     private fun addTeamworkFeatures(weights: List<Double>) {
         System.err.close() // Stanford NLP needs to shut the hell up
         val gramSearcher = getIndexSearcher(gramPath)
