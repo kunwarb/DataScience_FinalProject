@@ -176,7 +176,7 @@ public class Main {
 				
 		
 				Subparser paragraphwithwordnet;
-					paragraphwithwordnet = subparsers.addParser("query_heading")
+					paragraphwithwordnet = subparsers.addParser("paragraph_wordnet")
 							.setDefault("func", new Exec(Main::runParagraphWordnet)).help("Paragraph Wordnet Similarity");
 				paragraphwithwordnet.addArgument("index").help("Location of Lucene index directory.");
 				paragraphwithwordnet.addArgument("query_file").help("Location of the query file (.cbor)");
