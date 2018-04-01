@@ -96,7 +96,7 @@ public class ParagraphWithWordnet {
 	 * For search
 	 *****************************************************************/
 
-	void writeRankings(String queryLocation, String rankingsOutput) throws IOException {
+	public void writeRankings(String queryLocation, String rankingsOutput) throws IOException {
 		final BufferedWriter out = new BufferedWriter(new FileWriter(rankingsOutput));
 		final FileInputStream inputStream = new FileInputStream(new File(queryLocation));
 
@@ -120,6 +120,16 @@ public class ParagraphWithWordnet {
 		}
 
 	}
+	
+	
+	  //This function is being used for creating 
+  	public static ParagraphWithWordnet getQueryBuilder( String indexLocation, String queryLocation,
+  			String rankingOutputLocation) throws IOException {
+  	
+
+  		return new ParagraphWithWordnet( new StandardAnalyzer(), new BM25Similarity(), indexLocation);
+  	}
+    
 
 	private static String buildSectionQueryStr(Data.Page page, List<Data.Section> sectionPath) {
 
