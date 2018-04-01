@@ -269,7 +269,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
      * Desc:
      */
     private fun querySuperAwesomeTeamworkQuery() {
-        addTeamworkFeatures(listOf(1.0, 1.0, 1.0))
+        addTeamworkFeatures(listOf(0.35881632866737, 0.5789712, 0.062212395))
     }
 
     // Runs associated query method
