@@ -51,7 +51,8 @@ public class ParagraphSimilarity {
 		numDocs = n;
 		pageList = pl;
 
-		parser = new QueryParser("parabody", new StandardAnalyzer());
+		parser = new QueryParser("text", new StandardAnalyzer());
+//		parser = new QueryParser("parabody", new StandardAnalyzer());
 
 		searcher = new IndexSearcher(DirectoryReader.open(FSDirectory.open((new File(INDEX_DIRECTORY).toPath()))));
 

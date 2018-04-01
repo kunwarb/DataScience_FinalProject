@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.search.IndexSearcher;
@@ -678,6 +679,7 @@ public class Main {
 	// Main class for project
 	public static void main(String[] args) {
 		System.setProperty("file.encoding", "UTF-8");
+		Logger.getRootLogger().setLevel(Level.ERROR);
 		ArgumentParser parser = createArgParser();
 
 		try {
