@@ -281,7 +281,7 @@ program.jar paragraphwithwordnet index cborfile outputlocationfile
 In this method I am trying to rank the paragraph based on entity present in paragraph only. Then counting the total number of entities present in the paragraph and scoring accordingly. The difference between first one and this is that It does not check the entity content.
 
 ```bash
-program.jar paragraphwithwordnet index cborfile outputlocationfile
+program.jar paragraphwithentity index cborfile outputlocationfile
 ```
 
 
