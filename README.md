@@ -255,3 +255,21 @@ The likelihood of an entity given a query is approximated using the allButBenchm
 
 
 #### combined
+
+
+### Query Ranking by Entity linking using DBPedia Spotlight:
+In this method I am trying to rank the Query based on annotated Entity of paragraph content and then paragraph’s score is being calculated as the average score of the annotated entities using spotlight where the score is derived from the query against the abstract index. Here we can use both type of Query that page query and section path query.
+
+### 	Paragraph text with TF-IDF similarity: 
+Paragraph text with TF-IDF similarity: In order to rank the Query based on Paragraph score, using TF_IDF lnc.ltc variant. adding log is to dampen the importance of term that has a high frequency. I add 1 to the log(tf) because when tf is equal to 1, the log 1 is zero. by adding one, I can distinguish between tf=0 and tf=1 also for normalization using Cosine normalization and Ranked the query based on paragraph score.
+
+### 	Paragraph text with Wordnet: To rank the paragraph text using Wordnet API.
+Which gives similarity score. For Wordnet implementation I am using extjwnl Extended Java WordNet Library is a Java API for creating, reading and updating dictionaries in WordNet format. 
+
+### Paragraph with entity: 
+In this method I am trying to rank the paragraph based on entity present in paragraph only. Then counting the total number of entities present in the paragraph and scoring accordingly. The difference between first one and this is that It does not check the entity content.
+
+
+
+
+
