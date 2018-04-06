@@ -121,8 +121,15 @@
 			<artifactId>java-string-similarity</artifactId>
 			<version>RELEASE</version>
 		</dependency>
-	</dependencies>
 
+		<!--- Math Stuff -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-math3</artifactId>
+			<version>3.0</version>
+		</dependency>
+
+	</dependencies>
 
 	<build>
 		<plugins>

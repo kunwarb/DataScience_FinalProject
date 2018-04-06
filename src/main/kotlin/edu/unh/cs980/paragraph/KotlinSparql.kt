@@ -5,18 +5,6 @@ import edu.unh.cs.treccar_v2.read_data.DeserializeData
 import org.jsoup.Jsoup
 import khttp.post
 import java.io.File
-import org.deeplearning4j.models.paragraphvectors.ParagraphVectors
-import org.deeplearning4j.models.sequencevectors.serialization.VocabWordFactory
-import org.deeplearning4j.models.word2vec.VocabWord
-import org.deeplearning4j.text.documentiterator.FileLabelAwareIterator
-import org.deeplearning4j.text.documentiterator.LabelledDocument
-import org.deeplearning4j.text.documentiterator.LabelAwareIterator
-
-import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor
-import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory
-import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory
-import org.nd4j.linalg.io.ClassPathResource
-import org.slf4j.LoggerFactory
 import kotlin.system.exitProcess
 
 val topics = listOf(
@@ -110,62 +98,10 @@ object KotlinSparql {
         File(outDir).apply { if (!exists()) mkdirs() }
 
         results.forEachIndexed { index, doc ->
-            File("${outDir}doc_$index.txt").writeText(doc.take(doc.length - 3))
+            File("${outDir}doc_$index.txt").writeText(doc.take(doc.length - 3).replace("\"", ""))
         }
     }
 
-    fun doTraining() {
-//        val resource: ClassPathResource = ClassPathResource("paragraphs/")
-        val direc = File("paragraphs/")
-
-        val iterator = FileLabelAwareIterator
-            .Builder()
-            .addSourceFolder(direc)
-            .build()
-
-        val tokenFactory = DefaultTokenizerFactory()
-            .apply { tokenPreProcessor = CommonPreprocessor() }
-
-        val pVectors = ParagraphVectors.Builder()
-            .learningRate(0.025)
-            .minLearningRate(0.001)
-            .batchSize(100)
-            .epochs(5)
-            .iterate(iterator)
-            .trainWordVectors(true)
-            .tokenizerFactory(tokenFactory)
-            .build()
-
-
-        pVectors.fit()
-//        println(pVectors.inferVector("This is a test to see if you can infer."))
-        val vWords = arrayListOf(
-                VocabWord(0.5, "hi"),
-                VocabWord(2.0, "Cooking")
-        )
-        val vWords2 = arrayListOf(
-                VocabWord(0.5, "blah"),
-                VocabWord(2.0, "how")
-        )
-        println(pVectors.similarity("Cooking", "wine"))
-        println(pVectors.similarity("chef", "Cooking"))
-//        println(pVectors.similarity("Chef", "wine"))
-//        println(pVectors.predict(vWords))
-//        println(pVectors.similarityToLabel(vWords, "Cooking"))
-//        println(pVectors.similarityToLabel(vWords2, "Cooking"))
-        println("Got here")
-        exitProcess(0)
-//        println(pVectors.getWordVectorsMean(arrayListOf("Cooking")))
-//        doTraining2(pVectors!!)
-    }
-
-    private fun doTraining2(pVectors: ParagraphVectors) {
-        val tests = File("paragraphs/Cooking")
-        val iterator = FileLabelAwareIterator.Builder()
-            .addSourceFolder(tests)
-            .build()
-
-    }
 
 }
 
@@ -186,7 +122,9 @@ object KotlinSparql {
 
 
 fun main(args: Array<String>) {
-    val topics = listOf("Cooking", "Mathematics", "Society", "Games", "Cuisine", "Science", "Statistics")
+//    val topics = listOf("Cooking", "Mathematics", "Society", "Games", "Cuisine", "Science", "Statistics", "Engineering", "Statistics" )
+    val topics = listOf("Computers", "Cooking", "Cuisine", "Engineering", "Games", "Mathematics", "Society", "Statistics", "Technology", "Science")
+//    val topics = listOf("Technology", "Engineering")
     topics.forEach { topic ->
         val results = KotlinSparql.doSearch(topic)
         KotlinSparql.writeResults(topic, results)
