@@ -74,7 +74,9 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                 val method = dispatcher.methodContainer!! as MethodContainer<MasterExperiment>
                 method.getMethod(methodType, methodName)?.invoke(instance)
                 if (methodType == "query") {
-                    instance.formatter.writeQueriesToFile(instance.out)
+                    instance.formatter
+                        .apply { rerankQueries() }
+                        .writeQueriesToFile(instance.out)
                 } else {
                     instance.formatter.writeToRankLibFile("ranklib_results.txt")
                 }
