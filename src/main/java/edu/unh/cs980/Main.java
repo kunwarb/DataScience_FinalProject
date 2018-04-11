@@ -8,7 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-import edu.unh.cs980.misc.StupidTest;
+import edu.unh.cs980.experiment.MasterExperiment;
+import edu.unh.cs980.experiment.StupidTest;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -291,8 +292,9 @@ public class Main {
 
 
 		// Test Parser
-		Subparser myTestParser = subparsers.addParser("test_parser");
-		StupidTest.Companion.register(myTestParser);
+//		Subparser myTestParser = subparsers.addParser("test_parser");
+//		StupidTest.Companion.register("train", myTestParser);
+		MasterExperiment.Companion.addExperiments(subparsers);
 
 		return parser;
 	}
