@@ -129,6 +129,12 @@
 			<version>3.0</version>
 		</dependency>
 
+		<dependency>
+			<groupId>org.wikiclean</groupId>
+			<artifactId>wikiclean</artifactId>
+			<version>1.0</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>

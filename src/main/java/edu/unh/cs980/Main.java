@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import edu.unh.cs980.misc.StupidTest;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -52,7 +53,7 @@ public class Main {
 
 	// Used as a wrapper around a static method: will call method and pass
 	// argument parser's parameters to it
-	private static class Exec {
+	public static class Exec {
 		private Consumer<Namespace> func;
 
 		Exec(Consumer<Namespace> funcArg) {
@@ -63,6 +64,11 @@ public class Main {
 			func.accept(params);
 		}
 	}
+
+	public static Exec buildExec(Consumer<Namespace> consumer) {
+		return new Exec(consumer);
+	}
+
 
 	/****
 	 * @Function:getAllPageFromPath
@@ -282,6 +288,11 @@ public class Main {
 				.setDefault("func", new Exec(Main::runHyperlinkIndexer))
 				.help("Builds an entity likelihood model given entity mentions in page corpus.");
 		hyperlinkIndexerParser.addArgument("corpus").help("Location of all alllButBenchmark corpus.");
+
+
+		// Test Parser
+		Subparser myTestParser = subparsers.addParser("test_parser");
+		StupidTest.Companion.register(myTestParser);
 
 		return parser;
 	}

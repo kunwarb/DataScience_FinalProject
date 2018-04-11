@@ -81,6 +81,26 @@ object KotlinSparql {
         return sparTemp
     }
 
+    fun linkTemplate(entity: String): String {
+        val sparTemp = """
+            PREFIX vrank:<http://purl.org/voc/vrank#>
+            SELECT distinct ?link
+            FROM <http://people.aifb.kit.edu/ath/#DBpedia_PageRank>
+            FROM <http://dbpedia.org>
+            WHERE {
+                 ?related skos:broader dbc:$entity .
+                 {?entity  dct:subject/dbc:subClassOf* ?related } UNION {?entity dct:subject dbc:$entity } .
+                 ?entity dbo:abstract ?abstract .
+                 ?entity prov:wasDerivedFrom ?link .
+                 filter langMatches(lang(?abstract),"en") .
+                 filter (strlen(str(?abstract)) > 500) .
+                 ?entity vrank:hasRank/vrank:rankValue ?v .
+                  }
+            ORDER BY DESC(?v) LIMIT 10
+            """
+        return sparTemp
+    }
+
 
 
 
@@ -93,6 +113,15 @@ object KotlinSparql {
         return elements.map { element -> element.text() }
     }
 
+    fun doSearchPage(entity: String): List<String> {
+        val doc = Jsoup.connect("http://dbpedia.org/sparql")
+            .data("query", linkTemplate(entity))
+            .post()
+
+        val elements = doc.getElementsByTag("td")
+        return elements.map { element -> element.text() }
+    }
+
     fun writeResults(category: String, results: List<String>) {
         val outDir = "paragraphs/$category/"
         File(outDir).apply { if (!exists()) mkdirs() }
@@ -102,6 +131,22 @@ object KotlinSparql {
         }
     }
 
+    fun writePageResults(category: String, results: List<String>) {
+        val outDir = "pages/$category/"
+        File(outDir).apply { if (!exists()) mkdirs() }
+
+        results.forEachIndexed { index, doc ->
+            File("${outDir}doc_$index.txt").writeText(doc.take(doc.length - 3).replace("\"", ""))
+        }
+    }
+
+    fun getWikiText(url: String): String {
+        val doc = Jsoup.connect(url).get()
+        val paragraphs = doc.select(".mw-content-ltr p")
+//        val contentDiv = doc.select("div[id=content]").first()
+//        return contentDiv.text()
+        return paragraphs.map { p -> p.text() }.joinToString(" ")
+    }
 
 }
 
@@ -123,12 +168,19 @@ object KotlinSparql {
 
 fun main(args: Array<String>) {
 //    val topics = listOf("Cooking", "Mathematics", "Society", "Games", "Cuisine", "Science", "Statistics", "Engineering", "Statistics" )
-    val topics = listOf("Computers", "Cooking", "Cuisine", "Engineering", "Games", "Mathematics", "Society", "Statistics", "Technology", "Science")
-//    val topics = listOf("Technology", "Engineering")
+//    val topics = listOf("Computers", "Cooking", "Cuisine", "Engineering", "Games", "Mathematics", "Society", "Statistics", "Technology", "Science")
+//    val topics = listOf("Politics", "Medicine", "Biology", "Fashion", "People", "Environments", "Tools")
+
+//    val topics = listOf("Warfare", "Organizations", "Travel", "Events")
+    val topics = listOf("Environments", "Fashion")
     topics.forEach { topic ->
-        val results = KotlinSparql.doSearch(topic)
-        KotlinSparql.writeResults(topic, results)
+//        val results = KotlinSparql.doSearchPage(topic).onEach { println(it) }
+        val results = KotlinSparql.doSearchPage(topic).map { link -> KotlinSparql.getWikiText(link) }
+        KotlinSparql.writePageResults(topic, results)
     }
+
+//    println(KotlinSparql.getWikiText("https://en.wikipedia.org/wiki/Mathematics"))
+
 //    KotlinSparql.doTraining()
 //    tryPiece("/home/hcgs/Desktop/projects/data_science/DataScience_FinalProject/piece.cbor")
 
