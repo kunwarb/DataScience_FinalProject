@@ -3,6 +3,7 @@ package edu.unh.cs980.experiment
 import edu.unh.cs980.Main
 import edu.unh.cs980.context.HyperlinkIndexer
 import edu.unh.cs980.features.featSDM
+import edu.unh.cs980.features.featSplitSim
 import edu.unh.cs980.getIndexSearcher
 import edu.unh.cs980.identity
 import edu.unh.cs980.language.KotlinAbstractAnalyzer
@@ -14,6 +15,8 @@ import edu.unh.cs980.ranklib.NormType
 import net.sourceforge.argparse4j.inf.Namespace
 import net.sourceforge.argparse4j.inf.Subparser
 import net.sourceforge.argparse4j.inf.Subparsers
+import org.apache.lucene.search.IndexSearcher
+import org.apache.lucene.search.TopDocs
 
 class MasterExperiment(val resources: HashMap<String, Any>) {
     val indexPath: String by resources
@@ -29,11 +32,17 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 
 
     fun wee() {
-        val weights = listOf(0.14059688887081667, 0.8594031111291832)
-        formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
-        formatter.addFeature({ query, tops, indexSearcher ->
+        val weights = listOf(0.08047025663846726, 0.030239885393043505, 0.15642380129849698, 0.45881012321282,
+                0.1370279667285861, 0.1370279667285861
+        )
+
+        val bindSDM = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
             featSDM(query, tops, indexSearcher, gram, 4.0)
-        }, normType = NormType.ZSCORE, weight = weights[1])
+        }
+
+        formatter.addFeature({ query, tops, indexSearcher ->
+            featSplitSim(query, tops, indexSearcher, bindSDM, weights)
+        }, normType = NormType.ZSCORE)
     }
 
 
