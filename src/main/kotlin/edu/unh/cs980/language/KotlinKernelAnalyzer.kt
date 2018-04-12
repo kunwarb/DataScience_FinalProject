@@ -3,6 +3,7 @@ package edu.unh.cs980.language
 import edu.unh.cs980.defaultWhenNotFinite
 import edu.unh.cs980.misc.AnalyzerFunctions
 import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH
+import edu.unh.cs980.misc.ConvexStepper
 import edu.unh.cs980.smooth
 import org.apache.commons.math3.distribution.NormalDistribution
 import java.io.File
@@ -254,6 +255,29 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double, val partitioned: B
         }
     }
 
+    fun classifyByDomainSimplex(text: String, domain: List<KernelDist>, smooth: Boolean = false) {
+        val textKernel = KernelDist(mean, std)
+        if (partitioned) textKernel.analyzePartitionedDocument(text) else textKernel.analyzeDocument(text)
+        textKernel.normalizeKernels(mydf,false )
+        val base = scoreTopicDomain(textKernel, domain)
+        val filterDomained = domain.zip(base).filter { it.second > 0.0 }.map { it.first }
+        val filteredBase = scoreTopicDomain(textKernel, filterDomained, smooth)
+
+        val topicDistributions = topics.map { topic -> scoreTopicDomain(topic.value, filterDomained, smooth) }
+        val stepper = ConvexStepper(filteredBase, topicDistributions)
+        stepper.searchSimplex()
+        stepper.searchSimplex()
+        stepper.searchSimplex()
+        val weights = stepper.searchSimplex()
+        val kld = stepper.kld()
+
+        weights.zip(topics.keys).forEach { (weight, topic) ->
+            println("$topic : $weight")
+        }
+
+        println("KLD: $kld")
+    }
+
     fun classifyByDomain(text: String, domain: List<KernelDist>, smooth: Boolean = false) {
         val textKernel = KernelDist(mean, std)
         if (partitioned) textKernel.analyzePartitionedDocument(text) else textKernel.analyzeDocument(text)
@@ -277,11 +301,53 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double, val partitioned: B
 //                    val vnew = if (v1 <= 0.0) 99999.0 else v1
 //                    ((vnew) * log2(vnew / v2))
 //                }
-            topic.key to kl
+            Triple(topic.key, kl, score)
         }
 
         results.sortedBy { it.second }
-            .forEach { result -> println("${result.first} : ${result.second}") }
+            .forEach { result -> println("${result.first} : " + "%.10f".format(result.second)) }
+
+        val (d1, d2, d3) = results.sortedBy { it.second }.take(3)
+
+        (0 .. 10).flatMap { f1 ->
+            (0 .. 10).flatMap { f2 ->
+                (0 .. 10).map { f3 ->
+                    val total = (f1 + f2 + f3).toDouble()
+                    val r1 = f1.toDouble() / total
+                    val r2 = f2.toDouble() / total
+                    val r3 = f3.toDouble() / total
+
+                    val mixed = d1.third.zip(d2.third.zip(d3.third)).map { (v1, pair) ->
+                        val (v2, v3) = pair
+                        v1 * r1 + v2 * r2 + v3 * r3
+                    }
+
+                    val kl = filteredBase.zip(mixed)
+                        .sumByDouble { (v1, v2) ->
+                            (v1) * log2(v1 / v2)
+                        }
+                    Pair(Triple(r1, r2, r3), kl)
+
+                }
+            }
+        }.minBy { it.second }?.let { (trip, kl) ->
+            val (r1, r2, r3) = trip
+            println("($r1)${d1.first}, ($r2)${d2.first}, ($r3)${d3.first}: " + "%.10f".format(kl))
+        }
+
+//        (0 .. 40).map { base ->
+//            val r1 = base.toDouble() * 0.025
+//            val r2 = 1.0 - r1
+//
+//            val mixed = d1.third.zip(d2.third).map { (v1, v2) -> v1 * r1 + v2 * r2 }
+//            val kl = filteredBase.zip(mixed)
+//                .sumByDouble { (v1, v2) ->
+//                    (v1) * log2(v1 / v2)
+//                }
+//            Triple(r1, r2, kl)
+//        }.minBy { it.third }?.let { (r1, r2, kl) ->
+//            println("($r1)${d1.first}, ($r2)${d2.first}: " + "%.10f".format(kl))
+//        }
     }
 }
 
