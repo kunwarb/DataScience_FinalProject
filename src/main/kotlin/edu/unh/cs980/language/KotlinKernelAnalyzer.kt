@@ -3,6 +3,7 @@ package edu.unh.cs980.language
 import edu.unh.cs980.defaultWhenNotFinite
 import edu.unh.cs980.misc.AnalyzerFunctions
 import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH
+import edu.unh.cs980.smooth
 import org.apache.commons.math3.distribution.NormalDistribution
 import java.io.File
 import java.lang.Double.max
@@ -97,19 +98,10 @@ class KernelDist(val mean: Double, val std: Double) {
     }
 
     fun normalizedByRestriction(restriction: Set<String>) {
-        val total = restriction.sumByDouble { word -> 0.5 * kernels[word]!!.frequency + 0.5 * kernels[word]!!.condFrequency }
-        restriction.forEach { word -> kernels[word]!!.normFreq = (0.5 * kernels[word]!!.frequency + 0.5 * kernels[word]!!.condFrequency) / total }
-
-//        val condTotal = kernels.filter { it.key in restriction }
-//            .values
-//            .flatMap { kernel -> kernel.distribution.map { (k,v) -> k to v * kernel.normFreq } }
-//            .groupingBy { (word, _) -> word }
-//            .fold(0.0) { acc, (_, conditionalFreq) -> acc + conditionalFreq }
-//
-//
-//        condTotal.forEach { (k,v) -> kernels[k]!!.condFrequency = v }
-//        val ctotal = kernels.values.sumByDouble { kernel -> kernel.condFrequency }
-//        kernels.values.forEach { kernel -> kernel.condFrequency = kernel.condFrequency / ctotal }
+//        val total = restriction.sumByDouble { word -> 0.5 * kernels[word]!!.frequency + 0.5 * kernels[word]!!.condFrequency }
+//        restriction.forEach { word -> kernels[word]!!.normFreq = (0.5 * kernels[word]!!.frequency + 0.5 * kernels[word]!!.condFrequency) / total }
+        val total = restriction.sumByDouble { word -> kernels[word]!!.frequency }
+        restriction.forEach { word -> kernels[word]!!.normFreq = (kernels[word]!!.frequency / total) }
 
     }
 
@@ -117,15 +109,20 @@ class KernelDist(val mean: Double, val std: Double) {
     fun kld(other: KernelDist): Double {
         val restriction = kernels.keys.toSet()
             .intersect(other.kernels.keys.toSet())
-        normalizedByRestriction(restriction)
-        other.normalizedByRestriction(restriction)
+//        normalizedByRestriction(restriction)
+//        other.normalizedByRestriction(restriction)
+        val restrictionTotal = restriction.sumByDouble { word -> kernels[word]!!.frequency }
+        val kernelTotal = kernels.values.sumByDouble { kernel -> kernel.frequency }
+        val coverage = (kernelTotal / restrictionTotal).defaultWhenNotFinite(1.0)
 
-        return 1.0 * restriction.sumByDouble { word ->
+        return coverage * restriction.sumByDouble { word ->
             val k1 = kernels[word]!!
             val k2 = other.kernels[word]!!
 //            k1.kld(k2)
 //            k1.kld(k2) * log10(k1.frequency / k2.frequency)
-            (k1.normFreq - k2.normFreq) * log2((k1.normFreq / k2.normFreq))
+//            (k1.normFreq - k2.normFreq) * log2((k1.normFreq / k2.normFreq))
+//            (k1.frequency - k2.frequency) * log2((k1.frequency / k2.frequency))
+            (k1.frequency - k2.frequency) * log2((k1.frequency / k2.frequency))
 //            (k1.frequency) * log2((k1.frequency / k2.frequency))
 //            (k1.frequency) * log2((k1.frequency / k2.frequency))
 //            (k1.frequency) * log2((k1.frequency / k2.frequency))
@@ -221,15 +218,15 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double) {
                     }
             }
 
-    fun scoreTopicDomain(topic: KernelDist, domain: List<KernelDist>): List<Double> {
+    fun scoreTopicDomain(topic: KernelDist, domain: List<KernelDist>, smooth: Boolean = false): List<Double> {
         val scores = domain.map { k -> topic.kld(k) }
         val total = scores.sum()
         return scores.map { score -> score / total }
+            .let { results -> if (smooth) results.smooth() else results  }
     }
 
 
-    fun compareDistances() {
-        val domain = getTopicDomain()
+    fun compareDistances(domain: List<KernelDist>) {
 
         val results = topics.map { topic -> topic.key to scoreTopicDomain(topic.value, domain) }
         results.forEach { firstTopic ->
@@ -237,7 +234,9 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double) {
                 .map { secondTopic ->
                     val kl = firstTopic.second.zip(secondTopic.second)
                         .sumByDouble { (v1, v2) ->
-                            (v1-v2) * log2(v1 / v2)
+//                            (v1-v2) * log2(v1 / v2)
+                            (v1) * log2(v1 / v2)
+//                            (v2) * log2(v2 / v1)
                         }
                     secondTopic.first to kl
                 }
@@ -247,23 +246,23 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double) {
         }
     }
 
-    fun classifyByDomain(text: String) {
+    fun classifyByDomain(text: String, domain: List<KernelDist>, smooth: Boolean = false) {
         val textKernel = KernelDist(mean, std)
         textKernel.analyzeDocument(text)
         textKernel.normalizeKernels(mydf,false )
-        val domain = getTopicDomain()
         val base = scoreTopicDomain(textKernel, domain)
         val filterDomained = domain.zip(base).filter { it.second > 0.0 }.map { it.first }
-        val filteredBase = scoreTopicDomain(textKernel, filterDomained)
+        val filteredBase = scoreTopicDomain(textKernel, filterDomained, smooth)
 
         val results = topics.map { topic ->
-            val score = scoreTopicDomain(topic.value, filterDomained)
+            val score = scoreTopicDomain(topic.value, filterDomained, smooth)
             val kl = filteredBase.zip(score)
                 .sumByDouble { (v1, v2) ->
 //                    val v1new = v1 * 0.5 + uniform  * 0.5
 //                    val v2new = v2 * 0.5 + uniform * 0.5
-                    val vnew = if (v1 <= 0.0) 1.0 else v1
-                    (vnew) * log2(vnew / v2)
+//                    val vnew = if (v1 <= 0.0) 1.0 else v1
+//                    (vnew) * log2(vnew / v2)
+                    (v1) * log2(v1 / v2)
                 }
 //            val kl2 = base.zip(score)
 //                .sumByDouble { (v1, v2) ->
@@ -293,7 +292,7 @@ fun main(args: Array<String>) {
 
 Because of historical social and familial roles, baking has traditionally been performed at home by women for domestic consumption and by men in bakeries and restaurants for local consumption. When production was industrialized, baking was automated by machines in large factories. The art of baking remains a fundamental skill and is important for nutrition, as baked goods, especially breads, are a common and important food, both from an economic and cultural point of view. A person who prepares baked goods as a profession is called a baker.
                 """
-    analyzer.classifyByDomain(example)
+//    analyzer.classifyByDomain(example)
 //    analyzer.classify(example)
 
 

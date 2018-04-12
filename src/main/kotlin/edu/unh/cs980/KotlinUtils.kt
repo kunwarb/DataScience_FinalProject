@@ -52,6 +52,20 @@ fun <A>Iterable<A>.forEachParallelRestricted(nThreads: Int = 10, f: suspend (A) 
     map { async(pool) { f(it) } }.forEach { it.await() }
 }
 
+fun <A, B, C>Iterable<A>.accumMap(keyFun: (A) -> C, f: (B?, A) -> B): List<Pair<C, B>> {
+    var init: B? = null
+    return map { element ->
+        val key = keyFun(element)
+        val result = f(init, element)
+        init = result
+        key to result
+    }
+}
+
+fun Iterable<Double>.smooth()  =
+    windowed(3, 1, true)
+        .map { window -> window.average() }
+
 
 
 //fun <A>Sequence<A>.forEachParallel(f: suspend (A) -> Unit): Unit = runBlocking {
