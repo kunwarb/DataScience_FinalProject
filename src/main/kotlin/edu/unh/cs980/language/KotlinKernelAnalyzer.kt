@@ -12,7 +12,6 @@ import java.lang.Math.log10
 import kotlin.math.log2
 
 
-//class WordCount(var freq: Double, var cofreq: Double)
 
 class WordKernel(val word: String) {
     val distribution = HashMap<String, Double>()
@@ -81,7 +80,9 @@ class KernelDist(val mean: Double, val std: Double) {
     }
 
     fun analyzeDocument(text: String) {
-        val terms = AnalyzerFunctions.createTokenList(text, analyzerType = ANALYZER_ENGLISH)
+        val filterPattern = "[\\d+]".toRegex()
+        val filteredText = filterPattern.replace(text, "")
+        val terms = AnalyzerFunctions.createTokenList(filteredText, analyzerType = ANALYZER_ENGLISH)
 
         terms
             .windowed(8, 1, true)
@@ -96,6 +97,12 @@ class KernelDist(val mean: Double, val std: Double) {
                     }
             }
     }
+
+    fun analyzePartitionedDocument(text: String) =
+            text.split(".")
+                .filter { it.length > 10 }
+                .forEach { splitText -> analyzeDocument(splitText) }
+
 
     fun normalizedByRestriction(restriction: Set<String>) {
 //        val total = restriction.sumByDouble { word -> 0.5 * kernels[word]!!.frequency + 0.5 * kernels[word]!!.condFrequency }
@@ -146,7 +153,7 @@ class KernelDist(val mean: Double, val std: Double) {
     }
 }
 
-class KotlinKernelAnalyzer(val mean: Double, val std: Double) {
+class KotlinKernelAnalyzer(val mean: Double, val std: Double, val partitioned: Boolean = false) {
     val topics = HashMap<String, KernelDist>()
     var mydf: Map<String, Double> = HashMap<String, Double>()
 
@@ -161,7 +168,8 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double) {
         val kernelDist = KernelDist(mean, std)
         topics[topic] = kernelDist
         directory.listFiles()
-            .forEach { file ->  kernelDist.analyzeDocument(file.readText())}
+            .forEach { file ->  if (partitioned) kernelDist.analyzePartitionedDocument(file.readText())
+                                else kernelDist.analyzeDocument(file.readText())}
     }
 
     //    fun normalizeTopics() = topics.values.forEach(KernelDist::normalizeKernels)
@@ -248,7 +256,7 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double) {
 
     fun classifyByDomain(text: String, domain: List<KernelDist>, smooth: Boolean = false) {
         val textKernel = KernelDist(mean, std)
-        textKernel.analyzeDocument(text)
+        if (partitioned) textKernel.analyzePartitionedDocument(text) else textKernel.analyzeDocument(text)
         textKernel.normalizeKernels(mydf,false )
         val base = scoreTopicDomain(textKernel, domain)
         val filterDomained = domain.zip(base).filter { it.second > 0.0 }.map { it.first }

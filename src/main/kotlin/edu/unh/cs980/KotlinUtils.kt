@@ -63,7 +63,7 @@ fun <A, B, C>Iterable<A>.accumMap(keyFun: (A) -> C, f: (B?, A) -> B): List<Pair<
 }
 
 fun Iterable<Double>.smooth()  =
-    windowed(3, 1, true)
+    windowed(2, 1, true)
         .map { window -> window.average() }
 
 
