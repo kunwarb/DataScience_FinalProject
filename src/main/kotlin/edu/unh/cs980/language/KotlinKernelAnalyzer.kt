@@ -58,7 +58,7 @@ class WordKernel(val word: String) {
 
 }
 
-class KernelDist(val mean: Double, val std: Double) {
+class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = true) {
     val kernels = HashMap<String, WordKernel>()
 
     val distMappings = getDistMappings(mean, std)
@@ -86,18 +86,22 @@ class KernelDist(val mean: Double, val std: Double) {
         val filteredText = filterPattern.replace(text, "")
         val terms = AnalyzerFunctions.createTokenList(filteredText, analyzerType = ANALYZER_ENGLISH)
 
-        terms
-            .windowed(8, 1, true)
-            .forEach { window ->
-                val firstTerm = window[0]
-                kernels.computeIfAbsent(firstTerm, { WordKernel(firstTerm) }).frequency += 1.0
+        if (doCondition) {
+            terms
+                .windowed(8, 1, true)
+                .forEach { window ->
+                    val firstTerm = window[0]
+                    kernels.computeIfAbsent(firstTerm, { WordKernel(firstTerm) }).frequency += 1.0
 
-                window
-                    .slice(1  until window.size)
-                    .forEachIndexed{ index, secondTerm ->
-                        updateKernels(firstTerm, secondTerm, index)
-                    }
-            }
+                    window
+                        .slice(1 until window.size)
+                        .forEachIndexed { index, secondTerm ->
+                            updateKernels(firstTerm, secondTerm, index)
+                        }
+                }
+        } else {
+            terms.forEach { term -> kernels.computeIfAbsent(term, { WordKernel(term) }).frequency += 1.0 }
+        }
     }
 
     fun analyzePartitionedDocument(text: String) =
@@ -132,6 +136,7 @@ class KernelDist(val mean: Double, val std: Double) {
 //            (k1.frequency) * log2((k1.frequency / k2.frequency))
 //            (k2.frequency) * log2((k2.frequency / k1.frequency))
             (k2.frequency - k1.frequency) * log2((k2.frequency / k1.frequency))
+//            (k2.frequency) * log2((k1.frequency / k2.frequency))
 //            (k1.frequency - k2.frequency) * k1.kld(k2)
 //            k2.kld(k1)
 //        }

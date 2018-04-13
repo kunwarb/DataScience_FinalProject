@@ -63,7 +63,7 @@ fun <A, B, C>Iterable<A>.accumMap(keyFun: (A) -> C, f: (B?, A) -> B): List<Pair<
 }
 
 fun Iterable<Double>.smooth()  =
-    windowed(5, 1, false)
+    windowed(2, 1, false)
         .map { window -> window.average() }
         .run {
             val total = sum()
@@ -114,6 +114,7 @@ fun <A> identity(it: A): A = it
 fun Double.defaultWhenNotFinite(default: Double = 0.0): Double = if (!isFinite()) default else this
 
 //val sharedRand = Random(12398)
-val sharedRand = Random(132085)
-//val sharedRand = Random(12133123)
-//val sharedRand = Random()
+//val sharedRand = Random(132085)
+//val sharedRand = Random(4812192483)
+//val sharedRand = Random(48941294109124021)
+val sharedRand = Random()

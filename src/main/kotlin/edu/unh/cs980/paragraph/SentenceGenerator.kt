@@ -135,21 +135,13 @@ class DomainGenerator(val generator: DocumentGenerator, val origin: KernelDist, 
 fun main(args: Array<String>) {
 //    val example =
 //            """
-//                William Henry Gates III (born October 28, 1955) is an American business magnate, investor, author, philanthropist, humanitarian, and principal founder of the Microsoft Corporation.[2][3] During his career at Microsoft, Gates held the positions of chairman, CEO and chief software architect, while also being the largest individual shareholder until May 2014.
+//    Cartography studies the representation of the Earth's surface with abstract symbols (map making). Although other subdisciplines of geography rely on maps for presenting their analyses, the actual making of maps is abstract enough to be regarded separately. Cartography has grown from a collection of drafting techniques into an actual science.
 //
-//In 1975, Gates and Paul Allen launched Microsoft, which became the world's largest PC software company.[4][a] Gates led the company as chief executive officer until stepping down in January 2000, but he remained as chairman and created the position of chief software architect for himself.[7]
+//    Cartographers must learn cognitive psychology and ergonomics to understand which symbols convey information about the Earth most effectively, and behavioural psychology to induce the readers of their maps to act on the information. They must learn geodesy and fairly advanced mathematics to understand how the shape of the Earth affects the distortion of map symbols projected onto a flat surface for viewing. It can be said, without much controversy, that cartography is the seed from which the larger field of geography grew. Most geographers will cite a childhood fascination with maps as an early sign they would end up in the field.
 //
-//In June 2006, Gates announced that he would be transitioning from full-time work at Microsoft to part-time work and full-time work at the Bill & Melinda Gates Foundation, which was established in 2000.[8] He gradually transferred his duties to Ray Ozzie and Craig Mundie.[9] He stepped down as chairman of Microsoft in February 2014 and assumed a new post as technology adviser to support the newly appointed CEO Satya Nadella.[10]
-//
-//Gates is one of the best-known entrepreneurs of the personal computer revolution. He has been criticized for his business tactics, which have been considered anti-competitive. This opinion has been upheld by numerous court rulings.[11] Later in his career, Gates pursued a number of philanthropic endeavors. He donated large amounts of money to various charitable organizations and scientific research programs through the Bill & Melinda Gates Foundation.[12]
-//
-//Since 1987, Gates has been included in the Forbes list of the world's wealthiest people, an index of the wealthiest documented individuals, excluding and ranking against those with wealth that is not able to be completely ascertained.[13][14]
-//
-//From 1995 to 2017, he held the Forbes title of the richest person in the world all but four of those years, and held it consistently from March 2014 – July 2017, with an estimated net worth of US$89.9 billion as of October 2017.[1] However, on July 27, 2017, and since October 27, 2017, he has been surpassed by Amazon founder and CEO Jeff Bezos, who had an estimated net worth of US$90.6 billion at the time.[15]
-//
-//In 2009, Gates and Warren Buffett founded The Giving Pledge, whereby they and other billionaires pledge to give at least half of their wealth to philanthropy.[16] The foundation works to save lives and improve global health, and is working with Rotary International to eliminate polio.[17] As of February 17, 2018, Gates had a net worth of $91.7 billion, making him the second richest person in the world, behind Bezos.
 //                """
 
+//    Baking is a method of cooking food that uses prolonged dry heat, normally in an oven, but also in hot ashes, or on hot stones. The most common baked item is bread but many other types of foods are baked.[1] Heat is gradually transferred "from the surface of cakes, cookies, and breads to their centre. As heat travels through, it transforms batters and doughs into baked goods with a firm dry crust and a softer centre".[2] Baking can be combined with grilling to produce a hybrid barbecue variant by using both methods simultaneously, or one after the other. Baking is related to barbecuing because the concept of the masonry oven is similar to that of a smoke pit.
 
 //    Cartography studies the representation of the Earth's surface with abstract symbols (map making). Although other subdisciplines of geography rely on maps for presenting their analyses, the actual making of maps is abstract enough to be regarded separately. Cartography has grown from a collection of drafting techniques into an actual science.
 //
@@ -161,17 +153,17 @@ fun main(args: Array<String>) {
     //Because of historical social and familial roles, baking has traditionally been performed at home by women for domestic consumption and by men in bakeries and restaurants for local consumption. When production was industrialized, baking was automated by machines in large factories. The art of baking remains a fundamental skill and is important for nutrition, as baked goods, especially breads, are a common and important food, both from an economic and cultural point of view. A person who prepares baked goods as a profession is called a baker.
 //    Baking is a method of cooking food that uses prolonged dry heat, normally in an oven, but also in hot ashes, or on hot stones. The most common baked item is bread but many other types of foods are baked.[1] Heat is gradually transferred "from the surface of cakes, cookies, and breads to their centre. As heat travels through, it transforms batters and doughs into baked goods with a firm dry crust and a softer centre".[2] Baking can be combined with grilling to produce a hybrid barbecue variant by using both methods simultaneously, or one after the other. Baking is related to barbecuing because the concept of the masonry oven is similar to that of a smoke pit.
 
-    val example = File("paragraphs/People/doc_8.txt").readText() +
-            File("paragraphs/Computers/doc_1.txt").readText() +
-            File("paragraphs/People/doc_3.txt").readText()
-//    val example =
+//    val example = File("paragraphs/Warfare/doc_0.txt").readText() +
+//            File("paragraphs/Computers/doc_1.txt").readText() +
 //            File("paragraphs/People/doc_3.txt").readText()
+    val example =
+            File("paragraphs/People/doc_3.txt").readText()
 
     val analyzer = KotlinKernelAnalyzer(0.0, 1.0, partitioned = true)
     val tifd = analyzer.mydf
-    val exampleDist = KernelDist(0.0, 1.0)
+    val exampleDist = KernelDist(0.0, 20.0)
         .apply { analyzePartitionedDocument(example) }
-        .apply { (0 until 3).forEach { normalizeByCond() } }
+        .apply { (0 until 40).forEach { normalizeByCond() } }
 //        .apply { normalizeKernels(tifd, false) }
 
 
@@ -186,9 +178,13 @@ fun main(args: Array<String>) {
 //    val docGen = DocumentGenerator(analyzer.topics.values.toList(), 5, 300)
 //    val docGen = DocumentGenerator(analyzer.topics.values.toList(), 1, 500)
 
-    val docs = docGen.generateDocuments(300, replaceAll = true)
-        .map { doc -> KernelDist(0.0, 1.0)
+    val docs = docGen.generateDocuments(500, replaceAll = true)
+        .map { doc -> KernelDist(0.0, 1.0, false)
             .apply { analyzePartitionedDocument(doc) }
+//            .apply {
+//                val ktotal = kernels.values.sumByDouble { k -> k.frequency }
+//                kernels.values.forEach { k -> k.frequency = k.frequency / ktotal }
+//            }
         }
     analyzer.classifyByDomainSimplex(example, docs, smooth = false)
 //    val domainGenerator = DomainGenerator(docGen, exampleDist, analyzer.topics.values.toList())

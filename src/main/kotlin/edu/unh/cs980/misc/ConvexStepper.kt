@@ -173,7 +173,7 @@ class GradientDescenter(val origin: List<Double>, val topics: List<List<Double>>
                         max(0.0, weight + delta.first * (delta.second / total) * 0.01)
                 }
             }
-            // 0.00633
+            // 0.014057612
             // 0.0053a
 
 
