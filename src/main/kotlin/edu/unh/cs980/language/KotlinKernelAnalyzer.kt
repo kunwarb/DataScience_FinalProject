@@ -4,6 +4,7 @@ import edu.unh.cs980.defaultWhenNotFinite
 import edu.unh.cs980.misc.AnalyzerFunctions
 import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH
 import edu.unh.cs980.misc.ConvexStepper
+import edu.unh.cs980.misc.GradientDescenter
 import edu.unh.cs980.smooth
 import org.apache.commons.math3.distribution.NormalDistribution
 import java.io.File
@@ -126,22 +127,34 @@ class KernelDist(val mean: Double, val std: Double) {
         return coverage * restriction.sumByDouble { word ->
             val k1 = kernels[word]!!
             val k2 = other.kernels[word]!!
-//            k1.kld(k2)
-//            k1.kld(k2) * log10(k1.frequency / k2.frequency)
-//            (k1.normFreq - k2.normFreq) * log2((k1.normFreq / k2.normFreq))
 //            (k1.frequency - k2.frequency) * log2((k1.frequency / k2.frequency))
-            (k1.frequency - k2.frequency) * log2((k1.frequency / k2.frequency))
+//            (k1.frequency - k2.frequency) * log2((k1.frequency / k2.frequency))
 //            (k1.frequency) * log2((k1.frequency / k2.frequency))
-//            (k1.frequency) * log2((k1.frequency / k2.frequency))
-//            (k1.frequency) * log2((k1.frequency / k2.frequency))
-//            k1.frequency * log2(k1.frequency / k2.frequency)
+//            (k2.frequency) * log2((k2.frequency / k1.frequency))
+            (k2.frequency - k1.frequency) * log2((k2.frequency / k1.frequency))
 //            (k1.frequency - k2.frequency) * k1.kld(k2)
-        } / max(1.0, restriction.size.toDouble())
+//            k2.kld(k1)
+//        }
+    } / max(1.0, restriction.size.toDouble())
     }
 
     fun normalizeKernels(tfidf: Map<String, Double>, useTFID: Boolean = true) {
         var total = kernels.values.sumByDouble { kernel -> kernel.frequency }
         kernels.values.forEach{ wordKernel -> wordKernel.normalize(tfidf, useTFID)}
+        kernels.values.forEach { kernel -> kernel.frequency = kernel.frequency / total }
+
+//        val condTotal = kernels.values.flatMap { kernel -> kernel.distribution.map { (k,v) -> k to v * kernel.frequency } }
+//            .groupingBy { (word, _) -> word }
+//            .fold(0.0) { acc, (_, conditionalFreq) -> acc + conditionalFreq }
+//
+//        condTotal.forEach { (k,v) -> kernels[k]!!.condFrequency = v }
+//        total = kernels.values.sumByDouble { kernel -> kernel.condFrequency }
+//        kernels.values.forEach { kernel -> kernel.condFrequency = kernel.condFrequency / total }
+    }
+
+    fun normalizeByCond() {
+        var total = kernels.values.sumByDouble { kernel -> kernel.frequency }
+        kernels.values.forEach{ wordKernel -> wordKernel.normalize(emptyMap(), false)}
         kernels.values.forEach { kernel -> kernel.frequency = kernel.frequency / total }
 
         val condTotal = kernels.values.flatMap { kernel -> kernel.distribution.map { (k,v) -> k to v * kernel.frequency } }
@@ -151,6 +164,10 @@ class KernelDist(val mean: Double, val std: Double) {
         condTotal.forEach { (k,v) -> kernels[k]!!.condFrequency = v }
         total = kernels.values.sumByDouble { kernel -> kernel.condFrequency }
         kernels.values.forEach { kernel -> kernel.condFrequency = kernel.condFrequency / total }
+
+        kernels.values.forEach { kernel -> kernel.frequency = kernel.frequency * 0.5 + kernel.condFrequency * 0.5 }
+        total = kernels.values.sumByDouble { kernel -> kernel.frequency }
+        kernels.values.forEach { kernel -> kernel.frequency = kernel.frequency / total }
     }
 }
 
@@ -231,6 +248,12 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double, val partitioned: B
         val scores = domain.map { k -> topic.kld(k) }
         val total = scores.sum()
         return scores.map { score -> score / total }
+//            .let { results ->
+//                val lowest = results.min()!!
+//                val newResults = results.map { value -> value - lowest }
+//                val newTotal = results.sum()
+//                newResults.map { value -> value / newTotal }
+//            }
             .let { results -> if (smooth) results.smooth() else results  }
     }
 
@@ -262,9 +285,35 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double, val partitioned: B
         val base = scoreTopicDomain(textKernel, domain)
         val filterDomained = domain.zip(base).filter { it.second > 0.0 }.map { it.first }
         val filteredBase = scoreTopicDomain(textKernel, filterDomained, smooth)
+        println(filteredBase)
 
-        val topicDistributions = topics.map { topic -> scoreTopicDomain(topic.value, filterDomained, smooth) }
-        val stepper = ConvexStepper(filteredBase, topicDistributions)
+
+        val topicDistributions = topics
+            .map { topic -> scoreTopicDomain(topic.value, filterDomained, smooth) }
+
+
+//        val stepper = ConvexStepper(filteredBase, topicDistributions)
+//        stepper.searchSimplex()
+//        val weights = stepper.searchSimplex(10)
+//
+//        val kld = stepper.kld()
+        // 7497872310634673
+        val stepper = GradientDescenter(filteredBase, topicDistributions)
+        val (weights, kld) = stepper.startDescent(800)
+
+        weights.zip(topics.keys)
+            .sortedByDescending { it.first }
+            .forEach { (weight, topic) ->
+            println("$topic : $weight")
+        }
+
+        println("KLD: $kld\n\n")
+
+    }
+
+
+    fun classifyByDomainSimplex2(originScores: List<Double>, topicScores: List<List<Double>>) {
+        val stepper = ConvexStepper(originScores, topicScores)
         stepper.searchSimplex()
         stepper.searchSimplex()
         stepper.searchSimplex()
@@ -279,6 +328,8 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double, val partitioned: B
 
     }
 
+
+
     fun classifyByDomain(text: String, domain: List<KernelDist>, smooth: Boolean = false) {
         val textKernel = KernelDist(mean, std)
         if (partitioned) textKernel.analyzePartitionedDocument(text) else textKernel.analyzeDocument(text)
@@ -287,7 +338,8 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double, val partitioned: B
         val filterDomained = domain.zip(base).filter { it.second > 0.0 }.map { it.first }
         val filteredBase = scoreTopicDomain(textKernel, filterDomained, smooth)
 
-        val results = topics.map { topic ->
+        val results = topics
+            .map { topic ->
             val score = scoreTopicDomain(topic.value, filterDomained, smooth)
             val kl = filteredBase.zip(score)
                 .sumByDouble { (v1, v2) ->
