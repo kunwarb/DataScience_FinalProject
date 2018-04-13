@@ -133,13 +133,18 @@ class DomainGenerator(val generator: DocumentGenerator, val origin: KernelDist, 
 
 
 fun main(args: Array<String>) {
-//    val example =
-//            """
-//    Cartography studies the representation of the Earth's surface with abstract symbols (map making). Although other subdisciplines of geography rely on maps for presenting their analyses, the actual making of maps is abstract enough to be regarded separately. Cartography has grown from a collection of drafting techniques into an actual science.
-//
-//    Cartographers must learn cognitive psychology and ergonomics to understand which symbols convey information about the Earth most effectively, and behavioural psychology to induce the readers of their maps to act on the information. They must learn geodesy and fairly advanced mathematics to understand how the shape of the Earth affects the distortion of map symbols projected onto a flat surface for viewing. It can be said, without much controversy, that cartography is the seed from which the larger field of geography grew. Most geographers will cite a childhood fascination with maps as an early sign they would end up in the field.
-//
-//                """
+    val example =
+            """
+                The most obvious function of clothing is to improve the comfort of the wearer, by protecting the wearer from the elements. In hot climates, clothing provides protection from sunburn or wind damage, while in cold climates its thermal insulation properties are generally more important. The shelter usually reduces the functional need for clothing. For example, coats, hats, gloves, and other superficial layers are normally removed when entering a warm home, particularly if one is residing or sleeping there. Similarly, clothing has seasonal and regional aspects, so that thinner materials and fewer layers of clothing are generally worn in warmer seasons and regions than in colder ones.
+
+Clothing performs a range of social and cultural functions, such as individual, occupational and gender differentiation, and social status.[6] In many societies, norms about clothing reflect standards of modesty, religion, gender, and social status. Clothing may also function as a form of adornment and an expression of personal taste or style.
+
+Clothing can and has in history been made from a very wide variety of materials. Materials have ranged from leather and furs to woven materials, to elaborate and exotic natural and synthetic fabrics. Not all body coverings are regarded as clothing. Articles carried rather than worn (such as purses), worn on a single part of the body and easily removed (scarves), worn purely for adornment (jewelry), or those that serve a function other than protection (eyeglasses), are normally considered accessories rather than clothing, except for shoes.
+
+Clothing protects against many things that might injure the uncovered human body. Clothes protect people from the elements, including rain, snow, wind, and other weather, as well as from the sun. However, clothing that is too sheer, thin, small, tight, etc., offers less protection. Clothes also reduce risk during activities such as work or sport. Some clothing protects from specific environmental hazards, such as insects, noxious chemicals, weather, weapons, and contact with abrasive substances. Conversely, clothing may protect the environment from the clothing wearer, as with doctors wearing medical scrubs.
+
+Humans have shown the extreme invention in devising clothing solutions to environmental hazards. Examples include: space suits, air conditioned clothing, armor, diving suits, swimsuits, bee-keeper gear, motorcycle leathers, high-visibility clothing, and other pieces of protective clothing. Meanwhile, the distinction between clothing and protective equipment is not always clear-cut—since clothes designed to be fashionable often have protective value and clothes designed for function often consider fashion in their design. Wearing clothes also has social implications. They cover parts of the body that social norms require being covered, act as a form of adornment, and serve other social purposes. Someone who lacks the means to procure reasonable clothing due to poverty or affordability is sometimes said to be scruffy, ragged, or shabby.[7]
+                """
 
 //    Baking is a method of cooking food that uses prolonged dry heat, normally in an oven, but also in hot ashes, or on hot stones. The most common baked item is bread but many other types of foods are baked.[1] Heat is gradually transferred "from the surface of cakes, cookies, and breads to their centre. As heat travels through, it transforms batters and doughs into baked goods with a firm dry crust and a softer centre".[2] Baking can be combined with grilling to produce a hybrid barbecue variant by using both methods simultaneously, or one after the other. Baking is related to barbecuing because the concept of the masonry oven is similar to that of a smoke pit.
 
@@ -156,8 +161,10 @@ fun main(args: Array<String>) {
 //    val example = File("paragraphs/Warfare/doc_0.txt").readText() +
 //            File("paragraphs/Computers/doc_1.txt").readText() +
 //            File("paragraphs/People/doc_3.txt").readText()
-    val example =
-            File("paragraphs/People/doc_3.txt").readText()
+//    val example =
+//            File("paragraphs/Cooking/doc_8.txt").readText()
+//            File("paragraphs/Medicine/doc_4.txt").readText() +
+//                    File("paragraphs/Biology/doc_40.txt").readText()
 
     val analyzer = KotlinKernelAnalyzer(0.0, 1.0, partitioned = true)
     val tifd = analyzer.mydf
