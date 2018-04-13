@@ -275,7 +275,8 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double, val partitioned: B
             println("$topic : $weight")
         }
 
-        println("KLD: $kld")
+        println("KLD: $kld\n\n")
+
     }
 
     fun classifyByDomain(text: String, domain: List<KernelDist>, smooth: Boolean = false) {
