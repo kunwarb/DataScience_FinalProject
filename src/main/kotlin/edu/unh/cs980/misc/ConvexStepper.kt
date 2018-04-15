@@ -166,7 +166,7 @@ class GradientDescenter(val origin: List<Double>, val topics: List<List<Double>>
 //            println(baseline)
             val gradient = (0 until topics.size).map { index -> getDerivative(baseline, index, weights)}
             val total = gradient.sumByDouble { (_, delta) -> delta }
-            if (total > 0.000000000001) {
+            if (total > 0.00000000000001) {
                 weights = weights.mapIndexed { index, weight ->
                     val delta = gradient[index]
                     if (weight <= 0.0) 0.0 else

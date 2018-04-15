@@ -6,6 +6,7 @@ import edu.unh.cs980.language.KotlinKernelAnalyzer
 import edu.unh.cs980.misc.AnalyzerFunctions
 import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH
 import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.ANALYZER_STANDARD
+import edu.unh.cs980.misc.KotlinIndexTester
 import edu.unh.cs980.sharedRand
 import java.io.File
 import java.lang.Math.pow
@@ -162,16 +163,15 @@ fun main(args: Array<String>) {
 //
 //    Cartographers must learn cognitive psychology and ergonomics to understand which symbols convey information about the Earth most effectively, and behavioural psychology to induce the readers of their maps to act on the information. They must learn geodesy and fairly advanced mathematics to understand how the shape of the Earth affects the distortion of map symbols projected onto a flat surface for viewing. It can be said, without much controversy, that cartography is the seed from which the larger field of geography grew. Most geographers will cite a childhood fascination with maps as an early sign they would end up in the field.
 
-    val example =  """
-        Derivative academic fields of study may both interact with and develop independently of filmmaking, as in film theory and analysis. Fields of academic study have been created that are derivative or dependent on the existence of film, such as film criticism, film history, divisions of film propaganda in authoritarian governments, or psychological on subliminal effects (e.g., of a flashing soda can during a screening). These fields may further create derivative fields, such as a movie review section in a newspaper or a television guide. Sub-industries can spin off from film, such as popcorn makers, and film-related toys (e.g., Star Wars figures). Sub-industries of pre-existing industries may deal specifically with film, such as product placement and other advertising within films.
-"""
+//    val example =  """
+//        In Western cultures, birthday parties include a number of common rituals. The guests may be asked to bring a gift for the honored person. Party locations are often decorated with colorful decorations, such as balloons and streamers. A birthday cake is usually served with lit candles that are to be blown out after a "birthday wish" has been made. The person being honored will be given the first piece of cake. While the birthday cake is being brought to the table, the song "Happy Birthday to You" or some other birthday song is sung by the guests.
+//"""
 
 //    here are two main defensive strategies: zone defense and man-to-man defense. In a zone defense, each player is assigned to guard a specific area of the court. Zone defenses often allow the defense to double team the ball, a manoeuver known as a trap. In a man-to-man defense, each defensive player guards a specific opponent.
 //    Offensive plays are more varied, normally involving planned passes and movement by players without the ball. A quick movement by an offensive player without the ball to gain an advantageous position is known as a cut. A legal attempt by an offensive player to stop an opponent from guarding a teammate, by standing in the defender's way such that the teammate cuts next to him, is a screen or pick. The two plays are combined in the pick and roll, in which a player sets a pick and then "rolls" away from the pick towards the basket. Screens and cuts are very important in offensive plays; these allow the quick passes and teamwork, which can lead to a successful basket. Teams almost always have several offensive plays planned to ensure their movement is not predictable. On court, the point guard is usually responsible for indicating which play will occur.
 
 
 //    val example = File("paragraphs/Computers/doc_0.txt").readText() +
-//            File("paragraphs/Biology/doc_1.txt").readText() +
 //    File("paragraphs/People/doc_2.txt").readText()
 
 //    val example = File("paragraphs/Biology/doc_10.txt").readText()
@@ -182,32 +182,36 @@ fun main(args: Array<String>) {
 //    val example =
 //            File("paragraphs/Biology/doc_1.txt").readText()
 
-    val corpusStats = KernelDist(0.0, 1.0)
-    File("pages/")
-        .listFiles()
-        .filter(File::isDirectory)
-        .forEach { file ->
-            file.listFiles().forEach { corpusStats.analyzePartitionedDocument(it.readText()) } }
+    val testSearcher = KotlinIndexTester("/home/hcgs/data_science/index")
+    val example = testSearcher.getResults("Emergency").joinToString("\n")
+    println(example)
 
-//    File("paragraphs/")
+    val corpusStats = KernelDist(0.0, 1.0)
+//    File("pages/")
 //        .listFiles()
 //        .filter(File::isDirectory)
 //        .forEach { file ->
 //            file.listFiles().forEach { corpusStats.analyzePartitionedDocument(it.readText()) } }
 
+    File("paragraphs/")
+        .listFiles()
+        .filter(File::isDirectory)
+        .forEach { file ->
+            file.listFiles().forEach { corpusStats.analyzePartitionedDocument(it.readText()) } }
 
-    val analyzer = KotlinKernelAnalyzer(0.0, 1.0, corpus = corpusStats.kernels, partitioned = true)
-    val tifd = analyzer.mydf
-    corpusStats.normalizeKernels(tifd, false)
+    val corpusWrapper = {key: String -> corpusStats.kernels[key]?.frequency }
+
+    val analyzer = KotlinKernelAnalyzer(0.0, 1.0, corpus = corpusWrapper, partitioned = true)
+    corpusStats.normalizeKernels()
 //    corpusStats.kernels.values.map { kernel -> kernel.frequency = 1 / kernel.frequency }
 //    val ktotal = corpusStats.kernels.values.sumByDouble { kernel -> kernel.frequency }
 //    corpusStats.kernels.values.forEach { kernel -> kernel.frequency = kernel.frequency / ktotal }
 
 
 
-    val exampleDist = KernelDist(0.0, 20.0)
+    val exampleDist = KernelDist(0.0, 10.0)
         .apply { analyzePartitionedDocument(example) }
-        .apply { (0 until 40).forEach { normalizeByCond() } }
+        .apply { (0 until 20).forEach { normalizeByCond() } }
 //        .apply { normalizeKernels(tifd, false) }
 
 
@@ -219,14 +223,14 @@ fun main(args: Array<String>) {
 //    val sentGen = RandomSentenceGenerator(example)
 
     val sentGen = KernelDistSentenceGenerator(exampleDist)
-    val docGen = DocumentGenerator(sentGen, 700, 15)
+    val docGen = DocumentGenerator(sentGen, 300, 15)
 
 //
-    val docs = docGen.generateDocuments(200, replaceAll = true)
-        .map { doc -> KernelDist(0.0, 1.0)
-            .apply { analyzePartitionedDocument(doc) }
-        }
-    analyzer.classifyByDomainSimplex(example, docs, false)
+//    val docs = docGen.generateDocuments(300, replaceAll = true)
+//        .map { doc -> KernelDist(0.0, 1.0)
+//            .apply { analyzePartitionedDocument(doc) }
+//        }
+//    analyzer.classifyByDomainSimplex(example, docs, false)
 
 //    computeStats(exampleDist, docs)
 

@@ -1,13 +1,11 @@
 package edu.unh.cs980.language
 
-import edu.unh.cs980.defaultWhenNotFinite
+import edu.unh.cs980.*
 import edu.unh.cs980.misc.AnalyzerFunctions
 import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH
 import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.ANALYZER_STANDARD
 import edu.unh.cs980.misc.ConvexStepper
 import edu.unh.cs980.misc.GradientDescenter
-import edu.unh.cs980.sharedRand
-import edu.unh.cs980.smooth
 import org.apache.commons.math3.distribution.NormalDistribution
 import java.io.File
 import java.lang.Double.max
@@ -17,6 +15,19 @@ import java.lang.Math.sqrt
 import kotlin.math.log2
 
 
+data class TopicMixtureResult(val results: Map<String, Double>, val kld: Double) {
+
+    fun reportResults() {
+        results.entries
+            .filter { (_, weight) -> weight > 0.0 }
+            .sortedByDescending { (_, weight) -> weight }
+            .forEach { (topicName, weight) ->
+                println("$topicName : $weight")}
+
+        println("KLD: $kld\n\n")
+    }
+
+}
 
 class WordKernel(val word: String) {
     val distribution = HashMap<String, Double>()
@@ -24,40 +35,11 @@ class WordKernel(val word: String) {
     var condFrequency = 0.0
     var normFreq = 0.0
 
-    fun normalize(tfidf: Map<String, Double>, useTFID: Boolean = true) {
-        var total = distribution.values.sum()
-//        distribution.forEach { (k,v) -> distribution[k] = v / total }
-        if (useTFID) {
-            distribution.forEach { (k,v) -> distribution[k] = (v / total) * tfidf[k]!! }
-        }
-
-        total = distribution.values.sum()
+    fun normalize() {
+        val total = distribution.values.sum()
         distribution.forEach { (k,v) -> distribution[k] = v / total }
-
-    }
-    fun getRestrictedDstribution(restriction: Set<String>): Map<String, Double> {
-        val total = restriction.sumByDouble { word -> distribution[word]!! }
-        return distribution.filterKeys { key -> key in restriction }
-            .mapValues { (_,v) ->v / total }
     }
 
-    fun kld(other: WordKernel): Double {
-        val restriction = distribution.keys.toSet()
-            .intersect(other.distribution.keys.toSet())
-
-//        val dist1 = getRestrictedDstribution(restriction)
-//        val dist2 = other.getRestrictedDstribution(restriction)
-
-        return restriction.sumByDouble { word ->
-//            val d1 = dist1[word]!!
-//            val d2 = dist2[word]!!
-            val d1 = distribution[word]!!
-            val d2 = other.distribution[word]!!
-//            d1 * other.frequency * log10((d1 * other.frequency) / (d2 * frequency))
-//            (d2 - d1) * log2(d1 / d2)
-            (d1) * log2(d1 / d2)
-        } / max(1.0, restriction.size.toDouble())
-    }
 
 }
 
@@ -108,18 +90,18 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
     }
 
     fun analyzePartitionedDocument(text: String) =
-            text.split(".")
+            text
+                .toLowerCase()
+                .split(".")
                 .filter { it.length > 3 }
                 .forEach { splitText -> analyzeDocument(splitText) }
 
 
-    fun normalizedByRestriction(restriction: Set<String>) {
-//        val total = restriction.sumByDouble { word -> 0.5 * kernels[word]!!.frequency + 0.5 * kernels[word]!!.condFrequency }
-//        restriction.forEach { word -> kernels[word]!!.normFreq = (0.5 * kernels[word]!!.frequency + 0.5 * kernels[word]!!.condFrequency) / total }
-        val total = restriction.sumByDouble { word -> kernels[word]!!.frequency }
-        restriction.forEach { word -> kernels[word]!!.normFreq = (kernels[word]!!.frequency / total) }
 
-    }
+
+
+
+
 
     fun perturb(): Map<String, Double> {
         val perturbations = kernels.mapNotNull { (k,v) ->
@@ -143,41 +125,35 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
 //        return perturbations.toMap()
     }
 
-    fun kld(other: Map<String, Double>): Double {
-        val restriction = kernels.keys.toSet()
-            .intersect(other.keys.toSet())
 
-        val restrictionTotal = restriction.sumByDouble { word -> kernels[word]!!.frequency }
-        val kernelTotal = kernels.values.sumByDouble { kernel -> kernel.frequency }
-        val coverage = (kernelTotal / restrictionTotal).defaultWhenNotFinite(1.0)
+    fun kld(other: Map<String, Double>, corpus: (String) -> Double?): Double {
+//        val union = kernels.keys.union(other.kernels.keys)
+        val union = other.keys
+//        val sumFreq = other.kernels.values.sumByDouble { kernel -> kernel.frequency }
 
-        return coverage * restriction.sumByDouble { word ->
-            val k1 = kernels[word]!!
-            val k2 = other[word]!!
-            (k2 - k1.frequency) * log2((k2 / k1.frequency))
-        } / max(1.0, restriction.size.toDouble())
-    }
+        val normalizedMap = HashMap<String, Double>()
+        val defValue = 1.0
+        union.forEach { key ->
+            normalizedMap[key] =  kernels[key]?.run{frequency} ?: defValue
+        }
 
-    fun kld(other: KernelDist, corpus: HashMap<String, WordKernel>): Double {
-//        val restriction = kernels.keys.toSet()
-//            .intersect(other.kernels.keys.toSet())
-
-//        val restrictionTotal = restriction.sumByDouble { word -> kernels[word]!!.frequency }
-//        val kernelTotal = kernels.values.sumByDouble { kernel -> kernel.frequency }
-//        val coverage = (kernelTotal / restrictionTotal).defaultWhenNotFinite(1.0)
-
-//        val kernelTotal = kernels.values.sumByDouble { kernel -> kernel.frequency }
-        val union = kernels.keys.union(other.kernels.keys)
-//            .filter { key -> key in kernels || key in other.kernels  }
+        val total = normalizedMap.values.sum() +
+                kernels.filter { kernel -> kernel.key !in normalizedMap }.values.sumByDouble { kernel -> kernel.frequency }
+        normalizedMap.keys.forEach { key -> normalizedMap[key] = normalizedMap[key]!! / total }
 
         return 1.0 * union.sumByDouble { word ->
-            var k1 = kernels[word]?.frequency ?: 1 / kernels.size.toDouble()
-            var k2 = other.kernels[word]?.frequency ?: 1 / other.kernels.size.toDouble()
-            val c = corpus[word]?.frequency ?: 0.00
+//            var k1 = kernels[word]?.frequency ?: 1 / kernels.size.toDouble()
+//            var k2 = other.kernels[word]?.frequency ?: 1 / other.kernels.size.toDouble()
 
-            k1 = 0.5 * k1 + 0.5 * c * (1 / kernels.size.toDouble())
-            k2 = 0.5 * k2 + 0.5 * c * (1 / other.kernels.size.toDouble())
-            (k2 - k1) * log2((k2 / k1))
+//            val c = corpus(word) ?: 1.0
+//            var k1 = kernels[word]?.frequency ?: (1 / union.size.toDouble()) * c
+//            var k1 = kernels[word]?.frequency ?: 1.0 / union.size
+//            var k2 = other.kernels[word]?.frequency ?: (1 / other.kernels.size.toDouble() )
+//            var k1 = kernels[word]?.frequency ?: 1.0
+            var k1 = normalizedMap[word]!!
+            var k2 = other[word] ?: 0.0
+
+            (k2) * log2((k2 / k1))
         } / union.size
     }
 
@@ -196,15 +172,15 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
 //        } / max(1.0, restriction.size.toDouble())
 //    }
 
-    fun normalizeKernels(tfidf: Map<String, Double>, useTFID: Boolean = true) {
-        var total = kernels.values.sumByDouble { kernel -> kernel.frequency }
-        kernels.values.forEach{ wordKernel -> wordKernel.normalize(tfidf, useTFID)}
+    fun normalizeKernels() {
+        val total = kernels.values.sumByDouble { kernel -> kernel.frequency }
+        kernels.values.forEach{ wordKernel -> wordKernel.normalize()}
         kernels.values.forEach { kernel -> kernel.frequency = kernel.frequency / total }
     }
 
     fun normalizeByCond() {
         var total = kernels.values.sumByDouble { kernel -> kernel.frequency }
-        kernels.values.forEach{ wordKernel -> wordKernel.normalize(emptyMap(), false)}
+        kernels.values.forEach{ wordKernel -> wordKernel.normalize()}
         kernels.values.forEach { kernel -> kernel.frequency = kernel.frequency / total }
 
         val condTotal = kernels.values.flatMap { kernel -> kernel.distribution.map { (k,v) -> k to v * kernel.frequency } }
@@ -221,7 +197,7 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
     }
 }
 
-class KotlinKernelAnalyzer(val mean: Double, val std: Double, val corpus: HashMap<String, WordKernel>,
+class KotlinKernelAnalyzer(val mean: Double, val std: Double, val corpus: (String) -> Double?,
                            val partitioned: Boolean = false) {
     val topics = HashMap<String, KernelDist>()
     var mydf: Map<String, Double> = HashMap<String, Double>()
@@ -234,7 +210,7 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double, val corpus: HashMa
     }
 
     private fun analyzeTopic(topic: String, directory: File) {
-        val kernelDist = KernelDist(mean, std)
+        val kernelDist = KernelDist(mean, std, doCondition = false)
         topics[topic] = kernelDist
         directory.listFiles()
             .forEach { file ->  if (partitioned) kernelDist.analyzePartitionedDocument(file.readText())
@@ -243,92 +219,62 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double, val corpus: HashMa
 
     //    fun normalizeTopics() = topics.values.forEach(KernelDist::normalizeKernels)
     fun normalizeTopics(useTFID: Boolean = true) {
-        val tfidf = topics.flatMap { topic -> topic.value.kernels.values }
-            .groupingBy(WordKernel::word)
-            .fold(0.0, { acc, kernel -> acc + kernel.frequency})
-            .toMap()
-        mydf = tfidf
+//        val tfidf = topics.flatMap { topic -> topic.value.kernels.values }
+//            .groupingBy(WordKernel::word)
+//            .fold(0.0, { acc, kernel -> acc + kernel.frequency})
+//            .toMap()
+//        mydf = tfidf
 
-        topics.values.forEach { topic -> topic.normalizeKernels(tfidf, useTFID) }
+        topics.values.forEach { topic -> topic.normalizeKernels() }
     }
 
 
-    fun scoreTopicDomain(topic: KernelDist, domain: List<KernelDist>, smooth: Boolean = false): List<Double> {
+    fun scoreTopicDomain(topic: KernelDist, domain: List<Map<String, Double>>, smooth: Boolean = false): List<Double> {
         val scores = domain.map { k -> topic.kld(k, corpus) }
         val total = scores.sum()
         return scores.map { score -> score / total }
             .let { results -> if (smooth) results.smooth() else results  }
     }
 
-    fun scoreTopicDomain2(topic: KernelDist, domain: List<Map<String, Double>>, smooth: Boolean = false): List<Double> {
-        val scores = domain.map { k -> topic.kld(k) }
-        val total = scores.sum()
-        return scores.map { score -> score / total }
-            .let { results -> if (smooth) results.smooth() else results  }
-    }
 
-
-
-    fun classifyByDomainSimplex(text: String, domain: List<KernelDist>, smooth: Boolean = false) {
+    fun classifyByDomainSimplex(text: String, domain: List<Map<String, Double>>, smooth: Boolean = false): TopicMixtureResult {
         val textKernel = KernelDist(mean, std)
         if (partitioned) textKernel.analyzePartitionedDocument(text) else textKernel.analyzeDocument(text)
-        textKernel.normalizeKernels(mydf,false )
+        textKernel.normalizeKernels()
+
         val base = scoreTopicDomain(textKernel, domain)
         val filterDomained = domain.zip(base).filter { it.second > 0.0 }.map { it.first }
         val filteredBase = scoreTopicDomain(textKernel, filterDomained, smooth)
-        println(filteredBase)
-
 
         val topicDistributions = topics
             .map { topic -> scoreTopicDomain(topic.value, filterDomained, smooth) }
 
-
-//        val stepper = ConvexStepper(filteredBase, topicDistributions)
-//        stepper.searchSimplex()
-//        val weights = stepper.searchSimplex(10)
-//
-//        val kld = stepper.kld()
-        // 7497872310634673
         val stepper = GradientDescenter(filteredBase, topicDistributions)
         val (weights, kld) = stepper.startDescent(800)
 
-        weights.zip(topics.keys)
-            .sortedByDescending { it.first }
-            .forEach { (weight, topic) ->
-            println("$topic : $weight")
-        }
+//        Medicine : 0.45838319757414764
+//        Events : 0.19305613211817316
+//        Fashion : 0.14856668930573425
+//        Games : 0.10289401921471705
+//        People : 0.049383267974878776
+//        Politics : 0.03039241879573867
+//        Travel : 0.017324275016610456
 
-        println("KLD: $kld\n\n")
-
+        val results = topics.keys.zip(weights).toMap()
+        return TopicMixtureResult(results, kld)
     }
 
+    fun getUnigramFrequencies(text: String): Map<String, Double> {
+        val filterPattern = "[\\d+]".toRegex()
+        val filteredText = filterPattern.replace(text, "").toLowerCase()
+        val terms = AnalyzerFunctions.createTokenList(filteredText, analyzerType = ANALYZER_ENGLISH)
 
-    fun classifyByDomainSimplex2(text: String, domain: List<Map<String, Double>>, smooth: Boolean = false) {
-        val textKernel = KernelDist(mean, std)
-        if (partitioned) textKernel.analyzePartitionedDocument(text) else textKernel.analyzeDocument(text)
-        textKernel.normalizeKernels(mydf,false )
-
-        val base = scoreTopicDomain2(textKernel, domain)
-        val filterDomained = domain.zip(base).filter { it.second > 0.0 }.map { it.first }
-        val filteredBase = scoreTopicDomain2(textKernel, filterDomained, smooth)
-        println(filteredBase)
-
-
-        val topicDistributions = topics
-            .map { topic -> scoreTopicDomain2(topic.value, filterDomained, smooth) }
-
-        val stepper = GradientDescenter(filteredBase, topicDistributions)
-        val (weights, kld) = stepper.startDescent(800)
-
-        weights.zip(topics.keys)
-            .sortedByDescending { it.first }
-            .forEach { (weight, topic) ->
-                println("$topic : $weight")
-            }
-
-        println("KLD: $kld\n\n")
-
+        return terms
+            .groupingBy(::identity)
+            .eachCount()
+            .normalize()
     }
+
 
 
 

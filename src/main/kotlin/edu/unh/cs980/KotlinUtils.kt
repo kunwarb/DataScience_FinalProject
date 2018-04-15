@@ -66,6 +66,13 @@ fun <A, B, C>Iterable<A>.accumMap(keyFun: (A) -> C, f: (B?, A) -> B): List<Pair<
     }
 }
 
+
+fun <A, B: Number>Map<A, B>.normalize(): Map<A, Double> {
+    val total = values.sumByDouble { it.toDouble() }
+    return mapValues { (_, value) -> value.toDouble() / total }
+}
+
+
 fun Iterable<Double>.smooth2()  =
     windowed(2, 1, false)
         .map { window -> window.average() }
@@ -160,7 +167,7 @@ fun Double.defaultWhenNotFinite(default: Double = 0.0): Double = if (!isFinite()
 
 //val sharedRand = Random(12398)
 //val sharedRand = Random(132085)
-//val sharedRand = Random(4812192483)
+val sharedRand = Random(4812192483)
 //val sharedRand = Random(48941294109124021)
 //val sharedRand = Random(99104910481902384)
-val sharedRand = Random()
+//val sharedRand = Random()
