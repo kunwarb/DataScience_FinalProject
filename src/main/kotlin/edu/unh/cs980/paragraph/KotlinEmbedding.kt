@@ -1,7 +1,6 @@
 package edu.unh.cs980.paragraph
 
 import edu.unh.cs980.CONTENT
-import edu.unh.cs980.defaultWhenNotFinite
 import edu.unh.cs980.getIndexSearcher
 import edu.unh.cs980.language.KernelDist
 import edu.unh.cs980.language.KotlinGramAnalyzer
@@ -50,20 +49,24 @@ class KotlinEmbedding(indexLoc: String, gramLoc: String) {
     }
 
     fun embed(text: String, nSamples: Int = 300): TopicMixtureResult {
-        val kernelDist = KernelDist(0.0, 1.0)
+        val kernelDist = KernelDist(0.0, 100.0)
             .apply { analyzePartitionedDocument(text) }
-            .apply { normalizeByCond2() }
-//            .apply { (0 until 1).forEach { normalizeByCond() } }
+            .apply { normalizeKernels() }
 
-        val sentGen = KernelDistSentenceGenerator(kernelDist)
-        val docGen = DocumentGenerator(sentGen, 300, 15)
 
-//        val docs = docGen.generateDocuments(nSamples, replaceAll = true)
-//            .map(kernelAnalyzer::getUnigramFrequencies)
+        val identityFreqs = "identity" to kernelDist.getKernelFreqs()
 
-        val docs = (0 until 300).map { kernelDist.perturb() }
+        kernelDist.normalizeByCond2()
 
-        return kernelAnalyzer.classifyByDomainSimplex(text, docs, false)
+//        val samples = kernelDist.perturb(300)
+        val samples = kernelDist.perturb2(300)
+
+//        val topicStats = kernelAnalyzer.retrieveTopicFrequencies() + identityFreqs
+//        val stochasticIntegrator = KotlinStochasticIntegrator(samples, topicStats)
+//        val integrals = stochasticIntegrator.integrate()
+
+//        return kernelAnalyzer.classifyByDomainSimplex2(integrals, smooth = false)
+        return kernelAnalyzer.classifyByDomainSimplex(text, samples, smooth = false)
     }
 }
 

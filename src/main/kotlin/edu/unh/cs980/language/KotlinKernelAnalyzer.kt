@@ -3,15 +3,10 @@ package edu.unh.cs980.language
 import edu.unh.cs980.*
 import edu.unh.cs980.misc.AnalyzerFunctions
 import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH
-import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.ANALYZER_STANDARD
 import edu.unh.cs980.misc.GradientDescenter
 import org.apache.commons.math3.distribution.NormalDistribution
-import org.apache.commons.math3.random.RandomGenerator
 import java.io.File
-import java.lang.Double.max
 import java.lang.Double.sum
-import java.lang.Math.log10
-import java.lang.Math.sqrt
 import kotlin.math.log2
 
 
@@ -97,28 +92,26 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
                 .forEach { splitText -> analyzeDocument(splitText) }
 
 
-    fun perturb(): Map<String, Double> {
-        val perturbations = kernels.mapNotNull { (k,v) ->
-//            val norm = NormalDistribution(sharedRand,1000.0 * v.frequency, 50.0 * v.frequency)
-//            val norm = NormalDistribution(1000.0, 50.0)
-            val norm = NormalDistribution(sharedRand, 1000.0, 50.0)
-            val sample = norm.sample() * v.frequency
-//            if (sharedRand.nextDouble() <= sqrt(v.frequency)) k to sample else null
-//            k to v.frequency * (sharedRand.nextDouble())
-            k to sample
-//            k to v.frequency * (sharedRand.nextDouble() * (v.frequency)) * (sharedRand.nextDouble() * sqrt(v.frequency))
-//            k to v.frequency * (sharedRand.nextDouble() * (v.frequency)) + (sharedRand.nextDouble() * sqrt(v.frequency))
+    fun perturb(nSamples: Int = 50): Pair<List<String>, List<List<Double>>> {
+        val norm = NormalDistribution(sharedRand, 1000.0, 50.0)
+        val (kernelNames, kernelFreqs) = kernels.toList().unzip()
 
-            // interaction
-//            k to v.frequency * (sharedRand.nextDouble() * (v.frequency)) + v.frequency * (sharedRand.nextDouble() * sqrt(v.frequency))
+        val perturbations = (0 until nSamples).map {
+            norm.sample(kernelFreqs.size)
+                .zip(kernelFreqs)
+                .map { (gaussian, kernelFreq) -> gaussian * kernelFreq.frequency  }}
 
-//            k to v.frequency * (sharedRand.nextDouble() * (v.frequency))
-//            if (sample <= 0.0) null else k to sample
+        return kernelNames to perturbations
+    }
+
+    fun perturb2(nSamples: Int = 50): List<Map<String, Double>> {
+        val norm = NormalDistribution(sharedRand, 1000.0, 50.0)
+//        val (kernelNames, kernelFreqs) = kernels.toList().unzip()
+        val results = (0 until nSamples).map {
+            kernels.map { (k, v) -> k to norm.sample() * v.frequency }.toMap()
         }
 
-//        val total = perturbations.sumByDouble { it.second }
-//        return perturbations.map { it.first to it.second / total }.toMap()
-        return perturbations.toMap()
+        return results
     }
 
 
@@ -138,20 +131,14 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
         normalizedMap.keys.forEach { key -> normalizedMap[key] = normalizedMap[key]!! / total }
 
         return 1.0 * union.sumByDouble { word ->
-//            var k1 = kernels[word]?.frequency ?: 1 / kernels.size.toDouble()
-//            var k2 = other.kernels[word]?.frequency ?: 1 / other.kernels.size.toDouble()
-
-//            val c = corpus(word) ?: 1.0
-//            var k1 = kernels[word]?.frequency ?: (1 / union.size.toDouble()) * c
-//            var k1 = kernels[word]?.frequency ?: 1.0 / union.size
-//            var k2 = other.kernels[word]?.frequency ?: (1 / other.kernels.size.toDouble() )
-//            var k1 = kernels[word]?.frequency ?: 1.0
             var k1 = normalizedMap[word]!!
             var k2 = other[word] ?: 0.0
 
             (k2) * log2((k2 / k1))
         } / union.size
     }
+
+    fun getKernelFreqs() = kernels.map { (word, kernel) -> word to kernel.frequency }.toMap()
 
 
     fun normalizeKernels() {
@@ -217,6 +204,11 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double, val corpus: (Strin
         topics.values.forEach { topic -> topic.normalizeKernels() }
     }
 
+    fun retrieveTopicFrequencies() =
+            topics.map { (topic, kernel) ->
+                topic to kernel.getKernelFreqs()
+            }
+
 
     fun scoreTopicDomain(topic: KernelDist, domain: List<Map<String, Double>>, smooth: Boolean = false): List<Double> {
         val scores = domain.map { k -> topic.kld(k, corpus) }
@@ -242,6 +234,17 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double, val corpus: (Strin
         val (weights, kld) = stepper.startDescent(800)
 
         val results = topics.keys.zip(weights).toMap()
+        return TopicMixtureResult(results, kld)
+    }
+
+    fun classifyByDomainSimplex2(integrals: List<Pair<String, List<Double>>>, smooth: Boolean): TopicMixtureResult {
+        val identityFreq = integrals.find { it.first == "identity" }!!.second
+        val (featureNames, featureFreqs) = integrals.filter { it.first != "identity" }.unzip()
+
+        val stepper = GradientDescenter(identityFreq, featureFreqs)
+        val (weights, kld) = stepper.startDescent(800)
+
+        val results = featureNames.zip(weights).toMap()
         return TopicMixtureResult(results, kld)
     }
 
