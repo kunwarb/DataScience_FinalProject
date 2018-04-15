@@ -163,7 +163,7 @@ class GradientDescenter(val origin: List<Double>, val topics: List<List<Double>>
 
         (0 until nTimes).forEach {
             val baseline = kld(weights)
-            println(baseline)
+//            println(baseline)
             val gradient = (0 until topics.size).map { index -> getDerivative(baseline, index, weights)}
             val total = gradient.sumByDouble { (_, delta) -> delta }
             if (total > 0.000000000001) {

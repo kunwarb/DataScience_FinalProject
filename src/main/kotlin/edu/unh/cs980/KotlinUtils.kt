@@ -14,8 +14,12 @@ import org.apache.lucene.search.IndexSearcher
 import org.apache.lucene.search.TopDocs
 import org.apache.lucene.search.similarities.BM25Similarity
 import org.apache.lucene.store.FSDirectory
+import java.lang.Math.abs
+import java.lang.Math.pow
 import java.nio.file.Paths
 import java.util.*
+import kotlin.math.log2
+import kotlin.math.sqrt
 
 // Conditional versions of run/let/apply/also
 fun <T,R> T.runIf(condition: Boolean, block: T.() -> R): R? = if (condition)  run(block)  else null
@@ -62,13 +66,54 @@ fun <A, B, C>Iterable<A>.accumMap(keyFun: (A) -> C, f: (B?, A) -> B): List<Pair<
     }
 }
 
-fun Iterable<Double>.smooth()  =
+fun Iterable<Double>.smooth2()  =
     windowed(2, 1, false)
         .map { window -> window.average() }
+//        .map { window -> abs(window[0] * window[1])  }
         .run {
             val total = sum()
             map { averagedValue -> averagedValue / total }
         }
+
+fun Iterable<Double>.smooth()  =
+        windowed(3, 1, false)
+            .map { window -> abs(window[0] * window[1] * window[2]) / (window[0] + window[1] + window[2])    }
+            .run {
+                val total = sum()
+                map { averagedValue -> averagedValue / total }
+            }
+
+fun Iterable<Double>.smooth3(): List<Double> {
+    val items = toList()
+    val product = items.flatMap { first ->
+        items.map { second ->
+            (first * second) / (first + second)
+        } }
+        .chunked(items.size)
+        .map { chunk -> chunk.average() }
+        .shuffled(sharedRand)
+////        .mapIndexed { index, chunk -> 0.5 * chunk + 0.5 * items[index] }
+//        .mapIndexed { index, chunk -> chunk     }
+        .mapIndexed { index, chunk -> 0.5 * chunk * items[index] + items[index] * 0.5    }
+
+    return product
+//    val total = product.sum()
+//    return product.map { it / total }
+}
+
+fun Iterable<Double>.smooth4(): List<Double>  {
+//    val items = toList()
+//    val mean = items.average()
+//    val variantMap = items.map { pow(it - mean, 2.0) }
+//    val variantMap = items.map {abs(it - mean)}
+//    val diffMap = variantMap.map { 1 / it }
+//    val total = diffMap.sum()
+//    return diffMap.map { it / total }.smooth3()
+//    return diffMap.mapIndexed{index, value -> 0.5 * (value / total)  + 0.5 * items[index] }.smooth3().smooth3()
+//    return diffMap.mapIndexed{index, value -> items[index] }.smooth3()
+    return smooth3()
+//    return variantMap.map { 1 / it}.smooth3()
+}
 
 
 
@@ -117,4 +162,5 @@ fun Double.defaultWhenNotFinite(default: Double = 0.0): Double = if (!isFinite()
 //val sharedRand = Random(132085)
 //val sharedRand = Random(4812192483)
 //val sharedRand = Random(48941294109124021)
+//val sharedRand = Random(99104910481902384)
 val sharedRand = Random()
