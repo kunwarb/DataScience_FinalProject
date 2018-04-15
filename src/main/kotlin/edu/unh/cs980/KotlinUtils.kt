@@ -82,7 +82,7 @@ fun Iterable<Double>.smooth2()  =
             map { averagedValue -> averagedValue / total }
         }
 
-fun Iterable<Double>.smooth()  =
+fun Iterable<Double>.smooth5()  =
         windowed(3, 1, false)
             .map { window -> abs(window[0] * window[1] * window[2]) / (window[0] + window[1] + window[2])    }
             .run {
@@ -108,18 +108,17 @@ fun Iterable<Double>.smooth3(): List<Double> {
 //    return product.map { it / total }
 }
 
-fun Iterable<Double>.smooth4(): List<Double>  {
-//    val items = toList()
-//    val mean = items.average()
+fun Iterable<Double>.smooth(): List<Double>  {
+    val items = toList()
+    val mean = items.average()
 //    val variantMap = items.map { pow(it - mean, 2.0) }
-//    val variantMap = items.map {abs(it - mean)}
+    val variantMap = items.map {abs(it - mean)}
 //    val diffMap = variantMap.map { 1 / it }
-//    val total = diffMap.sum()
-//    return diffMap.map { it / total }.smooth3()
+    val total = variantMap.sum()
+//    return diffMap.map { it / total }
 //    return diffMap.mapIndexed{index, value -> 0.5 * (value / total)  + 0.5 * items[index] }.smooth3().smooth3()
 //    return diffMap.mapIndexed{index, value -> items[index] }.smooth3()
-    return smooth3()
-//    return variantMap.map { 1 / it}.smooth3()
+    return variantMap.map {it / total}
 }
 
 
@@ -166,8 +165,8 @@ fun <A> identity(it: A): A = it
 fun Double.defaultWhenNotFinite(default: Double = 0.0): Double = if (!isFinite()) default else this
 
 //val sharedRand = Random(12398)
-//val sharedRand = Random(132085)
-val sharedRand = Random(4812192483)
+val sharedRand = Random(132085)
+//val sharedRand = Random(4812192483)
 //val sharedRand = Random(48941294109124021)
 //val sharedRand = Random(99104910481902384)
 //val sharedRand = Random()

@@ -217,7 +217,7 @@ fun main(args: Array<String>) {
 
     analyzer.analyzeTopicDirectories("paragraphs/")
 //    analyzer.topics.remove("Organizations")
-    analyzer.normalizeTopics(true)
+    analyzer.normalizeTopics()
 
 //    val docGen = DocumentGenerator(listOf(exampleDist), 200, 25)
 //    val sentGen = RandomSentenceGenerator(example)
