@@ -6,6 +6,7 @@ import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH
 import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.ANALYZER_STANDARD
 import edu.unh.cs980.misc.GradientDescenter
 import org.apache.commons.math3.distribution.NormalDistribution
+import org.apache.commons.math3.random.RandomGenerator
 import java.io.File
 import java.lang.Double.max
 import java.lang.Double.sum
@@ -98,8 +99,9 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
 
     fun perturb(): Map<String, Double> {
         val perturbations = kernels.mapNotNull { (k,v) ->
-//            val norm = NormalDistribution(1000.0 * v.frequency, 50.0 * v.frequency)
-            val norm = NormalDistribution(1000.0, 50.0)
+//            val norm = NormalDistribution(sharedRand,1000.0 * v.frequency, 50.0 * v.frequency)
+//            val norm = NormalDistribution(1000.0, 50.0)
+            val norm = NormalDistribution(sharedRand, 1000.0, 50.0)
             val sample = norm.sample() * v.frequency
 //            if (sharedRand.nextDouble() <= sqrt(v.frequency)) k to sample else null
 //            k to v.frequency * (sharedRand.nextDouble())

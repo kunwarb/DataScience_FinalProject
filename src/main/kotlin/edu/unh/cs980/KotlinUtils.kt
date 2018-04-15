@@ -5,6 +5,7 @@ import kotlinx.coroutines.experimental.CommonPool
 import kotlinx.coroutines.experimental.async
 import kotlinx.coroutines.experimental.newFixedThreadPoolContext
 import kotlinx.coroutines.experimental.runBlocking
+import org.apache.commons.math3.random.JDKRandomGenerator
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.index.DirectoryReader
@@ -165,8 +166,9 @@ fun <A> identity(it: A): A = it
 fun Double.defaultWhenNotFinite(default: Double = 0.0): Double = if (!isFinite()) default else this
 
 //val sharedRand = Random(12398)
-val sharedRand = Random(132085)
+//val sharedRand = Random(132085)
+//val sharedRand = JDKRandomGenerator(132085)
 //val sharedRand = Random(4812192483)
 //val sharedRand = Random(48941294109124021)
 //val sharedRand = Random(99104910481902384)
-//val sharedRand = Random()
+val sharedRand = JDKRandomGenerator()
