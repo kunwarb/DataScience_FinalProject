@@ -26,9 +26,9 @@ class KotlinStochasticIntegrator(val perturbations: Pair<List<String>, List<List
     }
 
     private fun kldToTopic(topic: List<Double>) =
-            perturbations.second.zip(topic)
-                .map { (perturbs, k2) ->
-                    perturbs.sumByDouble{ k1 -> k1 * log2(k1 / k2) } / perturbs.size }
+            perturbations.second
+                .map { perturbs ->
+                    perturbs.zip(topic).sumByDouble { (k1, k2) -> k1 * log2(k1 / k2) / perturbs.size } }
                 .normalize()
 
     fun integrate() =

@@ -5,6 +5,8 @@ import edu.unh.cs980.misc.AnalyzerFunctions
 import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH
 import edu.unh.cs980.misc.GradientDescenter
 import org.apache.commons.math3.distribution.NormalDistribution
+import smile.math.matrix.Matrix
+import smile.math.matrix.PageRank
 import java.io.File
 import java.lang.Double.sum
 import kotlin.math.log2
@@ -178,6 +180,31 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
 
         val total = kernels.values.sumByDouble { kernel -> kernel.frequency }
         kernels.values.forEach { kernel -> kernel.frequency /= total }
+    }
+
+    fun equilibriumCovariance() {
+        kernels.values.forEach { worKernel -> worKernel.normalize() }
+        val wordIndices = kernels.keys.mapIndexed { index, key -> key to index  }.toMap()
+        val reverseIndices = wordIndices.map { (k,v) -> v to k }.toMap()
+        val covarianceMatrix = Matrix.newInstance(wordIndices.size, wordIndices.size, 0.0)
+        val base = wordIndices.map { (word, index) -> kernels[word]!!.frequency }.toDoubleArray()
+
+        kernels.values.map { kernel ->
+            val i = wordIndices[kernel.word]!!
+            kernel.distribution.forEach { (word,covariance) ->
+                val j = wordIndices[word]!!
+                covarianceMatrix[i,j] = covariance
+            }
+        }
+
+//        println(covarianceMatrix)
+//        val base = (0 until wordIndices.size).map { 1.0 }.toDoubleArray()
+        val ranked = PageRank
+                .pagerank(covarianceMatrix, base, 0.9, 0.000001, 10000)
+                .map { if (it < 0.0) 1 / wordIndices.size.toDouble() else it }
+
+        val total = ranked.sum()
+        ranked.forEachIndexed { index, d -> kernels[reverseIndices[index]]!!.frequency = d / total  }
     }
 }
 
