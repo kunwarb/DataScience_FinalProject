@@ -200,7 +200,8 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
 //        println(covarianceMatrix)
 //        val base = (0 until wordIndices.size).map { 1.0 }.toDoubleArray()
         val ranked = PageRank
-                .pagerank(covarianceMatrix, base, 0.9, 0.000001, 10000)
+//                .pagerank(covarianceMatrix, base, 0.9, 0.000001, 10000)
+            .pagerank(covarianceMatrix, base, 0.8, 0.00000001, 10000)
                 .map { if (it < 0.0) 1 / wordIndices.size.toDouble() else it }
 
         val total = ranked.sum()

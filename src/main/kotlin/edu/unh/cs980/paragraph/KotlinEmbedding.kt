@@ -50,21 +50,21 @@ class KotlinEmbedding(indexLoc: String, gramLoc: String) {
     }
 
     fun embed(text: String, nSamples: Int = 300): TopicMixtureResult {
-        val kernelDist = KernelDist(0.0, 10.0)
+        val kernelDist = KernelDist(0.0, 100.0)
             .apply { analyzePartitionedDocument(text) }
             .apply { normalizeKernels() }
 
 
         val identityFreqs = "identity" to kernelDist.getKernelFreqs()
 
-//        kernelDist.equilibriumCovariance()
-        kernelDist.normalizeByCond2()
+        kernelDist.equilibriumCovariance()
+//        kernelDist.normalizeByCond2()
 
         val samples = kernelDist.perturb(2000)
 //        val samples = kernelDist.perturb2(300)
 
         val topicStats = kernelAnalyzer.retrieveTopicFrequencies() + identityFreqs
-        val stochasticIntegrator = KotlinStochasticIntegrator(samples, topicStats)
+        val stochasticIntegrator = KotlinStochasticIntegrator(samples, topicStats, corpus = this::getUnigramFrequency)
         val integrals = stochasticIntegrator.integrate()
 
         return kernelAnalyzer.classifyByDomainSimplex2(integrals, smooth = false)
@@ -79,19 +79,12 @@ fun main(args: Array<String>) {
 
     val embedder = KotlinEmbedding(indexLoc, gramLoc)
     embedder.loadTopics("paragraphs/")
-    val testText = """
-        Contemporary medicine is in general conducted within health care systems. Legal, credentialing and financing frameworks are established by individual governments, augmented on occasion by international organizations, such as churches. The characteristics of any given health care system have significant impact on the way medical care is provided.
-
-From ancient times, Christian emphasis on practical charity gave rise to the development of systematic nursing and hospitals and the Catholic Church today remains the largest non-government provider of medical services in the world.[15] Advanced industrial countries (with the exception of the United States)[16][17] and many developing countries provide medical services through a system of universal health care that aims to guarantee care for all through a single-payer health care system, or compulsory private or co-operative health insurance. This is intended to ensure that the entire population has access to medical care on the basis of need rather than ability to pay. Delivery may be via private medical practices or by state-owned hospitals and clinics, or by charities, most commonly by a combination of all three.
-
-Most tribal societies provide no guarantee of healthcare for the population as a whole. In such societies, healthcare is available to those that can afford to pay for it or have self-insured it (either directly or as part of an employment contract) or who may be covered by care financed by the government or tribe directly.
-
-collection of glass bottles of different sizes
-Modern drug ampoules
-        """
-//    val testText =
-//            File("paragraphs/Biology/doc_1.txt").readText() +
-//            File("paragraphs/Computers/doc_1.txt").readText()
+//    val testText = """
+//        A party is a gathering of people who have been invited by a host for the purposes of socializing, conversation, recreation, or as part of a festival or other commemoration of a special occasion. A party will typically feature food and beverages, and often music and dancing or other forms of entertainment. In many Western countries, parties for teens and adults are associated with drinking alcohol such as beer, wine or distilled spirits.
+//        """
+    val testText =
+            File("paragraphs/Biology/doc_1.txt").readText() +
+            File("paragraphs/Computers/doc_1.txt").readText()
 
     val result = embedder.embed(testText, nSamples = 300)
     result.reportResults()

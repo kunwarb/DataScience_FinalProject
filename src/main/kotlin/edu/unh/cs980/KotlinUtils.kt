@@ -122,8 +122,8 @@ fun Iterable<Double>.smooth(): List<Double>  {
     val mean = items.average()
     val variantMap = items.map {abs(it - mean)}
     val total = variantMap.sum()
-    return variantMap.map {value -> value / total}
-//    return items.smooth3()
+//    return variantMap.map {value -> value / total}
+    return items.smooth2()
 
 }
 
