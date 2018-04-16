@@ -184,5 +184,5 @@ fun <A> identity(it: A): A = it
 fun Double.defaultWhenNotFinite(default: Double = 0.0): Double = if (!isFinite()) default else this
 
 //val sharedRand = JDKRandomGenerator(1000008)
-//val sharedRand = JDKRandomGenerator(1992323)
-val sharedRand = JDKRandomGenerator()
+val sharedRand = JDKRandomGenerator(1992323)
+//val sharedRand = JDKRandomGenerator()

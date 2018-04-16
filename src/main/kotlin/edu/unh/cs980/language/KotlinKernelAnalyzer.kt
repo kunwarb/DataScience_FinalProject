@@ -4,15 +4,18 @@ import edu.unh.cs980.*
 import edu.unh.cs980.misc.AnalyzerFunctions
 import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH
 import edu.unh.cs980.misc.GradientDescenter
+import edu.unh.cs980.misc.MartingaleSolver
 import org.apache.commons.math3.distribution.NormalDistribution
 import smile.math.matrix.Matrix
 import smile.math.matrix.PageRank
 import java.io.File
 import java.lang.Double.sum
+import java.lang.Math.*
+import java.util.*
 import kotlin.math.log2
 
 
-data class TopicMixtureResult(val results: Map<String, Double>, val kld: Double) {
+data class TopicMixtureResult(val results: SortedMap<String, Double>, val kld: Double) {
 
     fun reportResults() {
         results.entries
@@ -22,6 +25,65 @@ data class TopicMixtureResult(val results: Map<String, Double>, val kld: Double)
                 println("$topicName : $weight")}
 
         println("KLD: $kld\n\n")
+    }
+
+    fun euclideanDistance(other: TopicMixtureResult): Double =
+            results.values.zip(other.results.values)
+                .sumByDouble { (x, y) -> (pow(x - y, 2.0)) }
+                .apply { sqrt(this)  }
+
+    fun minkowskiDistance(other: TopicMixtureResult): Double =
+        results.values.zip(other.results.values)
+            .sumByDouble { (x, y) -> (pow(abs(x - y), results.values.size.toDouble())) }
+            .apply { pow(abs(this), 1 / results.values.size.toDouble())  }
+
+    fun deltaSim(other: TopicMixtureResult): Double =
+            results.values.zip(other.results.values)
+                .sumByDouble { (x, y) -> (x * y) }
+
+    fun weirdSim(other: TopicMixtureResult): Double {
+        val delta = deltaSim(other)
+        val manhatten = euclideanDistance(other)
+        return delta * (1 - manhatten)
+    }
+
+    fun weirdSim2(other: TopicMixtureResult): Double {
+        val delta = deltaSim(other)
+        val manhatten = euclideanDistance(other)
+        return delta / max(0.00001, manhatten)
+    }
+
+    fun kld(other: TopicMixtureResult): Double =
+            results.values.zip(other.results.values)
+                .sumByDouble { (x, y) ->
+                    val (xM, yM) = max(0.0001, x) to max(0.0001, y)
+                    xM * log2(xM / yM)
+                }
+
+    fun deltaDensity4(other: TopicMixtureResult): Double =
+            results.values.zip(other.results.values)
+                .sumByDouble { (x, y) -> y * (abs(y - x)) }
+
+    fun deltaDensity2(other: TopicMixtureResult): Double =
+            results.values.zip(other.results.values)
+                .sumByDouble { (x, y) -> (x * y) / max(0.001, (abs(x - y))) }
+
+    fun deltaDensity(other: TopicMixtureResult): Double =
+            results.values.zip(other.results.values)
+                .sumByDouble { (x, y) -> x * (x - y) + y * (y - x) }
+
+    fun manhattenDistance(other: TopicMixtureResult): Double =
+            results.values.zip(other.results.values)
+                .sumByDouble { (x, y) -> abs(x - y) }
+
+    fun cosineSim(other: TopicMixtureResult): Double {
+        val totalProduct = results.values.zip(other.results.values)
+            .sumByDouble { (x, y) -> (x * y) }
+
+        val xProduct = results.values.sumByDouble { value -> value * value }.apply { sqrt(this) }
+        val yProduct = other.results.values.sumByDouble { value -> value * value }.apply { sqrt(this) }
+        return totalProduct / (xProduct * yProduct)
+
     }
 
 }
@@ -106,39 +168,7 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
         return kernelNames to perturbations
     }
 
-    fun perturb2(nSamples: Int = 50): List<Map<String, Double>> {
-        val norm = NormalDistribution(sharedRand, 1000.0, 50.0)
-//        val (kernelNames, kernelFreqs) = kernels.toList().unzip()
-        val results = (0 until nSamples).map {
-            kernels.map { (k, v) -> k to norm.sample() * v.frequency }.toMap()
-        }
 
-        return results
-    }
-
-
-    fun kld(other: Map<String, Double>, corpus: (String) -> Double?): Double {
-//        val union = kernels.keys.union(other.kernels.keys)
-        val union = other.keys
-//        val sumFreq = other.kernels.values.sumByDouble { kernel -> kernel.frequency }
-
-        val normalizedMap = HashMap<String, Double>()
-        val defValue = 1.0
-        union.forEach { key ->
-            normalizedMap[key] =  kernels[key]?.run{frequency} ?: defValue
-        }
-
-        val total = normalizedMap.values.sum() +
-                kernels.filter { kernel -> kernel.key !in normalizedMap }.values.sumByDouble { kernel -> kernel.frequency }
-        normalizedMap.keys.forEach { key -> normalizedMap[key] = normalizedMap[key]!! / total }
-
-        return 1.0 * union.sumByDouble { word ->
-            var k1 = normalizedMap[word]!!
-            var k2 = other[word] ?: 0.0
-
-            (k2) * log2((k2 / k1))
-        } / union.size
-    }
 
     fun getKernelFreqs() = kernels.map { (word, kernel) -> word to kernel.frequency }.toMap()
 
@@ -149,23 +179,6 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
         kernels.values.forEach { kernel -> kernel.frequency = kernel.frequency / total }
     }
 
-    fun normalizeByCond() {
-        var total = kernels.values.sumByDouble { kernel -> kernel.frequency }
-        kernels.values.forEach{ wordKernel -> wordKernel.normalize()}
-        kernels.values.forEach { kernel -> kernel.frequency = kernel.frequency / total }
-
-        val condTotal = kernels.values.flatMap { kernel -> kernel.distribution.map { (k,v) -> k to v * kernel.frequency } }
-            .groupingBy { (word, _) -> word }
-            .fold(0.0) { acc, (_, conditionalFreq) -> acc + conditionalFreq }
-
-        condTotal.forEach { (k,v) -> kernels[k]!!.condFrequency = v }
-        total = kernels.values.sumByDouble { kernel -> kernel.condFrequency }
-        kernels.values.forEach { kernel -> kernel.condFrequency = kernel.condFrequency / total }
-
-        kernels.values.forEach { kernel -> kernel.frequency = kernel.frequency * 0.5 + kernel.condFrequency * 0.5 }
-        total = kernels.values.sumByDouble { kernel -> kernel.frequency }
-        kernels.values.forEach { kernel -> kernel.frequency = kernel.frequency / total }
-    }
 
     fun normalizeByCond2() {
         kernels.values.forEach{ wordKernel -> wordKernel.normalize()}
@@ -197,11 +210,8 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
             }
         }
 
-//        println(covarianceMatrix)
-//        val base = (0 until wordIndices.size).map { 1.0 }.toDoubleArray()
         val ranked = PageRank
-//                .pagerank(covarianceMatrix, base, 0.9, 0.000001, 10000)
-            .pagerank(covarianceMatrix, base, 0.2, 0.00000001, 10000)
+            .pagerank(covarianceMatrix, base, 0.99, 0.00000001, 10000)
                 .map { if (it < 0.0) 1 / wordIndices.size.toDouble() else it }
 
         val total = ranked.sum()
@@ -239,54 +249,30 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double, val corpus: (Strin
             }
 
 
-    fun scoreTopicDomain(topic: KernelDist, domain: List<Map<String, Double>>, smooth: Boolean = false): List<Double> {
-        val scores = domain.map { k -> topic.kld(k, corpus) }
-        val total = scores.sum()
-        return scores.map { score -> score / total }
-            .let { results -> if (smooth) results.smooth() else results  }
-    }
 
-
-    fun classifyByDomainSimplex(text: String, domain: List<Map<String, Double>>, smooth: Boolean = false): TopicMixtureResult {
-        val textKernel = KernelDist(mean, std)
-        if (partitioned) textKernel.analyzePartitionedDocument(text) else textKernel.analyzeDocument(text)
-        textKernel.normalizeKernels()
-
-        val base = scoreTopicDomain(textKernel, domain)
-        val filterDomained = domain.zip(base).filter { it.second > 0.0 }.map { it.first }
-        val filteredBase = scoreTopicDomain(textKernel, filterDomained, smooth)
-
-        val topicDistributions = topics
-            .map { topic -> scoreTopicDomain(topic.value, filterDomained, smooth) }
-
-        val stepper = GradientDescenter(filteredBase, topicDistributions)
-        val (weights, kld) = stepper.startDescent(800)
-
-        val results = topics.keys.zip(weights).toMap()
-        return TopicMixtureResult(results, kld)
-    }
 
     fun classifyByDomainSimplex2(integrals: List<Pair<String, List<Double>>>, nIterations: Int = 500, smooth: Boolean = false): TopicMixtureResult {
         val identityFreq = integrals.find { it.first == "identity" }!!.second
         val (featureNames, featureFreqs) = integrals.filter { it.first != "identity" }.unzip()
 
         val stepper = GradientDescenter(identityFreq, featureFreqs)
+//        val stepper = MartingaleSolver(identityFreq, featureFreqs)
         val (weights, kld) = stepper.startDescent(nIterations)
 
         val results = featureNames.zip(weights).toMap()
-        return TopicMixtureResult(results, kld)
+        return TopicMixtureResult(results.toSortedMap(), kld)
     }
 
-    fun getUnigramFrequencies(text: String): Map<String, Double> {
-        val filterPattern = "[\\d+]".toRegex()
-        val filteredText = filterPattern.replace(text, "").toLowerCase()
-        val terms = AnalyzerFunctions.createTokenList(filteredText, analyzerType = ANALYZER_ENGLISH)
-
-        return terms
-            .groupingBy(::identity)
-            .eachCount()
-            .normalize()
-    }
+//    fun getUnigramFrequencies(text: String): Map<String, Double> {
+//        val filterPattern = "[\\d+]".toRegex()
+//        val filteredText = filterPattern.replace(text, "").toLowerCase()
+//        val terms = AnalyzerFunctions.createTokenList(filteredText, analyzerType = ANALYZER_ENGLISH)
+//
+//        return terms
+//            .groupingBy(::identity)
+//            .eachCount()
+//            .normalize()
+//    }
 
 
 
