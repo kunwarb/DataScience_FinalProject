@@ -21,6 +21,7 @@ import java.nio.file.Paths
 import java.util.*
 import kotlin.math.log2
 import kotlin.math.sqrt
+import kotlin.system.measureTimeMillis
 
 // Conditional versions of run/let/apply/also
 fun <T,R> T.runIf(condition: Boolean, block: T.() -> R): R? = if (condition)  run(block)  else null
@@ -138,6 +139,12 @@ fun Iterable<Double>.normalize(): List<Double> {
 //fun <A>Sequence<A>.forEachParallel(f: suspend (A) -> Unit): Unit = runBlocking {
 //    forEach { async(CommonPool) { f(it) }.await() }
 //}
+
+fun<A> withTime(f: () -> A): Pair<Long, A> {
+    var result: A? = null
+    val time = measureTimeMillis { result = f() }
+    return time to result!!
+}
 
 
 // Map Extensions

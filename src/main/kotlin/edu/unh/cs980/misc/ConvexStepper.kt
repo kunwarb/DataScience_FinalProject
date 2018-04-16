@@ -103,23 +103,6 @@ class GradientDescenter(val origin: List<Double>, val topics: List<List<Double>>
 
 }
 
-fun applyWeight(weight: Double, mat: DenseMatrix, size: Int): DenseMatrix {
-    val weightMatrix = Matrix.newInstance(1, size, weight)
-    return weightMatrix.abmm(mat)!!
-}
 
 fun main(args: Array<String>) {
-    val lists = (0 until 3).map { (0 until 5).map { it.toDouble() }.toDoubleArray() }.toTypedArray()
-    val myMatrix = smile.math.matrix.Matrix.newInstance(lists)
-    val weights = c(10.0, 100.0, 1000.0)
-    val weightMatrix = Matrix.newInstance(weights)
-
-
-    val w1 = applyWeight(1.5, myMatrix, 3)
-    val w2 = applyWeight(1.5, myMatrix, 3)
-    println(w1)
-    println(w2)
-    println(Matrix.ones(3, 3).mul(0.3))
-    println("TOGETH")
-    println(w1.add(w2))
 }

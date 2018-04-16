@@ -213,10 +213,11 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double, val corpus: (Strin
                            val partitioned: Boolean = false) {
     val topics = HashMap<String, KernelDist>()
 
-    fun analyzeTopicDirectories(mainDirectory: String) {
+    fun analyzeTopicDirectories(mainDirectory: String, filterList: List<String> = listOf()) {
         File(mainDirectory)
             .listFiles()
             .filter(File::isDirectory)
+            .filter { file -> filterList.isEmpty() || file.name in filterList  }
             .forEach { file ->  analyzeTopic(file.name, file)}
     }
 
@@ -265,12 +266,12 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double, val corpus: (Strin
         return TopicMixtureResult(results, kld)
     }
 
-    fun classifyByDomainSimplex2(integrals: List<Pair<String, List<Double>>>, smooth: Boolean): TopicMixtureResult {
+    fun classifyByDomainSimplex2(integrals: List<Pair<String, List<Double>>>, nIterations: Int = 500, smooth: Boolean = false): TopicMixtureResult {
         val identityFreq = integrals.find { it.first == "identity" }!!.second
         val (featureNames, featureFreqs) = integrals.filter { it.first != "identity" }.unzip()
 
         val stepper = GradientDescenter(identityFreq, featureFreqs)
-        val (weights, kld) = stepper.startDescent(800)
+        val (weights, kld) = stepper.startDescent(nIterations)
 
         val results = featureNames.zip(weights).toMap()
         return TopicMixtureResult(results, kld)

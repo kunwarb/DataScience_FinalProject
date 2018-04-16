@@ -17,14 +17,23 @@ class KotlinStochasticIntegrator(val perturbations: Pair<List<String>, List<List
         val topicHash = topic.second
         val uniqueKeys = topic.second.keys - perturbations.first
         val uniqueTotalFreq = uniqueKeys.sumByDouble { word -> topicHash[word]!! }
+        val restrictedFreq = perturbations.first.sumByDouble { word -> topicHash[word] ?: 0.000000001 }
 
         val restrictedDist = perturbations.first
 //            .map { word -> topicHash[word] ?: 1 / perturbations.first.size.toDouble() }
-            .map { word -> topicHash[word] ?: 1000000000.0 }
+//            .map { word -> topicHash[word] ?: perturbations.first.size.toDouble() }
+//            .map { word -> topicHash[word]  ?: 1 / topic.second.keys.size.toDouble() }
+//            .map { word -> topicHash[word]  ?: 1 / perturbations.first.size.toDouble() }
+//            .map { word -> topicHash[word]  ?: 1000 * perturbations.first.size.toDouble() }
+            .map { word -> topicHash[word]  ?: topic.second.keys.size * perturbations.first.size.toDouble() }
+//            .map { word -> topicHash[word] ?: 1.0 }
 //            .map { word -> topicHash[word] ?: (corpus(word)?: 1 / perturbations.first.size.toDouble()) }
             .let { curMap ->
-                val finalTotal = curMap.sum() + uniqueTotalFreq
-                curMap.map { value -> value /  finalTotal }}
+                val mapSum = curMap.sum()
+                val finalTotal = mapSum + uniqueTotalFreq
+
+//                curMap.map { value -> value /  mapSum }}
+                    curMap.map { value -> value /  perturbations.first.size.toDouble() }}
             .toList()
 
         return restrictedDist
