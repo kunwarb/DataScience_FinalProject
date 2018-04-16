@@ -57,15 +57,18 @@ class KotlinEmbedding(indexLoc: String, gramLoc: String) {
         topicTime = time
     }
 
-    fun embed(text: String, nSamples: Int = 300, nIterations: Int = 500): TopicMixtureResult {
-        val kernelDist = KernelDist(0.0, 100.0)
+    fun embed(text: String, nSamples: Int = 300, nIterations: Int = 500, smooth: Boolean = false): TopicMixtureResult {
+        val kernelDist = KernelDist(0.0, 1.0)
             .apply { analyzePartitionedDocument(text) }
             .apply { normalizeKernels() }
 
 
         val identityFreqs = "identity" to kernelDist.getKernelFreqs()
 
-        val smoothTime = measureTimeMillis { kernelDist.equilibriumCovariance() }
+        if (smooth) {
+            val smoothTime = measureTimeMillis { kernelDist.equilibriumCovariance() }
+
+        }
 //        kernelDist.normalizeByCond2()
 
 
@@ -103,15 +106,18 @@ fun main(args: Array<String>) {
     val embedder = KotlinEmbedding(indexLoc, gramLoc)
     embedder.loadTopics("paragraphs/",
             filterList = listOf())
-//    val testText = """
-//        A party is a gathering of people who have been invited by a host for the purposes of socializing, conversation, recreation, or as part of a festival or other commemoration of a special occasion. A party will typically feature food and beverages, and often music and dancing or other forms of entertainment. In many Western countries, parties for teens and adults are associated with drinking alcohol such as beer, wine or distilled spirits.
-//        """
-    val testText =
-            File("paragraphs/Biology/doc_1.txt").readText() +
-            File("paragraphs/Computers/doc_3.txt").readText() +
-            File("paragraphs/Computers/doc_0.txt").readText() +
-            File("paragraphs/Computers/doc_0.txt").readText()
+    val testText = """
+        A party is a gathering of people who have been invited by a host for the purposes of socializing, conversation, recreation, or as part of a festival or other commemoration of a special occasion. A party will typically feature food and beverages, and often music and dancing or other forms of entertainment. In many Western countries, parties for teens and adults are associated with drinking alcohol such as beer, wine or distilled spirits.
+        """
+//    val testText =
+//            File("paragraphs/Biology/doc_1.txt").readText() +
+//            File("paragraphs/Computers/doc_3.txt").readText() +
+//            File("paragraphs/Computers/doc_0.txt").readText() +
+//            File("paragraphs/Medicine/doc_2.txt").readText() +
+//                    File("paragraphs/Medicine/doc_2.txt").readText() +
+//                    File("paragraphs/Medicine/doc_2.txt").readText() +
+//                    File("paragraphs/Medicine/doc_2.txt").readText()
 
-    val result = embedder.embed(testText, nSamples = 1000, nIterations = 500)
+    val result = embedder.embed(testText, nSamples = 1000, nIterations = 500, smooth = true)
     result.reportResults()
 }
