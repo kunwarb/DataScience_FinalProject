@@ -58,15 +58,15 @@ class KotlinEmbedding(indexLoc: String, gramLoc: String) {
 
         kernelDist.normalizeByCond2()
 
-//        val samples = kernelDist.perturb(300)
-        val samples = kernelDist.perturb2(300)
+        val samples = kernelDist.perturb(30000)
+//        val samples = kernelDist.perturb2(3000)
 
-//        val topicStats = kernelAnalyzer.retrieveTopicFrequencies() + identityFreqs
-//        val stochasticIntegrator = KotlinStochasticIntegrator(samples, topicStats)
-//        val integrals = stochasticIntegrator.integrate()
+        val topicStats = kernelAnalyzer.retrieveTopicFrequencies() + identityFreqs
+        val stochasticIntegrator = KotlinStochasticIntegrator(samples, topicStats)
+        val integrals = stochasticIntegrator.integrate()
 
-//        return kernelAnalyzer.classifyByDomainSimplex2(integrals, smooth = false)
-        return kernelAnalyzer.classifyByDomainSimplex(text, samples, smooth = false)
+        return kernelAnalyzer.classifyByDomainSimplex2(integrals, smooth = false)
+//        return kernelAnalyzer.classifyByDomainSimplex(text, samples, smooth = false)
     }
 }
 

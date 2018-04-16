@@ -99,7 +99,7 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
         val perturbations = (0 until nSamples).map {
             norm.sample(kernelFreqs.size)
                 .zip(kernelFreqs)
-                .map { (gaussian, kernelFreq) -> gaussian * kernelFreq.frequency  }}
+                .map { (gaussian, kernelFreq) -> gaussian * kernelFreq.frequency  } }
 
         return kernelNames to perturbations
     }
