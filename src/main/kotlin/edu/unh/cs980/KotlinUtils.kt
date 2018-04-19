@@ -71,7 +71,7 @@ fun <A, B, C>Iterable<A>.accumMap(keyFun: (A) -> C, f: (B?, A) -> B): List<Pair<
 
 fun <A, B: Number>Map<A, B>.normalize(): Map<A, Double> {
     val total = values.sumByDouble { it.toDouble() }
-    return mapValues { (_, value) -> value.toDouble() / total }
+    return mapValues { (_, value) -> (value.toDouble() / total).defaultWhenNotFinite(0.0) }
 }
 
 

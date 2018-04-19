@@ -1,12 +1,15 @@
 package edu.unh.cs980.language
 
+import edu.unh.cs980.defaultWhenNotFinite
 import edu.unh.cs980.identity
 import edu.unh.cs980.misc.AnalyzerFunctions
 import edu.unh.cs980.misc.PartitionDescenter
 import edu.unh.cs980.normalize
 import edu.unh.cs980.paragraph.KotlinStochasticIntegrator
 import edu.unh.cs980.sharedRand
+import info.debatty.java.stringsimilarity.Cosine
 import info.debatty.java.stringsimilarity.Jaccard
+import info.debatty.java.stringsimilarity.NormalizedLevenshtein
 import org.apache.commons.math3.distribution.NormalDistribution
 import java.io.*
 
@@ -22,6 +25,11 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
         val (simFun, partitionFun) = descentData.firstOrNull() ?: return
         val leftovers = descentData.subList(1, descentData.size)
 
+        if (partitions.isEmpty()) {
+            println("There's a hole in $name")
+            return
+        }
+
         val (partitionSims, partitionTexts) = partitions.mapIndexed { index, text ->
             val pname = "${name}_$index"
             (pname to simFun(text)) to (pname to text) }.unzip()
@@ -30,6 +38,7 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
             .groupingBy { it.key }
             .fold(0.0) { acc, entry -> acc!! + entry.value }
             .normalize()
+
 
         val perturbations = perturb(1000, coveringSim)
         val integrator = KotlinStochasticIntegrator(perturbations, partitionSims + (name to coveringSim), {null}, false)
@@ -62,7 +71,7 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
 
     fun transferMeasure(simFun: (String) -> Double): Pair<String, Double> {
         val similarityMeasure =
-                partitions.map(simFun).average()
+                partitions.map(simFun).average().defaultWhenNotFinite(0.0)
         return cover!!.ascend(name, similarityMeasure)
     }
 
@@ -113,7 +122,7 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
         .filter { it.length > 3 }
 
     fun splitWord(text: String): List<String> =
-            "[ \n\t]".toRegex().split(text)
+            "[ ]".toRegex().split(text)
                 .filter { it.length > 3 }
 
 
@@ -176,29 +185,66 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
 }
 
 fun averageSim(w1: String, w2: String): Double =
-    1.0 - Jaccard().distance(w1, w2)
+    1.0 - Jaccard(2).distance(w1, w2)
+
+fun filterWords(text: String) =
+    AnalyzerFunctions.createTokenList(text.toLowerCase(),
+            analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_STANDARD)
+
+fun tokenizedSim(w1: String, w2: String): Double {
+    val f1 = filterWords(w1)
+    val f2 = filterWords(w2)
+    return f1.flatMap { word1 -> f2.map { word2 -> averageSim(word1, word2).defaultWhenNotFinite(0.0) } }
+        .average().defaultWhenNotFinite(0.0)
+}
 
 
 fun bindSims(text: String): List<(String) -> Double> {
-    val splitreg = "[ \n\t]".toRegex()
+    val splitreg = "[ ]".toRegex()
     val words = splitreg.split(text.toLowerCase())
     return words.map { word -> {otherWord: String -> averageSim(word, otherWord)} }
+//    return words.map { word -> {otherWord: String -> 0.0} }
 }
 
-fun main(args: Array<String>) {
-    val metaAnalyzer = KotlinMetaKernelAnalyzer("paragraphs/")
-    metaAnalyzer.trainParagraphs()
-    val sheaves = metaAnalyzer.loadSheaves("descent_data/")
-    val mySentence = bindSims("Engineering involves lots of things")
+//fun bindSims2(text: String): List<(String) -> Double> {
+//    return {w2: String -> tokenizedSim(text, w2) }
+//}
 
-//    sheaves.flatMap { sheaf -> sheaf.retrieveLayer(2) }
-//        .map { sheaf ->
-//            sheaf.transferMeasure { word -> mySentence.map { myword -> myword(word) }.average() } }
-//        .groupingBy { it.first }
+fun createWordAverage(text: String): (String) -> Double {
+    return { w: String -> tokenizedSim(text, w) }
+
+}
+
+fun testStuff(metaAnalyzer: KotlinMetaKernelAnalyzer) {
+//    val sentence = "Tanks tanks tanks"
+//    val mySentence = listOf(createWordAverage(sentence))
+    val sheaves = metaAnalyzer.loadSheaves("descent_data/")
+    val mySentence = bindSims("Here is some  and some medicine and some people")
+//    val mySentence = bindSims("Philosophy is an old time historical traditional thing")
+
+//    val mySentence = listOf({ w: String -> tokenizedSim(sentence, w)})
+
+    sheaves.flatMap { sheaf -> sheaf.retrieveLayer(2) }
+        .map { sheaf ->
+            sheaf.transferMeasure { word -> mySentence.map { myword -> myword(word) }.average().defaultWhenNotFinite(0.0) } }
+        .groupBy { it.first }
+//        .mapValues { (key, values) -> values.sumByDouble { it.second } / values.size }
+        .mapValues { (key, values) -> values.sumByDouble { it.second }  }
 //        .fold(0.0) { cur, acc -> cur + acc.second}
-//        .forEach(::println)
+        .filter { it.value.isFinite() }
+        .filter { it.key == "Medicine" }
+//        .normalize()
+        .entries.sortedByDescending { it.value }
+        .forEach(::println)
 
 //        .map { it.partitions.joinToString("|||") }
 //        .joinToString("\n------\n")
 //        .apply(::println)
+
+}
+
+fun main(args: Array<String>) {
+    val metaAnalyzer = KotlinMetaKernelAnalyzer("paragraphs/")
+//    metaAnalyzer.trainParagraphs()
+//    testStuff(metaAnalyzer)
 }
