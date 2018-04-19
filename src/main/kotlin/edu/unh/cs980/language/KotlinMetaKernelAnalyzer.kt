@@ -6,6 +6,7 @@ import edu.unh.cs980.misc.PartitionDescenter
 import edu.unh.cs980.normalize
 import edu.unh.cs980.paragraph.KotlinStochasticIntegrator
 import edu.unh.cs980.sharedRand
+import info.debatty.java.stringsimilarity.Jaccard
 import org.apache.commons.math3.distribution.NormalDistribution
 import java.io.*
 
@@ -31,7 +32,6 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
             .normalize()
 
         val perturbations = perturb(1000, coveringSim)
-
         val integrator = KotlinStochasticIntegrator(perturbations, partitionSims + (name to coveringSim), {null}, false)
         val integrals = integrator.integrate()
 
@@ -50,7 +50,7 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
             .map { (freq, sheafName) ->
                 val partitionText = partitionTextMap[sheafName]!!
                 val newPartitions = partitionFun?.invoke(partitionText) ?: emptyList()
-                measure[sheafName] = Sheaf(sheafName, newPartitions, kld, cover) to freq
+                measure[sheafName] = Sheaf(sheafName, newPartitions, kld, this) to freq
             }
 
         measure.forEach { (_, sheafMeasure) ->
@@ -58,6 +58,17 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
             sheaf.descend(leftovers)
         }
 
+    }
+
+    fun transferMeasure(simFun: (String) -> Double): Pair<String, Double> {
+        val similarityMeasure =
+                partitions.map(simFun).average()
+        return cover!!.ascend(name, similarityMeasure)
+    }
+
+    fun ascend(datumName: String, simMeasure: Double): Pair<String, Double> {
+        val adjustedMeasure = measure[datumName]!!.second * simMeasure
+        return cover?.ascend(name, adjustedMeasure) ?: name to adjustedMeasure
     }
 
     fun retrieveLayer(depth: Int): List<Sheaf> =
@@ -148,7 +159,6 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
     fun trainParagraphs() {
         File(paragraphIndex)
             .listFiles()
-            .take(1)
             .filter { file -> file.isDirectory }
             .forEach { file -> trainParagraph(file.name, file) }
     }
@@ -165,12 +175,30 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
 
 }
 
+fun averageSim(w1: String, w2: String): Double =
+    1.0 - Jaccard().distance(w1, w2)
+
+
+fun bindSims(text: String): List<(String) -> Double> {
+    val splitreg = "[ \n\t]".toRegex()
+    val words = splitreg.split(text.toLowerCase())
+    return words.map { word -> {otherWord: String -> averageSim(word, otherWord)} }
+}
+
 fun main(args: Array<String>) {
     val metaAnalyzer = KotlinMetaKernelAnalyzer("paragraphs/")
-//    metaAnalyzer.trainParagraphs()
+    metaAnalyzer.trainParagraphs()
     val sheaves = metaAnalyzer.loadSheaves("descent_data/")
-    sheaves.flatMap { sheaf -> sheaf.retrieveLayer(3) }
-        .map { it.partitions.joinToString("|||") }
-        .joinToString("\n------\n")
-        .apply(::println)
+    val mySentence = bindSims("Engineering involves lots of things")
+
+//    sheaves.flatMap { sheaf -> sheaf.retrieveLayer(2) }
+//        .map { sheaf ->
+//            sheaf.transferMeasure { word -> mySentence.map { myword -> myword(word) }.average() } }
+//        .groupingBy { it.first }
+//        .fold(0.0) { cur, acc -> cur + acc.second}
+//        .forEach(::println)
+
+//        .map { it.partitions.joinToString("|||") }
+//        .joinToString("\n------\n")
+//        .apply(::println)
 }
