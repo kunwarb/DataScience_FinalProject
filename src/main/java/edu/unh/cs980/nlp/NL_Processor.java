@@ -1,56 +1,114 @@
 package edu.unh.cs980.nlp;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 
 import org.apache.log4j.Logger;
 
-import edu.stanford.nlp.ling.CoreAnnotations.PartOfSpeechAnnotation;
-import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
-import edu.stanford.nlp.ling.CoreAnnotations.TextAnnotation;
-import edu.stanford.nlp.ling.CoreAnnotations.TokensAnnotation;
+import edu.stanford.nlp.ie.util.RelationTriple;
 import edu.stanford.nlp.ling.CoreLabel;
-import edu.stanford.nlp.pipeline.Annotation;
+import edu.stanford.nlp.naturalli.NaturalLogicAnnotations;
+import edu.stanford.nlp.pipeline.CoreDocument;
+import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
-import edu.stanford.nlp.util.CoreMap;
+import edu.stanford.nlp.semgraph.SemanticGraph;
+import edu.unh.cs980.nlp.NL_Document.Sentence;
+import edu.unh.cs980.nlp.NL_Document.Word;
 
+/**
+ * @author Kaixin
+ *
+ */
 public class NL_Processor {
 	private static final Logger logger = Logger.getLogger(NL_Processor.class);
 	private static StanfordCoreNLP pipeline;
+	private static Boolean initWithOpenIE;
 
-	public static NL_Document.Paragraph convertToNL_Document(String para_text) {
+	// Retrieve relationships between entities in each sentence.
+	public static NL_Document.Paragraph convertToNL_DocumentWithOpenIE(String para_text) {
+		return convertToNL_Document(para_text, true);
+	}
 
-		logger.info("Processing text with stanford NLP.");
+	// Won't retrieve relationships between entities in each sentence. Run
+	// faster.
+	public static NL_Document.Paragraph convertToNL_DocumentWithOutOpenIE(String para_text) {
+		return convertToNL_Document(para_text, false);
+	}
+
+	/**
+	 * @param openie
+	 *            Please try to initialize the pipeline once. There will be a
+	 *            time cost & logs when re-init the pipeline. If the pipeline
+	 *            already exists and no change on openIE option, then skip the
+	 *            initialization.
+	 */
+	private static void initPipeline(Boolean openie) {
+
+		String annotators = "tokenize,ssplit,pos";
 		if (pipeline == null) {
+			if (openie) {
+				annotators = "tokenize,ssplit,pos,lemma,depparse,natlog,openie";
+				initWithOpenIE = openie;
+				logger.info("Initialize NLP pipeline with OpenIE.");
+			} else {
+				initWithOpenIE = openie;
+				logger.info("Initialize Standard NLP pipeline.");
+
+			}
+
 			Properties props = new Properties();
-			props.put("annotators", "tokenize, ssplit, pos");
+			props.put("annotators", annotators);
 			pipeline = new StanfordCoreNLP(props);
+		} else {
+			if (openie != initWithOpenIE) {
+				if (openie) {
+					annotators = "tokenize,ssplit,pos,lemma,depparse,natlog,openie";
+					initWithOpenIE = openie;
+					logger.info("Re-Initialize NLP pipeline with OpenIE.");
+				} else {
+					initWithOpenIE = openie;
+					logger.info("Re-Initialize Standard NLP pipeline without OpenIE.");
+
+				}
+				Properties props = new Properties();
+				props.put("annotators", annotators);
+				pipeline = new StanfordCoreNLP(props);
+			}
 		}
+	}
+
+	public static NL_Document.Paragraph convertToNL_Document(String para_text, Boolean openie) {
+
+		// Initialize pipeline.
+		initPipeline(openie);
+
+		logger.info("Processing text with stanford NLP... ");
 
 		NL_Document.Paragraph para = new NL_Document.Paragraph();
-		Annotation annotation = new Annotation(para_text);
+		CoreDocument document = new CoreDocument(para_text);
 
-		pipeline.annotate(annotation);
+		pipeline.annotate(document);
 
 		// Convert paragraph text into a list of sentences
-		List<CoreMap> coreMap = annotation.get(SentencesAnnotation.class);
-		ArrayList<NL_Document.Sentence> sentences = new ArrayList<>();
+		List<CoreSentence> coreSentences = document.sentences();
+		ArrayList<Sentence> sentences = new ArrayList<>();
 
-		for (CoreMap entryLine : coreMap) {
+		for (CoreSentence entryLine : coreSentences) {
 			// Iterate through each sentence
 			NL_Document.Sentence sentence = new NL_Document.Sentence();
-			ArrayList<String> allNouns = new ArrayList<String>();
-			ArrayList<String> allVerbs = new ArrayList<String>();
+			ArrayList<Word> allNouns = new ArrayList<Word>();
+			ArrayList<Word> allVerbs = new ArrayList<Word>();
 
-			String sentConent = entryLine.get(TextAnnotation.class);
+			String sentConent = entryLine.text();
 			logger.debug("Sentence: " + sentConent);
 			// Iterate through each word in a sentence
-			for (CoreLabel token : entryLine.get(TokensAnnotation.class)) {
-
-				String word = token.get(TextAnnotation.class);
-				String pos = token.get(PartOfSpeechAnnotation.class);
-
+			for (CoreLabel token : entryLine.tokens()) {
+				Word word = new Word();
+				word.setText(token.word());
+				String pos = token.tag();
+				word.setPosTag(pos);
 				if (isNoun(pos)) {
 					allNouns.add(word);
 				} else if (isVerb(pos)) {
@@ -62,6 +120,18 @@ public class NL_Processor {
 			sentence.setSentContent(sentConent);
 			sentence.setAllNouns(allNouns);
 			sentence.setAllVerbs(allVerbs);
+
+			if (openie) {
+				// Retrieve dependency graph.
+				SemanticGraph dependencies = entryLine.dependencyParse();
+				sentence.setDependencyGraph(dependencies);
+
+				// Retrieve all relations
+				Collection<RelationTriple> triples = entryLine.coreMap()
+						.get(NaturalLogicAnnotations.RelationTriplesAnnotation.class);
+				sentence.setTriples(new ArrayList<RelationTriple>(triples));
+
+			}
 
 			sentences.add(sentence);
 		}

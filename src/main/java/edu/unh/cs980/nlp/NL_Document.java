@@ -2,6 +2,9 @@ package edu.unh.cs980.nlp;
 
 import java.util.ArrayList;
 
+import edu.stanford.nlp.ie.util.RelationTriple;
+import edu.stanford.nlp.semgraph.SemanticGraph;
+
 public class NL_Document {
 
 	public static class Paragraph {
@@ -28,8 +31,8 @@ public class NL_Document {
 			this.sentences = sentences;
 		}
 
-		public ArrayList<String> getAllNounsInPara() {
-			ArrayList<String> wordList = new ArrayList<String>();
+		public ArrayList<Word> getAllNounsInPara() {
+			ArrayList<Word> wordList = new ArrayList<Word>();
 
 			if (sentences != null || !sentences.isEmpty()) {
 				for (Sentence sent : sentences) {
@@ -40,8 +43,8 @@ public class NL_Document {
 			return wordList;
 		}
 
-		public ArrayList<String> getAllVerbsInPara() {
-			ArrayList<String> wordList = new ArrayList<String>();
+		public ArrayList<Word> getAllVerbsInPara() {
+			ArrayList<Word> wordList = new ArrayList<Word>();
 
 			if (sentences != null || !sentences.isEmpty()) {
 				for (Sentence sent : sentences) {
@@ -55,8 +58,10 @@ public class NL_Document {
 
 	public static class Sentence {
 		private String sentContent;
-		private ArrayList<String> allNouns;
-		private ArrayList<String> allVerbs;
+		private ArrayList<RelationTriple> triples;
+		private ArrayList<Word> allNouns;
+		private ArrayList<Word> allVerbs;
+		private SemanticGraph dependencies;
 
 		public Sentence() {
 
@@ -70,21 +75,70 @@ public class NL_Document {
 			this.sentContent = sentContent;
 		}
 
-		public ArrayList<String> getAllNouns() {
+		public ArrayList<RelationTriple> getTriples() {
+			return triples;
+		}
+
+		public void setTriples(ArrayList<RelationTriple> triples) {
+			this.triples = triples;
+		}
+
+		public ArrayList<Word> getAllNouns() {
 			return allNouns;
 		}
 
-		public void setAllNouns(ArrayList<String> allNouns) {
+		public void setAllNouns(ArrayList<Word> allNouns) {
 			this.allNouns = allNouns;
 		}
 
-		public ArrayList<String> getAllVerbs() {
+		public ArrayList<Word> getAllVerbs() {
 			return allVerbs;
 		}
 
-		public void setAllVerbs(ArrayList<String> allVerbs) {
+		public void setAllVerbs(ArrayList<Word> allVerbs) {
 			this.allVerbs = allVerbs;
 		}
 
+		public SemanticGraph getDependencyGraph() {
+			return dependencies;
+		}
+
+		public void setDependencyGraph(SemanticGraph dependencies) {
+			this.dependencies = dependencies;
+		}
+	}
+
+	public static class Word {
+		private String text;
+		private String posTag;
+		private String nerTag;
+
+		public Word() {
+
+		}
+
+		public String getText() {
+			return text;
+		}
+
+		public void setText(String text) {
+			this.text = text;
+		}
+
+		public String getPosTag() {
+			return posTag;
+		}
+
+		public void setPosTag(String posTag) {
+			this.posTag = posTag;
+		}
+
+		public String getNerTag() {
+			return nerTag;
+		}
+
+		public void setNerTag(String nerTag) {
+			this.nerTag = nerTag;
+		}
 	}
 }
