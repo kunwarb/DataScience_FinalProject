@@ -146,12 +146,19 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
     private fun trainParagraph(topic: String, directory: File) {
 //        val paragraphs =
 //                directory.listFiles() .mapIndexed { index, file -> "${topic}_$index" to file.readText() }
-        val paragraphs = directory.listFiles().map { file -> file.readText().toLowerCase() }
+        val paragraphs = directory.listFiles().map { file -> file.readText().toLowerCase().replace(",", " ") }
+            .map { text -> splitSentence(text).map {  text ->
+                AnalyzerFunctions.createTokenList(text, analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH).joinToString(" ") }
+                .joinToString(". ")
+            }
+
         val sheaf = Sheaf(topic, paragraphs)
         val descentData = listOf(
-                DescentData(this::unigramFreq, this::splitSentence),
+//                DescentData(this::unigramFreq, this::splitSentence),
+                DescentData(bindFreq(3), this::splitSentence),
                 DescentData(bindFreq(2), this::splitWord),
-                DescentData(this::singleLetterFreq, ::listOf)
+//                DescentData(this::singleLetterFreq, ::listOf)
+                DescentData(bindFreq(2), ::listOf)
         )
         sheaf.descend(descentData)
         File("descent_data/").let { file -> if (!file.exists()) file.mkdir() }
@@ -165,10 +172,10 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
     }
 
 
-    fun trainParagraphs() {
+    fun trainParagraphs(filterList: List<String> = emptyList()) {
         File(paragraphIndex)
             .listFiles()
-            .filter { file -> file.isDirectory }
+            .filter { file -> file.isDirectory && (filterList.isEmpty() || file.name in filterList)  }
             .forEach { file -> trainParagraph(file.name, file) }
     }
 
@@ -185,11 +192,12 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
 }
 
 fun averageSim(w1: String, w2: String): Double =
-    1.0 - Jaccard(2).distance(w1, w2)
+//    1.0 - Jaccard(2).distance(w1, w2)
+    NormalizedLevenshtein().similarity(w1, w2)
 
 fun filterWords(text: String) =
     AnalyzerFunctions.createTokenList(text.toLowerCase(),
-            analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_STANDARD)
+            analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH)
 
 fun tokenizedSim(w1: String, w2: String): Double {
     val f1 = filterWords(w1)
@@ -203,7 +211,7 @@ fun bindSims(text: String): List<(String) -> Double> {
     val splitreg = "[ ]".toRegex()
     val words = splitreg.split(text.toLowerCase())
     return words.map { word -> {otherWord: String -> averageSim(word, otherWord)} }
-//    return words.map { word -> {otherWord: String -> 0.0} }
+//    return words.map { word -> {otherWord: String -> 1.0} }
 }
 
 //fun bindSims2(text: String): List<(String) -> Double> {
@@ -219,7 +227,10 @@ fun testStuff(metaAnalyzer: KotlinMetaKernelAnalyzer) {
 //    val sentence = "Tanks tanks tanks"
 //    val mySentence = listOf(createWordAverage(sentence))
     val sheaves = metaAnalyzer.loadSheaves("descent_data/")
-    val mySentence = bindSims("Here is some  and some medicine and some people")
+//    val mySentence = bindSims("Here is some  and some medicine and some people")
+    val text = """
+            """
+    val mySentence = bindSims(text)
 //    val mySentence = bindSims("Philosophy is an old time historical traditional thing")
 
 //    val mySentence = listOf({ w: String -> tokenizedSim(sentence, w)})
@@ -232,7 +243,7 @@ fun testStuff(metaAnalyzer: KotlinMetaKernelAnalyzer) {
         .mapValues { (key, values) -> values.sumByDouble { it.second }  }
 //        .fold(0.0) { cur, acc -> cur + acc.second}
         .filter { it.value.isFinite() }
-        .filter { it.key == "Medicine" }
+//        .filter { it.key == "Medicine" }
 //        .normalize()
         .entries.sortedByDescending { it.value }
         .forEach(::println)
@@ -243,8 +254,21 @@ fun testStuff(metaAnalyzer: KotlinMetaKernelAnalyzer) {
 
 }
 
+fun showSheaves(metaAnalyzer: KotlinMetaKernelAnalyzer) {
+    val sheaves = metaAnalyzer.loadSheaves("descent_data/")
+    val res = sheaves
+        .filter { sheaf -> sheaf.name == "Cooking" }
+        .map { sheaf ->
+        sheaf.retrieveLayer(3)
+            .map { s -> s.partitions.joinToString(" ")  }.joinToString("\n") }
+
+    println(res)
+
+}
+
 fun main(args: Array<String>) {
     val metaAnalyzer = KotlinMetaKernelAnalyzer("paragraphs/")
-//    metaAnalyzer.trainParagraphs()
-//    testStuff(metaAnalyzer)
+//    metaAnalyzer.trainParagraphs(listOf("Medicine", "Cooking"))
+    testStuff(metaAnalyzer)
+//    showSheaves(metaAnalyzer)
 }
