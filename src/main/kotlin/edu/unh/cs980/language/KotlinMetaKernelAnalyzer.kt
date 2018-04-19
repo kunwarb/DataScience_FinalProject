@@ -1,0 +1,154 @@
+package edu.unh.cs980.language
+
+import edu.unh.cs980.identity
+import edu.unh.cs980.misc.AnalyzerFunctions
+import edu.unh.cs980.misc.PartitionDescenter
+import edu.unh.cs980.normalize
+import edu.unh.cs980.paragraph.KotlinStochasticIntegrator
+import edu.unh.cs980.sharedRand
+import org.apache.commons.math3.distribution.NormalDistribution
+import java.io.File
+
+
+data class DescentData(val simFun: (String) -> Map<String, Double>,
+                       val partitionFun: ((String) -> List<String>)? = null)
+
+//class Sheaf(val name: String, val text: String, val cover: Sheaf? = null, useLetterGram: Boolean = false) {
+class Sheaf(val name: String, val partitions: List<String>, val cover: Sheaf? = null) {
+    val measure = HashMap<String, Pair<Sheaf, Double>>()
+
+    fun descend(descentData: List<DescentData>)  {
+        val (simFun, partitionFun) = descentData.firstOrNull() ?: return
+        val leftovers = descentData.subList(1, descentData.size)
+
+        val (partitionSims, partitionTexts) = partitions.mapIndexed { index, text ->
+            val pname = "${name}_$index"
+            (pname to simFun(text)) to (pname to text) }.unzip()
+
+        val coveringSim = partitionSims.flatMap { partition -> partition.second.entries }
+            .groupingBy { it.key }
+            .fold(0.0) { acc, entry -> acc!! + entry.value }
+            .normalize()
+
+        val perturbations = perturb(1000, coveringSim)
+
+        val integrator = KotlinStochasticIntegrator(perturbations, partitionSims + (name to coveringSim), {null}, false)
+        val integrals = integrator.integrate()
+
+        val identityFreq = integrals.find { it.first == name }!!.second
+        val (featureNames, featureFreqs) = integrals.filter { it.first != name }.unzip()
+
+        val stepper = PartitionDescenter(identityFreq, featureFreqs)
+        val (weights, kld) = stepper.startDescent(500)
+
+        val results = featureNames.zip(weights).toMap()
+        val partitionTextMap = partitionTexts.toMap()
+        val mixture =  TopicMixtureResult(results.toSortedMap(), kld).reportResults()
+
+        partitionSims.mapNotNull { (name, _) -> results[name]?.to(name) }
+            .map { (freq, sheafName) ->
+                val partitionText = partitionTextMap[sheafName]!!
+                val newPartitions = partitionFun?.invoke(partitionText) ?: emptyList()
+                measure[sheafName] = Sheaf(sheafName, newPartitions, cover) to freq
+            }
+
+        measure.forEach { (_, sheafMeasure) ->
+            val sheaf = sheafMeasure.first
+            sheaf.descend(leftovers)
+        }
+
+
+//        sheaves.mapNotNull { sheaf -> results[sheaf.name]?.to(sheaf) }
+//            .forEach { (freq, sheaf) -> cover.measure[sheaf.name] = sheaf to freq }
+
+
+    }
+
+    companion object {
+        fun perturb(nSamples: Int = 50, sims: Map<String, Double>): Pair<List<String>, List<List<Double>>> {
+            val norm = NormalDistribution(sharedRand, 1000.0, 50.0)
+            val (kernelNames, kernelFreqs) = sims.toList().unzip()
+
+            val perturbations = (0 until nSamples).map {
+                norm.sample(kernelFreqs.size)
+                    .toList()
+                    .zip(kernelFreqs)
+                    .map { (gaussian, kernelFreq) -> gaussian * kernelFreq  } }
+
+            return kernelNames to perturbations
+        }
+
+    }
+}
+
+//    val kernel =
+//            KernelDist(0.0, 1.0, false)
+//                .apply {
+//                    analyzePartitionedDocument(text, useLetterGram)
+//                    normalizeKernels()
+//                }
+
+//    fun retrieveKernelFreqs() = name to kernel.getKernelFreqs()
+
+class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
+
+    fun unigramFreq(text: String): Map<String, Double> =
+        AnalyzerFunctions.createTokenList(text, analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH)
+            .groupingBy(::identity)
+            .eachCount()
+            .normalize()
+
+    private fun trainParagraph(topic: String, directory: File) {
+//        val paragraphs =
+//                directory.listFiles() .mapIndexed { index, file -> "${topic}_$index" to file.readText() }
+        val paragraphs = directory.listFiles().map { file -> file.readText() }
+        val sheaf = Sheaf(topic, paragraphs)
+        val descentData = listOf(DescentData(this::unigramFreq))
+        sheaf.descend(descentData)
+
+
+//        val cover = paragraphs
+//            .map { (_, text) -> text }
+//            .joinToString("\n")
+//            .let { combinedText -> Sheaf(topic, combinedText) }
+//
+//        val sheaves = paragraphs.map { (sheafName, text) -> Sheaf(sheafName, text, cover)}
+//
+//        val perturbations = cover.kernel.perturb(1000)
+//        val kernelFreqs = sheaves.map(Sheaf::retrieveKernelFreqs) + cover.retrieveKernelFreqs()
+//
+//
+//        val integrator = KotlinStochasticIntegrator(perturbations, kernelFreqs, {null}, false)
+//        val integrals = integrator.integrate()
+//
+//        val identityFreq = integrals.find { it.first == topic }!!.second
+//        val (featureNames, featureFreqs) = integrals.filter { it.first != topic }.unzip()
+//
+//        val stepper = PartitionDescenter(identityFreq, featureFreqs)
+//        val (weights, kld) = stepper.startDescent(500)
+//        val results = featureNames.zip(weights).toMap()
+//
+//        sheaves.mapNotNull { sheaf -> results[sheaf.name]?.to(sheaf) }
+//            .forEach { (freq, sheaf) -> cover.measure[sheaf.name] = sheaf to freq }
+//
+////        val mixture =  TopicMixtureResult(results.toSortedMap(), kld)
+//
+////        println("For topic: $topic")
+////        mixture.reportResults()
+
+    }
+
+
+    fun trainParagraphs() {
+        File(paragraphIndex)
+            .listFiles()
+            .filter { file -> file.isDirectory }
+            .forEach { file -> trainParagraph(file.name, file) }
+    }
+
+}
+
+fun main(args: Array<String>) {
+    val metaAnalyzer = KotlinMetaKernelAnalyzer("paragraphs/")
+    metaAnalyzer.trainParagraphs()
+}

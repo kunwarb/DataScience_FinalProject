@@ -4,7 +4,7 @@ import edu.unh.cs980.*
 import edu.unh.cs980.misc.AnalyzerFunctions
 import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH
 import edu.unh.cs980.misc.GradientDescenter
-import edu.unh.cs980.misc.MartingaleSolver
+import edu.unh.cs980.misc.PartitionDescenter
 import org.apache.commons.math3.distribution.NormalDistribution
 import smile.math.matrix.Matrix
 import smile.math.matrix.PageRank
@@ -126,10 +126,18 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
             .map { (v1, v2) -> v2 - v1 }
     }
 
-    fun analyzeDocument(text: String) {
+    fun analyzeDocument(text: String, letterGram: Boolean = false) {
         val filterPattern = "[\\d+]".toRegex()
         val filteredText = filterPattern.replace(text, "")
         val terms = AnalyzerFunctions.createTokenList(filteredText, analyzerType = analyzer)
+
+        if (letterGram) {
+            terms.forEach { term ->
+                term.windowed(2, partialWindows = false)
+                    .forEach { lGram -> kernels.computeIfAbsent(lGram, { WordKernel(term) }).frequency += 1.0 }
+            }
+            return
+        }
 
         terms.forEach { term -> kernels.computeIfAbsent(term, { WordKernel(term) }).frequency += 1.0 }
         if (doCondition) {
@@ -137,7 +145,6 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
                 .windowed(8, 1, true)
                 .forEach { window ->
                     val firstTerm = window[0]
-//                    kernels.computeIfAbsent(firstTerm, { WordKernel(firstTerm) }).frequency += 1.0
 
                     window
                         .slice(1 until window.size)
@@ -148,20 +155,23 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
         }
     }
 
-    fun analyzePartitionedDocument(text: String) =
+    fun analyzePartitionedDocument(text: String, letterGram: Boolean = false) =
             text
                 .toLowerCase()
                 .split(".")
                 .filter { it.length > 3 }
-                .forEach { splitText -> analyzeDocument(splitText) }
+                .forEach { splitText -> analyzeDocument(splitText, letterGram) }
 
 
     fun perturb(nSamples: Int = 50): Pair<List<String>, List<List<Double>>> {
+//        val norm = NormalDistribution(sharedRand, 1000.0, 50.0)
         val norm = NormalDistribution(sharedRand, 1000.0, 50.0)
+//        val norm = NormalDistribution(sharedRand, 1000.0, 100.0)
         val (kernelNames, kernelFreqs) = kernels.toList().unzip()
 
         val perturbations = (0 until nSamples).map {
             norm.sample(kernelFreqs.size)
+                .toList()
                 .zip(kernelFreqs)
                 .map { (gaussian, kernelFreq) -> gaussian * kernelFreq.frequency  } }
 
@@ -223,20 +233,26 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double, val corpus: (Strin
                            val partitioned: Boolean = false) {
     val topics = HashMap<String, KernelDist>()
 
-    fun analyzeTopicDirectories(mainDirectory: String, filterList: List<String> = listOf()) {
+    fun analyzeTopicDirectories(mainDirectory: String, filterList: List<String> = listOf(), smooth: Boolean = false) {
         File(mainDirectory)
             .listFiles()
             .filter(File::isDirectory)
             .filter { file -> filterList.isEmpty() || file.name in filterList  }
-            .forEach { file ->  analyzeTopic(file.name, file)}
+            .forEach { file ->  analyzeTopic(file.name, file, smooth)}
     }
 
-    private fun analyzeTopic(topic: String, directory: File) {
-        val kernelDist = KernelDist(mean, std, doCondition = false)
+    private fun analyzeTopic(topic: String, directory: File, smooth: Boolean) {
+        val kernelDist = KernelDist(mean, std, doCondition = smooth)
         topics[topic] = kernelDist
         directory.listFiles()
             .forEach { file ->  if (partitioned) kernelDist.analyzePartitionedDocument(file.readText())
                                 else kernelDist.analyzeDocument(file.readText())}
+    }
+
+    fun createTopicFromParagraph(topic: String, paragraph: String, smooth: Boolean) {
+        val kernelDist = KernelDist(mean, std, doCondition = smooth)
+        topics[topic] = kernelDist
+        kernelDist.analyzePartitionedDocument(paragraph)
     }
 
     fun normalizeTopics() {
@@ -250,29 +266,18 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double, val corpus: (Strin
 
 
 
-
     fun classifyByDomainSimplex2(integrals: List<Pair<String, List<Double>>>, nIterations: Int = 500, smooth: Boolean = false): TopicMixtureResult {
         val identityFreq = integrals.find { it.first == "identity" }!!.second
         val (featureNames, featureFreqs) = integrals.filter { it.first != "identity" }.unzip()
 
-        val stepper = GradientDescenter(identityFreq, featureFreqs)
+//        val stepper = GradientDescenter(identityFreq, featureFreqs)
+        val stepper = PartitionDescenter(identityFreq, featureFreqs)
 //        val stepper = MartingaleSolver(identityFreq, featureFreqs)
         val (weights, kld) = stepper.startDescent(nIterations)
-
         val results = featureNames.zip(weights).toMap()
+
         return TopicMixtureResult(results.toSortedMap(), kld)
     }
-
-//    fun getUnigramFrequencies(text: String): Map<String, Double> {
-//        val filterPattern = "[\\d+]".toRegex()
-//        val filteredText = filterPattern.replace(text, "").toLowerCase()
-//        val terms = AnalyzerFunctions.createTokenList(filteredText, analyzerType = ANALYZER_ENGLISH)
-//
-//        return terms
-//            .groupingBy(::identity)
-//            .eachCount()
-//            .normalize()
-//    }
 
 
 

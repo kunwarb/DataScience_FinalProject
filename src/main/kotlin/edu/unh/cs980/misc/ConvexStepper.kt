@@ -1,6 +1,8 @@
 package edu.unh.cs980.misc
 
 import edu.unh.cs980.features.featSDMWithEntityQueryExpansion
+import edu.unh.cs980.normalize
+import edu.unh.cs980.paragraph.topics
 import edu.unh.cs980.sharedRand
 import smile.math.matrix.Matrix
 import smile.math.*
@@ -13,61 +15,115 @@ import kotlin.math.sign
 import kotlin.system.exitProcess
 
 
-class MartingaleSolver(val origin: List<Double>, val topics: List<List<Double>>) {
-    val weights = (0 until topics.size).map { 1.0 }.toDoubleArray()
-    val normOrigin = origin.sum().let { total -> origin.map { it / total } }
-    var step = 0
-
-    fun doKld() =
-        weights.zip(topics).sumByDouble { (weight, topic) -> weight * topic[step] }
-            .let { observation ->
-                val normObservation = observation / weights.sum()
-                (normOrigin[step] - normObservation)  * log2(normOrigin[step] / normObservation)
-            }
-
-    fun getDerivative(baseline: Double, index: Int, curWeight: Double): Pair<Double, Double> {
-        if (curWeight <= 0.001) return 0.0 to 0.0
-
-        weights[index] = curWeight - 0.001
-        val lowerDiff = (doKld() - baseline)
-
-        weights[index] = curWeight + 0.001
-        val upperDiff = (doKld() - baseline)
-
-        weights[index] = curWeight
-        return if (lowerDiff < upperDiff) -1.0 to abs(lowerDiff) else 1.0 to abs(upperDiff)
-//        return if (lowerDiff < upperDiff) 1.0 to abs(lowerDiff) else -1.0 to abs(upperDiff)
-    }
 
 
-    fun startDescent(replays: Int): Pair<List<Double>, Double> {
-        var trainingWeights = (0 until topics.size).map { 1.0 }.toList()
+data class Partition(val origin: DoubleArray, val topics: List<DenseMatrix>) {
 
-        (0 until replays).forEach {
-            (0 until origin.size).forEach { curStep ->
-                trainingWeights.forEachIndexed { index, d -> weights[index] = d }
-                step = curStep
-                val baseline = doKld()
-                val gradient = (0 until topics.size).map { index -> getDerivative(baseline, index, trainingWeights[index]) }
-                val total = gradient.sumByDouble { (_, delta) -> delta }
 
-                if (total != 0.0) {
-                    trainingWeights = trainingWeights.mapIndexed { index, weight ->
-                        val delta = gradient[index]
-                        if (weight <= 0.001 || delta.second == 0.0) 0.0 else
-                            max(0.0, weight + delta.first * (delta.second / total) * 0.01)
-                    }
-                }
-            }
+    fun kld(weightMatrices: List<DenseMatrix>): Double =
+        weightMatrices.zip(topics)
+            .map { (w,t) -> w.transpose().mul(t) }
+            .reduce { acc, denseMatrix -> acc.add(denseMatrix)  }
+            .run { div(sum()) }
+            .transpose().array()
+            .run { KullbackLeiblerDivergence(origin, this.first())}
 
-        }
-        val weightSum = trainingWeights.sum()
-        val finalWeights = trainingWeights.map { value -> value / weightSum }
-        return finalWeights to doKld()
-    }
 
 
 }
+
+class PartitionContainer(val partitions: List<Partition>)  {
+    var curStep = 0
+
+    fun step() = (curStep + 1)  % partitions.size
+//    fun step() = sharedRand.nextInt(partitions.size)
+
+    fun kld(weightMatrices: List<DenseMatrix>): Double = partitions[curStep].kld(weightMatrices)
+
+
+    companion object {
+        fun createPartitionContainer(origin: List<Double>,
+                                     topics: List<List<Double>>, partitionSize: Int = 100): PartitionContainer {
+            val nPartitions = origin.size / partitionSize
+            val partitions = (0 until nPartitions).map {  part ->
+                val originPartition = origin.subList(part, part + partitionSize).normalize().toDoubleArray()
+                val topicPartitions = topics.map { topic ->
+                    Matrix.newInstance(topic.subList(part, part + partitionSize).normalize().toDoubleArray()) }
+
+                Partition(originPartition, topicPartitions)
+            }
+
+            return PartitionContainer(partitions)
+        }
+    }
+}
+
+
+class PartitionDescenter(origin: List<Double>, topics: List<List<Double>>, partitionSize: Int = 500) {
+    val partitionContainer = PartitionContainer.createPartitionContainer(origin, topics, partitionSize)
+    val weightMatrices =
+            (0 until topics.size).map { Matrix.newInstance(1, partitionSize, 0.1) }
+
+
+
+    fun changeWeight(index: Int, weight: Double) =
+            weightMatrices[index].mul(0.0).add(weight)
+
+    fun doKld() =
+            partitionContainer.kld(weightMatrices)
+
+
+
+    fun getDerivative(baseline: Double, index: Int, curWeight: Double): Pair<Double, Double> {
+        if (curWeight <= 0.0) return 0.0 to 0.0
+
+        changeWeight(index, curWeight - 0.001)
+        val lowerDiff = (doKld() - baseline)
+
+        changeWeight(index, curWeight + 0.001)
+        val upperDiff = (doKld() - baseline)
+        changeWeight(index, curWeight)
+
+        return if (lowerDiff < upperDiff) -1.0 to abs(lowerDiff) else 1.0 to abs(upperDiff)
+//        return if (lowerDiff > upperDiff) -1.0 to abs(lowerDiff) else 1.0 to abs(upperDiff)
+    }
+
+    fun updateWeightAgainstGradient(weights: List<Double>): List<Double> {
+        weights.mapIndexed { index, weight -> changeWeight(index, weight)}
+        val baseline = doKld()
+        val gradient = (0 until weights.size).map { index -> getDerivative(baseline, index, weights[index])}
+        val total = gradient.sumByDouble { (_, delta) -> delta }
+        if (total <= 0.0) return weights
+
+        return weights.mapIndexed { index, weight ->
+            val delta = gradient[index]
+            if (weight <= 0.0) 0.0 else
+                max(0.0, weight + delta.first * (delta.second / total) * 0.01)
+
+        }
+    }
+
+
+    fun startDescent(nTimes: Int): Pair<List<Double>, Double> {
+        val nTopics = weightMatrices.size
+        var weights = (0 until nTopics).map { 0.1 + sharedRand.nextDouble() }.toList().normalize()
+//        var weights = (0 until nTopics).map { 0.1 }.toList()
+
+        (0 until nTimes).forEach { iter ->
+
+            weights.mapIndexed { index, weight -> changeWeight(index, weight)}
+
+            weights = updateWeightAgainstGradient(weights)
+            partitionContainer.step()
+
+        }
+        val weightSum = weights.sum()
+        val finalWeights = weights.map { value -> value / weightSum }
+        return finalWeights to doKld()
+    }
+
+}
+
 
 
 class GradientDescenter(val origin: List<Double>, val topics: List<List<Double>>) {
@@ -76,7 +132,6 @@ class GradientDescenter(val origin: List<Double>, val topics: List<List<Double>>
 
     val topicMatrices = topics.map { Matrix.newInstance(it.toDoubleArray())}
     val originArray = origin.toDoubleArray()
-    val originMatrix = Matrix.newInstance(origin.toDoubleArray())
 
     fun changeWeight(index: Int, weight: Double) =
         weightMatrices[index].mul(0.0).add(weight)

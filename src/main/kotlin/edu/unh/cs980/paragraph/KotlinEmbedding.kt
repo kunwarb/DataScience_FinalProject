@@ -21,7 +21,7 @@ class KotlinEmbedding(indexLoc: String) {
     private val searcher = getIndexSearcher(indexLoc)
     private val memoizedFreqs = ConcurrentHashMap<String, Double>()
     private val kernelAnalyzer =
-            KotlinKernelAnalyzer(0.0, 300.0, corpus = {s -> null}, partitioned = true)
+            KotlinKernelAnalyzer(0.0, 1.0, corpus = {s -> null}, partitioned = true)
 
 
     var topicTime: Long = 0
@@ -30,9 +30,9 @@ class KotlinEmbedding(indexLoc: String) {
 //        .getSumTotalTermFreq("unigram")
 //        .toDouble()
 
-    fun query(query: String): List<String> {
+    fun query(query: String, nQueries: Int = 10): List<String> {
         val boolQuery = AnalyzerFunctions.createQuery(query)
-        val results = searcher.search(boolQuery, 10)
+        val results = searcher.search(boolQuery, nQueries)
         return results.scoreDocs.map { scoreDoc ->
             val doc = searcher.doc(scoreDoc.doc)
             doc.get(CONTENT)
@@ -40,7 +40,7 @@ class KotlinEmbedding(indexLoc: String) {
     }
 
     fun scoreResults(combined: TopicMixtureResult, docs: List<Pair<String, TopicMixtureResult>>) {
-        docs.map { doc -> doc to doc.second.deltaDensity(combined) }
+        docs.map { doc -> doc to doc.second.deltaSim(combined) }
             .sortedBy { (_, distance) -> distance }
             .forEach { (doc, distance) -> println("${doc.first}:\n\t $distance") }
 
@@ -75,24 +75,29 @@ class KotlinEmbedding(indexLoc: String) {
         scoreResults(result, results)
     }
 
-//    fun getUnigramFrequency(unigram: String): Double? {
-//        val gramFreq = memoizedFreqs.computeIfAbsent(unigram) {
-//            gramAnalyzer
-//                .indexSearcher
-//                .indexReader
-//                .totalTermFreq(Term("unigram", unigram)) / totalCorpusFreq
-//        }
-//
-//        return if (!gramFreq.isFinite() || gramFreq == 0.0) null else gramFreq
-//    }
 
-    fun loadTopics(directory: String, filterList: List<String> = listOf()) {
+    fun loadTopics(directory: String, filterList: List<String> = listOf(), smooth: Boolean = false) {
         val time = measureTimeMillis {
-            kernelAnalyzer.analyzeTopicDirectories(directory, filterList)
+            kernelAnalyzer.analyzeTopicDirectories(directory, filterList, smooth)
             kernelAnalyzer.normalizeTopics()
+            if (smooth) {
+                kernelAnalyzer.topics.values.forEach { it.equilibriumCovariance() }
+            }
         }
         topicTime = time
     }
+
+    fun loadQueries(queryString: String, filterList: List<String> = listOf(), smooth: Boolean = false, nQueries: Int = 5) {
+        val results = query(queryString, nQueries)
+        results.mapIndexed { index, s -> kernelAnalyzer.createTopicFromParagraph("$index", s, smooth)  }
+        kernelAnalyzer.normalizeTopics()
+    }
+
+    fun expandQueryText(queryString: String, nQueries: Int = 5) =
+        AnalyzerFunctions.createTokenList(queryString)
+            .map { query(it, nQueries).joinToString("\n") }
+            .joinToString()
+
 
     fun embed(text: String, nSamples: Int = 300, nIterations: Int = 500, smooth: Boolean = false): TopicMixtureResult {
         val kernelDist = KernelDist(0.0, 1.0)
@@ -122,44 +127,13 @@ class KotlinEmbedding(indexLoc: String) {
         }
 
 
-        println("Loaded topics in $topicTime ms")
+//        println("Loaded topics in $topicTime ms")
 //        println("Smoothed in $smoothTime ms")
-        println("Created $nSamples perturbations in $timePerturb ms")
-        println("Created integrals in $timeIntegrals ms")
-        println("Finished Gradient Descent in $timeGradient ms\n")
+//        println("Created $nSamples perturbations in $timePerturb ms")
+//        println("Created integrals in $timeIntegrals ms")
+//        println("Finished Gradient Descent in $timeGradient ms\n")
         return results
     }
 }
 
 
-fun main(args: Array<String>) {
-    val gramLoc = "/home/hcgs/data_science/gram"
-    val indexLoc = "/home/hcgs/data_science/index"
-
-    val embedder = KotlinEmbedding(indexLoc)
-    embedder.loadTopics("paragraphs/",
-            filterList = listOf())
-//    val testText = """
-//        A party is a gathering of people who have been invited by a host for the purposes of socializing, conversation, recreation, or as part of a festival or other commemoration of a special occasion. A party will typically feature food and beverages, and often music and dancing or other forms of entertainment. In many Western countries, parties for teens and adults are associated with drinking alcohol such as beer, wine or distilled spirits.
-//        """
-
-//    val testText = """
-//        A cuisine is a style of cooking characterized by distinctive ingredients, techniques and dishes, and usually associated with a specific culture or geographic region. A cuisine is primarily influenced by the ingredients that are available locally or through trade. Religious food laws, such as Hindu, Islamic and Jewish dietary laws, can also exercise a strong influence on cuisine. Regional food preparation traditions, customs and ingredients often combine to create dishes unique to a particular region.[1]
-//        """
-    val testText =
-            File("paragraphs/Statistics/doc_10.txt").readText() +
-                    File("paragraphs/Computers/doc_0.txt").readText()
-//                    File("paragraphs/Environments/doc_3.txt").readText() +
-//                    File("paragraphs/Environments/doc_1.txt").readText() +
-//            File("paragraphs/Computers/doc_3.txt").readText() +
-//            File("paragraphs/Medicine/doc_2.txt").readText()
-//            File("paragraphs/Computers/doc_0.txt").readText() +
-//                    File("paragraphs/Medicine/doc_2.txt").readText() +
-//                    File("paragraphs/Medicine/doc_2.txt").readText() +
-//                    File("paragraphs/Medicine/doc_2.txt").readText()
-
-    val result = embedder.embed(testText, nSamples = 1000, nIterations = 400, smooth = false)
-    result.reportResults()
-//    embedder.reportQueryResults("Variational calculus and bayes theorem", smoothDocs = false, smoothCombined = false)
-//    embedder.reportQueryResults("Health benefits of chocolate", smoothDocs = false, smoothCombined = false)
-}
