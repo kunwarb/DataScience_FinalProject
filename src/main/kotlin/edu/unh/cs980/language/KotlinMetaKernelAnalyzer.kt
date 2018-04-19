@@ -7,14 +7,14 @@ import edu.unh.cs980.normalize
 import edu.unh.cs980.paragraph.KotlinStochasticIntegrator
 import edu.unh.cs980.sharedRand
 import org.apache.commons.math3.distribution.NormalDistribution
-import java.io.File
+import java.io.*
 
 
 data class DescentData(val simFun: (String) -> Map<String, Double>,
                        val partitionFun: ((String) -> List<String>)? = null)
 
 //class Sheaf(val name: String, val text: String, val cover: Sheaf? = null, useLetterGram: Boolean = false) {
-class Sheaf(val name: String, val partitions: List<String>, val cover: Sheaf? = null) {
+class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.0, val cover: Sheaf? = null) : Serializable {
     val measure = HashMap<String, Pair<Sheaf, Double>>()
 
     fun descend(descentData: List<DescentData>)  {
@@ -46,21 +46,17 @@ class Sheaf(val name: String, val partitions: List<String>, val cover: Sheaf? = 
         val mixture =  TopicMixtureResult(results.toSortedMap(), kld).reportResults()
 
         partitionSims.mapNotNull { (name, _) -> results[name]?.to(name) }
+            .filter { it.first > 0.0 }
             .map { (freq, sheafName) ->
                 val partitionText = partitionTextMap[sheafName]!!
                 val newPartitions = partitionFun?.invoke(partitionText) ?: emptyList()
-                measure[sheafName] = Sheaf(sheafName, newPartitions, cover) to freq
+                measure[sheafName] = Sheaf(sheafName, newPartitions, kld, cover) to freq
             }
 
         measure.forEach { (_, sheafMeasure) ->
             val sheaf = sheafMeasure.first
             sheaf.descend(leftovers)
         }
-
-
-//        sheaves.mapNotNull { sheaf -> results[sheaf.name]?.to(sheaf) }
-//            .forEach { (freq, sheaf) -> cover.measure[sheaf.name] = sheaf to freq }
-
 
     }
 
@@ -98,13 +94,48 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
             .eachCount()
             .normalize()
 
+    fun splitSentence(text: String): List<String> = text.split(".")
+        .filter { it.length > 3 }
+
+    fun splitWord(text: String): List<String> =
+            "[ \n\t]".toRegex().split(text)
+                .filter { it.length > 3 }
+
+
+    fun letterFreq(windowSize: Int, text: String) =
+        AnalyzerFunctions.createTokenList(text, analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH)
+            .flatMap { token -> token.windowed(windowSize, partialWindows = false) }
+            .groupingBy(::identity)
+            .eachCount()
+            .normalize()
+
+    fun bindFreq(windowSize: Int) = { text: String -> letterFreq(windowSize, text)}
+
+    fun singleLetterFreq(text: String) =
+            text.map(Char::toString)
+                .groupingBy(::identity)
+                .eachCount()
+                .normalize()
+
+
+
     private fun trainParagraph(topic: String, directory: File) {
 //        val paragraphs =
 //                directory.listFiles() .mapIndexed { index, file -> "${topic}_$index" to file.readText() }
         val paragraphs = directory.listFiles().map { file -> file.readText() }
         val sheaf = Sheaf(topic, paragraphs)
-        val descentData = listOf(DescentData(this::unigramFreq))
+        val descentData = listOf(
+                DescentData(this::unigramFreq, this::splitSentence),
+                DescentData(bindFreq(2), this::splitWord),
+                DescentData(this::singleLetterFreq)
+        )
         sheaf.descend(descentData)
+        File("descent_data/").let { file -> if (!file.exists()) file.mkdir() }
+        val f = FileOutputStream("descent_data/$topic")
+        val of = ObjectOutputStream(f)
+        of.writeObject(sheaf)
+        of.close()
+        f.close()
 
 
 //        val cover = paragraphs
@@ -143,12 +174,25 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
         File(paragraphIndex)
             .listFiles()
             .filter { file -> file.isDirectory }
+            .take(1)
             .forEach { file -> trainParagraph(file.name, file) }
     }
+
+    fun loadSheaves(sheafIndex: String) =
+            File(sheafIndex)
+                .listFiles()
+                .map { file ->
+                    val reader = ObjectInputStream(FileInputStream(file))
+                    reader.readObject() as Sheaf
+                }
+
+
 
 }
 
 fun main(args: Array<String>) {
     val metaAnalyzer = KotlinMetaKernelAnalyzer("paragraphs/")
-    metaAnalyzer.trainParagraphs()
+//    metaAnalyzer.trainParagraphs()
+    val sheaves = metaAnalyzer.loadSheaves("descent_data/")
+    println(sheaves.first().partitions.joinToString())
 }
