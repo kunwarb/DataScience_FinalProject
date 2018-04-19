@@ -60,6 +60,10 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
 
     }
 
+    fun retrieveLayer(depth: Int): List<Sheaf> =
+        if (depth == 0) listOf(this)
+        else measure.values.flatMap { (sheaf, _) -> sheaf.retrieveLayer(depth - 1) }
+
     companion object {
         fun perturb(nSamples: Int = 50, sims: Map<String, Double>): Pair<List<String>, List<List<Double>>> {
             val norm = NormalDistribution(sharedRand, 1000.0, 50.0)
@@ -69,7 +73,7 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
                 norm.sample(kernelFreqs.size)
                     .toList()
                     .zip(kernelFreqs)
-                    .map { (gaussian, kernelFreq) -> gaussian * kernelFreq  } }
+                    .map { (gaussian, kernelFreq) -> gaussian * if( kernelFreq < 0.0) 0.0 else kernelFreq  } }
 
             return kernelNames to perturbations
         }
@@ -122,12 +126,12 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
     private fun trainParagraph(topic: String, directory: File) {
 //        val paragraphs =
 //                directory.listFiles() .mapIndexed { index, file -> "${topic}_$index" to file.readText() }
-        val paragraphs = directory.listFiles().map { file -> file.readText() }
+        val paragraphs = directory.listFiles().map { file -> file.readText().toLowerCase() }
         val sheaf = Sheaf(topic, paragraphs)
         val descentData = listOf(
                 DescentData(this::unigramFreq, this::splitSentence),
                 DescentData(bindFreq(2), this::splitWord),
-                DescentData(this::singleLetterFreq)
+                DescentData(this::singleLetterFreq, ::listOf)
         )
         sheaf.descend(descentData)
         File("descent_data/").let { file -> if (!file.exists()) file.mkdir() }
@@ -138,43 +142,14 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
         f.close()
 
 
-//        val cover = paragraphs
-//            .map { (_, text) -> text }
-//            .joinToString("\n")
-//            .let { combinedText -> Sheaf(topic, combinedText) }
-//
-//        val sheaves = paragraphs.map { (sheafName, text) -> Sheaf(sheafName, text, cover)}
-//
-//        val perturbations = cover.kernel.perturb(1000)
-//        val kernelFreqs = sheaves.map(Sheaf::retrieveKernelFreqs) + cover.retrieveKernelFreqs()
-//
-//
-//        val integrator = KotlinStochasticIntegrator(perturbations, kernelFreqs, {null}, false)
-//        val integrals = integrator.integrate()
-//
-//        val identityFreq = integrals.find { it.first == topic }!!.second
-//        val (featureNames, featureFreqs) = integrals.filter { it.first != topic }.unzip()
-//
-//        val stepper = PartitionDescenter(identityFreq, featureFreqs)
-//        val (weights, kld) = stepper.startDescent(500)
-//        val results = featureNames.zip(weights).toMap()
-//
-//        sheaves.mapNotNull { sheaf -> results[sheaf.name]?.to(sheaf) }
-//            .forEach { (freq, sheaf) -> cover.measure[sheaf.name] = sheaf to freq }
-//
-////        val mixture =  TopicMixtureResult(results.toSortedMap(), kld)
-//
-////        println("For topic: $topic")
-////        mixture.reportResults()
-
     }
 
 
     fun trainParagraphs() {
         File(paragraphIndex)
             .listFiles()
-            .filter { file -> file.isDirectory }
             .take(1)
+            .filter { file -> file.isDirectory }
             .forEach { file -> trainParagraph(file.name, file) }
     }
 
@@ -194,5 +169,8 @@ fun main(args: Array<String>) {
     val metaAnalyzer = KotlinMetaKernelAnalyzer("paragraphs/")
 //    metaAnalyzer.trainParagraphs()
     val sheaves = metaAnalyzer.loadSheaves("descent_data/")
-    println(sheaves.first().partitions.joinToString())
+    sheaves.flatMap { sheaf -> sheaf.retrieveLayer(3) }
+        .map { it.partitions.joinToString("|||") }
+        .joinToString("\n------\n")
+        .apply(::println)
 }
