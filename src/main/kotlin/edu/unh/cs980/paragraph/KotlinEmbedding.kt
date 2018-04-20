@@ -11,6 +11,7 @@ import edu.unh.cs980.misc.AnalyzerFunctions
 import edu.unh.cs980.withTime
 import org.apache.lucene.index.Term
 import java.io.File
+import java.lang.Double.sum
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.system.exitProcess
 import kotlin.system.measureTimeMillis
@@ -18,10 +19,11 @@ import kotlin.system.measureTimeMillis
 
 class KotlinEmbedding(indexLoc: String) {
 //    private val gramAnalyzer = KotlinGramAnalyzer(gramLoc)
+    private val totalFreqs = HashMap<String, Double>()
     private val searcher = getIndexSearcher(indexLoc)
     private val memoizedFreqs = ConcurrentHashMap<String, Double>()
     private val kernelAnalyzer =
-            KotlinKernelAnalyzer(0.0, 1.0, corpus = {s -> null}, partitioned = true)
+            KotlinKernelAnalyzer(0.0, 1.0, corpus = {s -> totalFreqs[s]}, partitioned = true)
 
 
     var topicTime: Long = 0
@@ -83,6 +85,13 @@ class KotlinEmbedding(indexLoc: String) {
             if (smooth) {
                 kernelAnalyzer.topics.values.forEach { it.equilibriumCovariance() }
             }
+
+            kernelAnalyzer.topics.forEach { topic ->
+                topic.value.getKernelFreqs().forEach { (k,v) -> totalFreqs.merge(k, v, ::sum)}
+            }
+
+            val total = totalFreqs.values.sum()
+            totalFreqs.forEach { k, v -> totalFreqs[k] = v/total  }
         }
         topicTime = time
     }

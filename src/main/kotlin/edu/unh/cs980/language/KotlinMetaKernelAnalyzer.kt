@@ -12,6 +12,7 @@ import info.debatty.java.stringsimilarity.Jaccard
 import info.debatty.java.stringsimilarity.NormalizedLevenshtein
 import org.apache.commons.math3.distribution.NormalDistribution
 import java.io.*
+import kotlin.math.log2
 
 
 data class DescentData(val simFun: (String) -> Map<String, Double>,
@@ -87,20 +88,37 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
         return cover?.ascend(name, adjustedMeasure) ?: name to adjustedMeasure
     }
 
+    fun measurePartitions(simFun: (String) -> Double): Double  =
+        partitions.map { partition -> simFun(partition) }.average().defaultWhenNotFinite(0.0)
+
+    fun transferDown1(simFun: (String) -> Double): Double {
+        if (measure.isEmpty()) return measurePartitions(simFun)
+
+        val (mFreq, curFreq) = measure.values
+            .map { (sheaf, freq) -> sheaf.transferDown1(simFun) to freq }.unzip()
+
+        return mFreq.normalize().zip(curFreq).sumByDouble { (v1, v2) -> v1 * log2(v1 / (if (v2 == 0.0) 0.0001 else v2)) }
+    }
+
+    fun transferDown2(simFun: (String) -> Double): Double {
+        return measurePartitions(simFun) + measure.values.sumByDouble { (partition, freq) ->
+            partition.transferDown2(simFun) * freq }
+    }
+
     fun retrieveLayer(depth: Int): List<Sheaf> =
         if (depth == 0) listOf(this)
         else measure.values.flatMap { (sheaf, _) -> sheaf.retrieveLayer(depth - 1) }
 
     companion object {
         fun perturb(nSamples: Int = 50, sims: Map<String, Double>): Pair<List<String>, List<List<Double>>> {
-            val norm = NormalDistribution(sharedRand, 1000.0, 50.0)
+            val norm = NormalDistribution(sharedRand, 1.0, 0.0001)
             val (kernelNames, kernelFreqs) = sims.toList().unzip()
 
             val perturbations = (0 until nSamples).map {
                 norm.sample(kernelFreqs.size)
                     .toList()
                     .zip(kernelFreqs)
-                    .map { (gaussian, kernelFreq) -> gaussian * if( kernelFreq < 0.0) 0.0 else kernelFreq  } }
+                    .map { (gaussian, kernelFreq) -> gaussian + kernelFreq  }.normalize() }
 
             return kernelNames to perturbations
         }
@@ -191,8 +209,8 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
 }
 
 fun averageSim(w1: String, w2: String): Double =
-//    1.0 - Jaccard(2).distance(w1, w2)
-    NormalizedLevenshtein().similarity(w1, w2)
+    1.0 - Jaccard(2).distance(w1, w2)
+//    NormalizedLevenshtein().similarity(w1, w2)
 
 fun filterWords(text: String) =
     AnalyzerFunctions.createTokenList(text.toLowerCase(),
@@ -202,7 +220,7 @@ fun tokenizedSim(w1: String, w2: String): Double {
     val f1 = filterWords(w1)
     val f2 = filterWords(w2)
     return f1.flatMap { word1 -> f2.map { word2 -> averageSim(word1, word2).defaultWhenNotFinite(0.0) } }
-        .average().defaultWhenNotFinite(0.0)
+        .average()!!.defaultWhenNotFinite(0.0)
 }
 
 
@@ -228,18 +246,25 @@ fun testStuff(metaAnalyzer: KotlinMetaKernelAnalyzer) {
     val sheaves = metaAnalyzer.loadSheaves("descent_data/")
 //    val mySentence = bindSims("Here is some  and some medicine and some people")
     val text = """
-        I went to have a medical procedure and bacteria and stuff
+        Medicine is the science and practice of the diagnosis, treatment, and prevention of disease. Medicine encompasses a variety of health care practices evolved to maintain and restore health by the prevention and treatment of illness. Contemporary medicine applies biomedical sciences, biomedical research, genetics, and medical technology to diagnose, treat, and prevent injury and disease, typically through pharmaceuticals or surgery, but also through therapies as diverse as psychotherapy, external splints and traction, medical devices, biologics, and ionizing radiation, amongst others.[1]
+
+Medicine has existed for thousands of years, during most of which it was an art (an area of skill and knowledge) frequently having connections to the religious and philosophical beliefs of local culture. For example, a medicine man would apply herbs and say prayers for healing, or an ancient philosopher and physician would apply bloodletting according to the theories of humorism. In recent centuries, since the advent of modern science, most medicine has become a combination of art and science (both basic and applied, under the umbrella of medical science). While stitching technique for sutures is an art learned through practice, the knowledge of what happens at the cellular and molecular level in the tissues being stitched arises through science.
+
+Prescientific forms of medicine are now known as traditional medicine and folk medicine. They remain commonly used with or instead of scientific medicine and are thus called alternative medicine. For example, evidence on the effectiveness of acupuncture is "variable and inconsistent" for any condition,[2] but is generally safe when done by an appropriately trained practitioner.[3] In contrast, treatments outside the bounds of safety and efficacy are termed quackery.
             """
     val mySentence = bindSims(text)
 //    val mySentence = bindSims("Philosophy is an old time historical traditional thing")
 
 //    val mySentence = listOf({ w: String -> tokenizedSim(sentence, w)})
 
-    sheaves.flatMap { sheaf -> sheaf.retrieveLayer(2) }
+    sheaves.flatMap { sheaf -> sheaf.retrieveLayer(3) }
         .map { sheaf ->
-            sheaf.transferMeasure { word -> mySentence.map { myword -> myword(word) }.average().defaultWhenNotFinite(0.0) } }
+//            sheaf.transferMeasure { word -> mySentence.map { myword -> myword(word) }.max()!!.defaultWhenNotFinite(0.0) } }
+            sheaf.transferMeasure { word -> mySentence.map {
+                myword -> myword(word) }.max()!!.defaultWhenNotFinite(0.0).let { res -> if (res > 0.8) res else 0.0 } } }
         .groupBy { it.first }
 //        .mapValues { (key, values) -> values.sumByDouble { it.second } / values.size }
+//        .mapValues { (key, values) -> values.sumByDouble { it.second }  }
         .mapValues { (key, values) -> values.sumByDouble { it.second }  }
 //        .fold(0.0) { cur, acc -> cur + acc.second}
         .filter { it.value.isFinite() }
@@ -274,6 +299,6 @@ fun exploreSheaves(metaAnalyzer: KotlinMetaKernelAnalyzer) {
 fun main(args: Array<String>) {
     val metaAnalyzer = KotlinMetaKernelAnalyzer("paragraphs/")
 //    metaAnalyzer.trainParagraphs(listOf("Medicine", "Cooking"))
-//    testStuff(metaAnalyzer)
-    showSheaves(metaAnalyzer)
+    testStuff(metaAnalyzer)
+//    showSheaves(metaAnalyzer)
 }

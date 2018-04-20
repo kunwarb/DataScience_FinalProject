@@ -32,7 +32,7 @@ fun testText(embedder: KotlinEmbedding): TopicMixtureResult {
         A party is a gathering of people who have been invited by a host for the purposes of socializing, conversation, recreation, or as part of a festival or other commemoration of a special occasion. A party will typically feature food and beverages, and often music and dancing or other forms of entertainment. In many Western countries, parties for teens and adults are associated with drinking alcohol such as beer, wine or distilled spirits.
         """
 
-    return embedder.embed(testText, nSamples = 5000, nIterations = 2000, smooth = false)
+    return embedder.embed(testText, nSamples = 5000, nIterations = 2000, smooth = true)
 }
 
 fun main(args: Array<String>) {

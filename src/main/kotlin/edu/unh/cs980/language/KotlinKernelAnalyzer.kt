@@ -164,10 +164,7 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
 
 
     fun perturb(nSamples: Int = 50): Pair<List<String>, List<List<Double>>> {
-//        val norm = NormalDistribution(sharedRand, 1000.0, 50.0)
-//        val norm = NormalDistribution(sharedRand, 1000.0, 50.0)
         val norm = NormalDistribution(sharedRand, 1.0, 0.0001)
-//        val norm = NormalDistribution(sharedRand, 1000.0, 100.0)
         val (kernelNames, kernelFreqs) = kernels.toList().unzip()
 
         val perturbations = (0 until nSamples).map {
@@ -222,7 +219,7 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
         }
 
         val ranked = PageRank
-            .pagerank(covarianceMatrix, base, 0.9, 0.00000001, 1000)
+            .pagerank(covarianceMatrix, base, 0.05, 0.00000001, 1000)
                 .map { if (it < 0.0) 1 / wordIndices.size.toDouble() else it }
 
         val total = ranked.sum()

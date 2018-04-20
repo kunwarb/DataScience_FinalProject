@@ -23,9 +23,11 @@ class KotlinStochasticIntegrator(val perturbations: Pair<List<String>, List<List
 
         val focusedHash = perturbations.first.map { word ->
 //            word to (topicHash[word] ?: 1 / perturbations.first.size.toDouble())
-            word to 1/(topicHash[word] ?: (perturbations.first.size * topic.second.size.toDouble()) )
+            word to (topicHash[word] ?: corpus(word)?.run { (1/this) / topicHash.size.toDouble() } ?: 1/perturbations.first.size.toDouble())
+//            word to (topicHash[word] ?: (perturbations.first.size * topic.second.size.toDouble()) )
         }
             .toMap()
+//            .normalize()
 
         val restrictedDist = perturbations.first
 //            .map { word -> topicHash[word]  ?: topic.second.keys.size * perturbations.first.size.toDouble() }
@@ -48,7 +50,7 @@ class KotlinStochasticIntegrator(val perturbations: Pair<List<String>, List<List
                 .map { perturbs ->
 //                    perturbs.zip(topic).sumByDouble { (k1, k2) -> abs(k1  * log2(k1 / k2)) / perturbs.size } }
 //                     perturbs.zip(topic).sumByDouble { (k1, k2) -> k1  * log2(k1 / k2) / perturbs.size } }
-                    perturbs.zip(topic).sumByDouble { (k1, k2) -> k1  * log2(k1 / k2)  } }
+                    perturbs.zip(topic).sumByDouble { (k1, k2) -> abs(k1  * log2(k1 / k2))  } }
                 .normalize()
                 .let {if (smooth) it.smooth() else it }
 
