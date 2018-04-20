@@ -16,15 +16,15 @@ fun testQuery() {
 
 fun testBasisParagraphs(embedder: KotlinEmbedding): TopicMixtureResult  {
     val testText =
-            File("paragraphs/Tools/doc_0.txt").readText() +
-                    File("paragraphs/Travel/doc_3.txt").readText() +
-                    File("paragraphs/Environments/doc_3.txt").readText() +
-                    File("paragraphs/Environments/doc_2.txt").readText()
+//            File("paragraphs/Tools/doc_0.txt").readText()
+//                    File("paragraphs/Travel/doc_3.txt").readText()
+//                    File("paragraphs/Environments/doc_3.txt").readText() +
+                    File("paragraphs/Biology/doc_1.txt").readText()
 
 //    val testText =
 //            File("paragraphs/Biology/doc_0.txt").readText() +
 //                    File("paragraphs/People/doc_0.txt").readText()
-    return embedder.embed(testText, nSamples = 10000, nIterations = 4000, smooth = false)
+    return embedder.embed(testText, nSamples = 5000, nIterations = 2000, smooth = true)
 }
 
 
@@ -40,18 +40,20 @@ fun main(args: Array<String>) {
     val indexLoc = "/home/hcgs/data_science/index"
 
     val embedder = KotlinEmbedding(indexLoc)
-//    embedder.loadTopics("paragraphs/",
-//            filterList = listOf())
+    embedder.loadTopics("paragraphs/",
+            filterList = listOf())
+    testBasisParagraphs(embedder).reportResults()
+//    testText(embedder).reportResults()
 
-    val myquery = "Arachnophobia signs and symptoms"
-    val queryResults = embedder.query(myquery, 100).mapIndexed { index, s -> index.toString() to s  }.toMap()
-
-    embedder.loadQueries(myquery, nQueries = 100)
-    val expanded = embedder.expandQueryText(myquery, 10)
-
-    val results = embedder.embed(expanded, nSamples = 3000, nIterations = 100, smooth = false)
-    results.results.entries.sortedByDescending { it.value }
-        .forEach { (k,v) -> println("${queryResults[k]}:\n\t$v") }
+//    val myquery = "Arachnophobia signs and symptoms"
+//    val queryResults = embedder.query(myquery, 100).mapIndexed { index, s -> index.toString() to s  }.toMap()
+//
+//    embedder.loadQueries(myquery, nQueries = 100)
+//    val expanded = embedder.expandQueryText(myquery, 10)
+//
+//    val results = embedder.embed(expanded, nSamples = 3000, nIterations = 100, smooth = false)
+//    results.results.entries.sortedByDescending { it.value }
+//        .forEach { (k,v) -> println("${queryResults[k]}:\n\t$v") }
 
 //    println(expanded)
 

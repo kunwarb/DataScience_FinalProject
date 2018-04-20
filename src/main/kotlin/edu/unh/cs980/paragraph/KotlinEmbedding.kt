@@ -100,7 +100,7 @@ class KotlinEmbedding(indexLoc: String) {
 
 
     fun embed(text: String, nSamples: Int = 300, nIterations: Int = 500, smooth: Boolean = false): TopicMixtureResult {
-        val kernelDist = KernelDist(0.0, 1.0)
+        val kernelDist = KernelDist(0.0, 3.0)
             .apply { analyzePartitionedDocument(text) }
             .apply { normalizeKernels() }
 

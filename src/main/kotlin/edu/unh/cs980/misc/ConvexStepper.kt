@@ -65,12 +65,14 @@ class PartitionDescenter(origin: List<Double>, topics: List<List<Double>>, parti
             (0 until topics.size).map { Matrix.newInstance(1, partitionSize, 0.1) }
 
 
+    val weightHistory = (0 until topics.size).map { ArrayList<Double>() }
 
     fun changeWeight(index: Int, weight: Double) =
             weightMatrices[index].mul(0.0).add(weight)
 
     fun doKld() =
             partitionContainer.kld(weightMatrices)
+
 
 
 
@@ -103,10 +105,22 @@ class PartitionDescenter(origin: List<Double>, topics: List<List<Double>>, parti
         }
     }
 
+    fun getVariance(curWeights: List<Double>) =
+            weightHistory.map { w ->
+                val lastWeights = w.takeLast(20)
+                val mean = lastWeights.sum() / 20.0
+                val variance = lastWeights.sumByDouble { pow(it - mean, 2.0) }
+                variance / 20 }
+                .normalize()
+                .mapIndexed { index, d -> if (curWeights[index] == 0.0) 0.0 else (1 - d) * curWeights[index]  }
+                .onEach { println(it) }
+                .normalize()
+
 
     fun startDescent(nTimes: Int): Pair<List<Double>, Double> {
         val nTopics = weightMatrices.size
-        var weights = (0 until nTopics).map { 0.1 + sharedRand.nextDouble() }.toList().normalize()
+//        var weights = (0 until nTopics).map { 0.1 + sharedRand.nextDouble() }.toList().normalize()
+        var weights = (0 until nTopics).map { 0.1  }.toList()
 //        var weights = (0 until nTopics).map { 0.1 }.toList()
 
         (0 until nTimes).forEach { iter ->
@@ -115,11 +129,15 @@ class PartitionDescenter(origin: List<Double>, topics: List<List<Double>>, parti
 
             weights = updateWeightAgainstGradient(weights)
             partitionContainer.step()
+            if (iter >= nTimes - 20) {
+                weights.normalize().forEachIndexed { index, d -> weightHistory[index] += d }
+            }
 
         }
         val weightSum = weights.sum()
         val finalWeights = weights.map { value -> value / weightSum }
         return finalWeights to doKld()
+//        return getVariance(weights) to doKld()
     }
 
 }

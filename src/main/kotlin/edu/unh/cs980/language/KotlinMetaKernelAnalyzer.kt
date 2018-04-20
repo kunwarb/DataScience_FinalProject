@@ -27,6 +27,7 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
 
         if (partitions.isEmpty()) {
             println("There's a hole in $name")
+            println(cover!!.partitions)
             return
         }
 
@@ -52,13 +53,19 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
 
         val results = featureNames.zip(weights).toMap()
         val partitionTextMap = partitionTexts.toMap()
-        val mixture =  TopicMixtureResult(results.toSortedMap(), kld).reportResults()
+        val mixture =  TopicMixtureResult(results.toSortedMap(), kld)
+        mixture.reportResults()
+        if (kld.isNaN()) {
+            println(name)
+            println(partitions)
+        }
 
         partitionSims.mapNotNull { (name, _) -> results[name]?.to(name) }
             .filter { it.first > 0.0 }
             .map { (freq, sheafName) ->
                 val partitionText = partitionTextMap[sheafName]!!
                 val newPartitions = partitionFun?.invoke(partitionText) ?: emptyList()
+                if (newPartitions.isEmpty()) { println("$sheafName") }
                 measure[sheafName] = Sheaf(sheafName, newPartitions, kld, this) to freq
             }
 
@@ -101,14 +108,6 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
     }
 }
 
-//    val kernel =
-//            KernelDist(0.0, 1.0, false)
-//                .apply {
-//                    analyzePartitionedDocument(text, useLetterGram)
-//                    normalizeKernels()
-//                }
-
-//    fun retrieveKernelFreqs() = name to kernel.getKernelFreqs()
 
 class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
 
@@ -229,6 +228,7 @@ fun testStuff(metaAnalyzer: KotlinMetaKernelAnalyzer) {
     val sheaves = metaAnalyzer.loadSheaves("descent_data/")
 //    val mySentence = bindSims("Here is some  and some medicine and some people")
     val text = """
+        I went to have a medical procedure and bacteria and stuff
             """
     val mySentence = bindSims(text)
 //    val mySentence = bindSims("Philosophy is an old time historical traditional thing")
@@ -266,9 +266,14 @@ fun showSheaves(metaAnalyzer: KotlinMetaKernelAnalyzer) {
 
 }
 
+
+fun exploreSheaves(metaAnalyzer: KotlinMetaKernelAnalyzer) {
+    val sheaves = metaAnalyzer.loadSheaves("descent_data/")
+}
+
 fun main(args: Array<String>) {
     val metaAnalyzer = KotlinMetaKernelAnalyzer("paragraphs/")
 //    metaAnalyzer.trainParagraphs(listOf("Medicine", "Cooking"))
-    testStuff(metaAnalyzer)
-//    showSheaves(metaAnalyzer)
+//    testStuff(metaAnalyzer)
+    showSheaves(metaAnalyzer)
 }

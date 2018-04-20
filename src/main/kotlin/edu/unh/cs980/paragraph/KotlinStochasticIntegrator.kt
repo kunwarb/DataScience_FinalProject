@@ -1,5 +1,6 @@
 package edu.unh.cs980.paragraph
 
+import edu.unh.cs980.defaultWhenNotFinite
 import edu.unh.cs980.normalize
 import edu.unh.cs980.smooth
 import java.lang.Math.pow
@@ -18,14 +19,15 @@ class KotlinStochasticIntegrator(val perturbations: Pair<List<String>, List<List
 
     private fun getRestrictedTopic(topic: Pair<String, Map<String, Double>>): List<Double> {
         val topicHash = topic.second
+        val restrictedFreq = perturbations.first.sumByDouble { word -> topicHash[word] ?: 0.0 }
 
         val restrictedDist = perturbations.first
-            .map { word -> topicHash[word]  ?: topic.second.keys.size * perturbations.first.size.toDouble() }
+//            .map { word -> topicHash[word]  ?: topic.second.keys.size * perturbations.first.size.toDouble() }
 //            .map { word -> topicHash[word]  ?: perturbations.first.size.toDouble() }
-//            .map { word -> topicHash[word]  ?: 0.1 }
-//            .map { word -> topicHash[word]  ?: 0.0 }
-//            .map { word -> topicHash[word]  ?: topic.second.keys.size.toDouble() }
 //            .map { word -> topicHash[word]  ?: 1.0 }
+//            .map { word -> topicHash[word]  ?: 1/topic.second.keys.size.toDouble() }
+//            .map { word -> topicHash[word]  ?: topic.second.keys.size.toDouble() }
+            .map { word -> topicHash[word]  ?: (1/restrictedFreq).defaultWhenNotFinite(0.0000001) }
 //            .map { word -> topicHash[word]  ?: 1.0 }
 //            .let { curMap ->
 ////                    curMap.map { value -> value /  perturbations.first.size.toDouble() }}
@@ -38,7 +40,9 @@ class KotlinStochasticIntegrator(val perturbations: Pair<List<String>, List<List
     private fun kldToTopic(topic: List<Double>) =
             perturbations.second
                 .map { perturbs ->
-                    perturbs.zip(topic).sumByDouble { (k1, k2) -> k1  * log2(k1 / k2) / perturbs.size } }
+//                    perturbs.zip(topic).sumByDouble { (k1, k2) -> abs(k1  * log2(k1 / k2)) / perturbs.size } }
+//                     perturbs.zip(topic).sumByDouble { (k1, k2) -> k1  * log2(k1 / k2) / perturbs.size } }
+                    perturbs.zip(topic).sumByDouble { (k1, k2) -> k1  * log2(k1 / k2)  } }
                 .normalize()
                 .let {if (smooth) it.smooth() else it }
 
