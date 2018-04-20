@@ -283,11 +283,11 @@ fun testStuff(metaAnalyzer: KotlinMetaKernelAnalyzer) {
 fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
     val sheaves = metaAnalyzer.loadSheaves("descent_data/")
     val text = """
-        Carbohydrates include the common sugar, sucrose (table sugar), a disaccharide, and such simple sugars as glucose (made by enzymatic splitting of sucrose) and fructose (from fruit), and starches from sources such as cereal flour, rice, arrowroot and potato. Medicine hospital medicine medicine
+        engineering
             """
     val mySentence = bindSims(text)
     sheaves
-        .map { sheaf -> sheaf.name to mySentence.map{ f -> sheaf.transferDown1(f) }.sum()!! }
+        .map { sheaf -> sheaf.name to mySentence.map{ f -> sheaf.transferDown1(f) }.max()!! }
         .toMap()
         .normalize()
         .entries.sortedByDescending { it.value }
@@ -298,10 +298,14 @@ fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
 fun showSheaves(metaAnalyzer: KotlinMetaKernelAnalyzer) {
     val sheaves = metaAnalyzer.loadSheaves("descent_data/")
     val res = sheaves
-        .filter { sheaf -> sheaf.name == "Cooking" }
+        .filter { sheaf -> sheaf.name == "Engineering" }
         .map { sheaf ->
-        sheaf.retrieveLayer(3)
-            .map { s -> s.partitions.joinToString(" ")  }.joinToString("\n") }
+        sheaf.retrieveLayer(2)
+            .map { s ->
+                val parentScore = s.cover?.run { measure[s.name]!!.second }.toString()
+                s.partitions.joinToString(" ") + ":\n\t$parentScore\n"  }
+            .joinToString("\n")
+        }
 
     println(res)
 
@@ -315,7 +319,7 @@ fun exploreSheaves(metaAnalyzer: KotlinMetaKernelAnalyzer) {
 fun main(args: Array<String>) {
     val metaAnalyzer = KotlinMetaKernelAnalyzer("paragraphs/")
 //    metaAnalyzer.trainParagraphs(listOf("Medicine", "Cooking"))
-//    testStuff(metaAnalyzer)
-    testStuff2(metaAnalyzer)
-//    showSheaves(metaAnalyzer)
+//    metaAnalyzer.trainParagraphs()
+//    testStuff2(metaAnalyzer)
+    showSheaves(metaAnalyzer)
 }
