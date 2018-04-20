@@ -19,7 +19,13 @@ class KotlinStochasticIntegrator(val perturbations: Pair<List<String>, List<List
 
     private fun getRestrictedTopic(topic: Pair<String, Map<String, Double>>): List<Double> {
         val topicHash = topic.second
-        val restrictedFreq = perturbations.first.sumByDouble { word -> topicHash[word] ?: 0.0 }
+//        val restrictedFreq = perturbations.first.sumByDouble { word -> topicHash[word] ?: 0.0 } / topicHash.values.sum()
+
+        val focusedHash = perturbations.first.map { word ->
+//            word to (topicHash[word] ?: 1 / perturbations.first.size.toDouble())
+            word to 1/(topicHash[word] ?: (perturbations.first.size * topic.second.size.toDouble()) )
+        }
+            .toMap()
 
         val restrictedDist = perturbations.first
 //            .map { word -> topicHash[word]  ?: topic.second.keys.size * perturbations.first.size.toDouble() }
@@ -27,7 +33,7 @@ class KotlinStochasticIntegrator(val perturbations: Pair<List<String>, List<List
 //            .map { word -> topicHash[word]  ?: 1.0 }
 //            .map { word -> topicHash[word]  ?: 1/topic.second.keys.size.toDouble() }
 //            .map { word -> topicHash[word]  ?: topic.second.keys.size.toDouble() }
-            .map { word -> topicHash[word]  ?: (1/restrictedFreq).defaultWhenNotFinite(0.0000001) }
+            .map { word -> focusedHash[word]  ?: (0.0000001).defaultWhenNotFinite(0.0000001) }
 //            .map { word -> topicHash[word]  ?: 1.0 }
 //            .let { curMap ->
 ////                    curMap.map { value -> value /  perturbations.first.size.toDouble() }}

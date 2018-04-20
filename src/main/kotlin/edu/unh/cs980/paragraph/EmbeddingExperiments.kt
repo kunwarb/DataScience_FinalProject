@@ -16,15 +16,14 @@ fun testQuery() {
 
 fun testBasisParagraphs(embedder: KotlinEmbedding): TopicMixtureResult  {
     val testText =
-//            File("paragraphs/Tools/doc_0.txt").readText()
-//                    File("paragraphs/Travel/doc_3.txt").readText()
-//                    File("paragraphs/Environments/doc_3.txt").readText() +
-                    File("paragraphs/Biology/doc_1.txt").readText()
+            File("paragraphs/Tools/doc_0.txt").readText() +
+                    File("paragraphs/Travel/doc_3.txt").readText() +
+                    File("paragraphs/Games/doc_3.txt").readText()
 
 //    val testText =
 //            File("paragraphs/Biology/doc_0.txt").readText() +
 //                    File("paragraphs/People/doc_0.txt").readText()
-    return embedder.embed(testText, nSamples = 5000, nIterations = 2000, smooth = true)
+    return embedder.embed(testText, nSamples = 5000, nIterations = 2000, smooth = false)
 }
 
 
@@ -33,7 +32,7 @@ fun testText(embedder: KotlinEmbedding): TopicMixtureResult {
         A party is a gathering of people who have been invited by a host for the purposes of socializing, conversation, recreation, or as part of a festival or other commemoration of a special occasion. A party will typically feature food and beverages, and often music and dancing or other forms of entertainment. In many Western countries, parties for teens and adults are associated with drinking alcohol such as beer, wine or distilled spirits.
         """
 
-    return embedder.embed(testText, nSamples = 30000, nIterations = 6000, smooth = false)
+    return embedder.embed(testText, nSamples = 5000, nIterations = 2000, smooth = false)
 }
 
 fun main(args: Array<String>) {
@@ -42,8 +41,8 @@ fun main(args: Array<String>) {
     val embedder = KotlinEmbedding(indexLoc)
     embedder.loadTopics("paragraphs/",
             filterList = listOf())
-    testBasisParagraphs(embedder).reportResults()
-//    testText(embedder).reportResults()
+//    testBasisParagraphs(embedder).reportResults()
+    testText(embedder).reportResults()
 
 //    val myquery = "Arachnophobia signs and symptoms"
 //    val queryResults = embedder.query(myquery, 100).mapIndexed { index, s -> index.toString() to s  }.toMap()
