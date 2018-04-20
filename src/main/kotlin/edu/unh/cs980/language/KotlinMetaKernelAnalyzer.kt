@@ -12,6 +12,7 @@ import info.debatty.java.stringsimilarity.Jaccard
 import info.debatty.java.stringsimilarity.NormalizedLevenshtein
 import org.apache.commons.math3.distribution.NormalDistribution
 import java.io.*
+import kotlin.math.abs
 import kotlin.math.log2
 
 
@@ -89,15 +90,17 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
     }
 
     fun measurePartitions(simFun: (String) -> Double): Double  =
-        partitions.map { partition -> simFun(partition) }.average().defaultWhenNotFinite(0.0)
+        partitions.map { partition -> simFun(partition) }.max()!!.defaultWhenNotFinite(0.01)
 
     fun transferDown1(simFun: (String) -> Double): Double {
         if (measure.isEmpty()) return measurePartitions(simFun)
 
         val (mFreq, curFreq) = measure.values
             .map { (sheaf, freq) -> sheaf.transferDown1(simFun) to freq }.unzip()
+        return mFreq.zip(curFreq).sumByDouble { (f1, f2) -> f1 * f2 }
 
-        return mFreq.normalize().zip(curFreq).sumByDouble { (v1, v2) -> v1 * log2(v1 / (if (v2 == 0.0) 0.0001 else v2)) }
+//        return mFreq.normalize().zip(curFreq).sumByDouble { (v2, v1) -> (v1 - v2) * log2(v1 / (if (v2 == 0.0) 0.0001 else v2)) }
+//            .apply { abs(this) }
     }
 
     fun transferDown2(simFun: (String) -> Double): Double {
@@ -209,7 +212,9 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
 }
 
 fun averageSim(w1: String, w2: String): Double =
-    1.0 - Jaccard(2).distance(w1, w2)
+//    1.0 - Jaccard(2).distance(w1, w2)
+//        1.0 - Jaccard(2).distance(w1, w2)
+        (1.0 - Jaccard(4).distance(w1, w2)).run { if (this < 0.5) 0.0 else 1.0 }
 //    NormalizedLevenshtein().similarity(w1, w2)
 
 fun filterWords(text: String) =
@@ -246,11 +251,7 @@ fun testStuff(metaAnalyzer: KotlinMetaKernelAnalyzer) {
     val sheaves = metaAnalyzer.loadSheaves("descent_data/")
 //    val mySentence = bindSims("Here is some  and some medicine and some people")
     val text = """
-        Medicine is the science and practice of the diagnosis, treatment, and prevention of disease. Medicine encompasses a variety of health care practices evolved to maintain and restore health by the prevention and treatment of illness. Contemporary medicine applies biomedical sciences, biomedical research, genetics, and medical technology to diagnose, treat, and prevent injury and disease, typically through pharmaceuticals or surgery, but also through therapies as diverse as psychotherapy, external splints and traction, medical devices, biologics, and ionizing radiation, amongst others.[1]
-
-Medicine has existed for thousands of years, during most of which it was an art (an area of skill and knowledge) frequently having connections to the religious and philosophical beliefs of local culture. For example, a medicine man would apply herbs and say prayers for healing, or an ancient philosopher and physician would apply bloodletting according to the theories of humorism. In recent centuries, since the advent of modern science, most medicine has become a combination of art and science (both basic and applied, under the umbrella of medical science). While stitching technique for sutures is an art learned through practice, the knowledge of what happens at the cellular and molecular level in the tissues being stitched arises through science.
-
-Prescientific forms of medicine are now known as traditional medicine and folk medicine. They remain commonly used with or instead of scientific medicine and are thus called alternative medicine. For example, evidence on the effectiveness of acupuncture is "variable and inconsistent" for any condition,[2] but is generally safe when done by an appropriately trained practitioner.[3] In contrast, treatments outside the bounds of safety and efficacy are termed quackery.
+        Cooking or cookery is the art, technology, science and craft of preparing food for consumption with or without the use of fire or heat. Cooking techniques and ingredients vary widely across the world, from grilling food over an open fire to using electric stoves, to baking in various types of ovens, reflecting unique environmental, economic, and cultural traditions and trends. The ways or types of cooking also depend on the skill and type of training an individual cook has. Cooking is done both by people in their own dwellings and by professional cooks and chefs in restaurants and other food establishments. Cooking can also occur through chemical reactions without the presence of heat, such as in ceviche, a traditional South American dish where fish is cooked with the acids in lemon or lime juice.
             """
     val mySentence = bindSims(text)
 //    val mySentence = bindSims("Philosophy is an old time historical traditional thing")
@@ -279,6 +280,21 @@ Prescientific forms of medicine are now known as traditional medicine and folk m
 
 }
 
+fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
+    val sheaves = metaAnalyzer.loadSheaves("descent_data/")
+    val text = """
+        Carbohydrates include the common sugar, sucrose (table sugar), a disaccharide, and such simple sugars as glucose (made by enzymatic splitting of sucrose) and fructose (from fruit), and starches from sources such as cereal flour, rice, arrowroot and potato. Medicine hospital medicine medicine
+            """
+    val mySentence = bindSims(text)
+    sheaves
+        .map { sheaf -> sheaf.name to mySentence.map{ f -> sheaf.transferDown1(f) }.sum()!! }
+        .toMap()
+        .normalize()
+        .entries.sortedByDescending { it.value }
+        .forEach { println(it) }
+
+}
+
 fun showSheaves(metaAnalyzer: KotlinMetaKernelAnalyzer) {
     val sheaves = metaAnalyzer.loadSheaves("descent_data/")
     val res = sheaves
@@ -299,6 +315,7 @@ fun exploreSheaves(metaAnalyzer: KotlinMetaKernelAnalyzer) {
 fun main(args: Array<String>) {
     val metaAnalyzer = KotlinMetaKernelAnalyzer("paragraphs/")
 //    metaAnalyzer.trainParagraphs(listOf("Medicine", "Cooking"))
-    testStuff(metaAnalyzer)
+//    testStuff(metaAnalyzer)
+    testStuff2(metaAnalyzer)
 //    showSheaves(metaAnalyzer)
 }

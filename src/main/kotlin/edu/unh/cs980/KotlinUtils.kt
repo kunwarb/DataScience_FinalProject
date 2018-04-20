@@ -131,6 +131,7 @@ fun Iterable<Double>.smooth(): List<Double>  {
 fun Iterable<Double>.normalize(): List<Double> {
     val items = toList()
     val total = items.sum()
+    if (total == 0.0) return items.map { value -> 0.0 }
     return items.map { value -> value / total }
 }
 
