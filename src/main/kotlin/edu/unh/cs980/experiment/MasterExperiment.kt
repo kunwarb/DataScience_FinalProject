@@ -67,27 +67,26 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 
     fun doClust() {
 //        metaAnalyzer.loadSheaves(descent_data, filterWords = listOf("Medicine", "Cooking", "Warfare", "Society"))
-        metaAnalyzer.loadSheaves(descent_data, filterWords = listOf("Medicine", "Cooking", "Society"))
-        metaAnalyzer.loadSheaves(descent_data)
+        metaAnalyzer.loadSheaves(descent_data, filterWords = listOf("Medicine", "Cooking"))
         val boundSheafDistFunction = bindSheafDist(
                 startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
                 normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.DELTA_SIM,
                 queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
 
-        val boundSheafDistFunction2 = bindSheafDist(
-                startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
-                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN,
-                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
-
-        val boundSheafDistFunction3 = bindSheafDist(
-                startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
-                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN,
-                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
+//        val boundSheafDistFunction2 = bindSheafDist(
+//                startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
+//                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN,
+//                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
+//
+//        val boundSheafDistFunction3 = bindSheafDist(
+//                startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
+//                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN,
+//                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
 
         formatter.addBM25(normType = NormType.ZSCORE)
         formatter.addFeature(boundSheafDistFunction, normType = NormType.ZSCORE)
-        formatter.addFeature(boundSheafDistFunction2, normType = NormType.ZSCORE)
-        formatter.addFeature(boundSheafDistFunction3, normType = NormType.ZSCORE)
+//        formatter.addFeature(boundSheafDistFunction2, normType = NormType.ZSCORE)
+//        formatter.addFeature(boundSheafDistFunction3, normType = NormType.ZSCORE)
     }
 
 
