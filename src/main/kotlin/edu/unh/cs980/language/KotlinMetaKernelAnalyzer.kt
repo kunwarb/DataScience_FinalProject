@@ -182,8 +182,6 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
 
 
     private fun trainParagraph(topic: String, directory: File) {
-//        val paragraphs =
-//                directory.listFiles() .mapIndexed { index, file -> "${topic}_$index" to file.readText() }
         val paragraphs = directory.listFiles().map { file -> file.readText().toLowerCase().replace(",", " ") }
             .map { text -> splitSentence(text).map {  text ->
                 AnalyzerFunctions.createTokenList(text, analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH).joinToString(" ") }
@@ -217,6 +215,36 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
             .listFiles()
             .filter { file -> file.isDirectory && (filterList.isEmpty() || file.name in filterList)  }
             .forEach { file -> trainParagraph(file.name, file) }
+    }
+
+    fun extractTopicText(topicDir: File): List<String> =
+        topicDir.listFiles().map { file -> file.readText().toLowerCase().replace(",", " ") }
+            .map { text -> splitSentence(text).map {  text ->
+            AnalyzerFunctions.createTokenList(text, analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH).joinToString(" ") }
+            .joinToString(". ") }
+
+
+    fun combinedTraining(filterList: List<String> = emptyList()) {
+        val allParas = File(paragraphIndex)
+            .listFiles()
+            .filter { file -> filterList.isEmpty() || file.name in filterList }
+            .flatMap { file -> extractTopicText(file) }
+
+        val sheaf = Sheaf("Combined", allParas)
+        val descentData = listOf(
+//                DescentData(this::unigramFreq, this::splitSentence),
+                DescentData(bindFreq(3), this::splitSentence),
+                DescentData(bindFreq(2), this::splitWord),
+//                DescentData(this::singleLetterFreq, ::listOf)
+                DescentData(bindFreq(2), ::listOf)
+        )
+        sheaf.descend(descentData)
+        File("descent_data/").let { file -> if (!file.exists()) file.mkdir() }
+        val f = FileOutputStream("descent_data/Combined")
+        val of = ObjectOutputStream(f)
+        of.writeObject(sheaf)
+        of.close()
+        f.close()
     }
 
     fun loadSheaves(sheafIndex: String, filterWords: List<String> = emptyList()) =
@@ -361,8 +389,8 @@ fun exploreSheaves(metaAnalyzer: KotlinMetaKernelAnalyzer) {
 fun main(args: Array<String>) {
     val metaAnalyzer = KotlinMetaKernelAnalyzer("paragraphs/")
 //    metaAnalyzer.trainParagraphs(listOf("Medicine", "Cooking"))
-//    metaAnalyzer.trainParagraphs()
-    testStuff2(metaAnalyzer)
+    metaAnalyzer.combinedTraining(listOf("Medicine", "Cooking", "Warfare"))
+//    testStuff2(metaAnalyzer)
 //    showSheaves(metaAnalyzer)
 //    println(metaAnalyzer.extractSheaves(1))
 }

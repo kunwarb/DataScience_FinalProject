@@ -67,9 +67,9 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 
     fun doClust() {
 //        metaAnalyzer.loadSheaves(descent_data, filterWords = listOf("Medicine", "Cooking", "Warfare", "Society"))
-        metaAnalyzer.loadSheaves(descent_data, filterWords = listOf("Medicine", "Cooking"))
+        metaAnalyzer.loadSheaves(descent_data, filterWords = listOf("Combined"))
         val boundSheafDistFunction = bindSheafDist(
-                startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
+                startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
                 normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.DELTA_SIM,
                 queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
 
@@ -79,7 +79,7 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                 queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
 
         val boundSheafDistFunction3 = bindSheafDist(
-                startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
+                startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
                 normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN,
                 queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
 
