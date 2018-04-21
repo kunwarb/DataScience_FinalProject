@@ -66,7 +66,7 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 
 
     fun doClust() {
-
+        metaAnalyzer.loadSheaves(descent_data)
         val boundSheafDistFunction = bindSheafDist(
                 startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
                 normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
