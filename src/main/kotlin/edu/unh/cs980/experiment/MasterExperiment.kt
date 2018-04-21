@@ -134,6 +134,7 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 
                     resource("qrelPath") {
                         help = "Location to qrel file"
+                        default = ""
                         loader = ::identity
                     }
 
