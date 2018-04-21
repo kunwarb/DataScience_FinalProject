@@ -182,7 +182,7 @@ public class Contextual_QueryExpansion{
 				String paraId = doc.getField(PID).stringValue();   //PID
 				float rankScore = score.score;
 				int rank = i + 1;
-                 // for exactly matchong the queryString
+                 
 				String runStr = "enwiki:" + queryStr.replace(" ", "%20") + " Q0 " + paraId + " " + rank + " "
 						+ rankScore + "Contextual_QueryExpansion";
 				if (runFileStr.contains(runStr)) {
@@ -233,7 +233,7 @@ public class Contextual_QueryExpansion{
 					for (EntityWord entity : entities) {
 						expandedQueryTerms.add(entity.getSurfaceForm());
 					}
-					return expandedQueryTerms;      // Get top 5 expanded Query terms with query rm qe
+					return expandedQueryTerms;    
 				} else {
 					
 					return expandedQueryTerms;
@@ -299,11 +299,9 @@ public class Contextual_QueryExpansion{
 			}
 			if (entities.size() > 5) {
 				for (EntityWord entity : entities) {
-					// If entities is more than 5, save entity to hashmap, for
-					// scoring.
+					
 					entityScore.put(entity.getSurfaceForm(), entity.getSimilarityScore());
 				}
-				// Get the top 5 entities.
 				Set<String> termSet = ProjectUtils.getTopValuesInMap(entityScore, top_k).keySet();
 				expandedQueryTerms.addAll(termSet);
 				return expandedQueryTerms;
@@ -343,10 +341,10 @@ public class Contextual_QueryExpansion{
 				int factor = 1; 
 				String term = termList.get(i);
 				if (i == 0) {
-					factor = 3;     //assigning factor value for upper value
+					factor = 3;     //assigning factor value for upper tree
 				}
 				if (i == termList.size() - 1) {
-					factor = 2;        // assigning factor value for lower value
+					factor = 2;        // assigning factor value for lower tree
 				}
 
 				ArrayList<String> expanded_terms = new ArrayList<String>();
