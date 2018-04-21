@@ -232,8 +232,8 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
 
         val sheaf = Sheaf("Combined", allParas)
         val descentData = listOf(
-//                DescentData(this::unigramFreq, this::splitSentence),
-                DescentData(bindFreq(3), this::splitSentence),
+                DescentData(this::unigramFreq, this::splitSentence),
+//                DescentData(bindFreq(3), this::splitSentence),
                 DescentData(bindFreq(2), this::splitWord),
 //                DescentData(this::singleLetterFreq, ::listOf)
                 DescentData(bindFreq(2), ::listOf)

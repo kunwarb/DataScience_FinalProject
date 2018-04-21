@@ -70,17 +70,17 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
         metaAnalyzer.loadSheaves(descent_data, filterWords = listOf("Combined"))
         val boundSheafDistFunction = bindSheafDist(
                 startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
-                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.DELTA_SIM,
+                normalize = false, mixtureDistanceMeasure = MixtureDistanceMeasure.DELTA_SIM,
                 queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
 
         val boundSheafDistFunction2 = bindSheafDist(
                 startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
-                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN,
+                normalize = false, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN,
                 queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
 
         val boundSheafDistFunction3 = bindSheafDist(
-                startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
-                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN,
+                startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_MAX_MAX,
+                normalize = false, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN,
                 queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
 
         formatter.addBM25(normType = NormType.ZSCORE)
