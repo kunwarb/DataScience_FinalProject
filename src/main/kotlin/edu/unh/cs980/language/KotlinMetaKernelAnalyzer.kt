@@ -1,12 +1,9 @@
 package edu.unh.cs980.language
 
-import edu.unh.cs980.defaultWhenNotFinite
-import edu.unh.cs980.identity
+import edu.unh.cs980.*
 import edu.unh.cs980.misc.AnalyzerFunctions
 import edu.unh.cs980.misc.PartitionDescenter
-import edu.unh.cs980.normalize
 import edu.unh.cs980.paragraph.KotlinStochasticIntegrator
-import edu.unh.cs980.sharedRand
 import info.debatty.java.stringsimilarity.Cosine
 import info.debatty.java.stringsimilarity.Jaccard
 import info.debatty.java.stringsimilarity.NormalizedLevenshtein
@@ -15,6 +12,9 @@ import java.io.*
 import kotlin.math.abs
 import kotlin.math.log2
 
+enum class ReductionMethod {
+    REDUCTION_SUM, REDUCTION_AVERAGE, REDUCTION_MAX
+}
 
 data class DescentData(val simFun: (String) -> Map<String, Double>,
                        val partitionFun: ((String) -> List<String>)? = null)
@@ -92,21 +92,22 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
     fun measurePartitions(simFun: (String) -> Double): Double  =
         partitions.map { partition -> simFun(partition) }.max()!!.defaultWhenNotFinite(0.01)
 
-    fun transferDown1(simFun: (String) -> Double): Double {
-        if (measure.isEmpty()) return measurePartitions(simFun)
+    fun transferDown(depthToGo: Int, simFun: (String) -> Double): Double {
+        if (depthToGo == 0) return measurePartitions(simFun)
+//        if (measure.isEmpty()) return measurePartitions(simFun)
 
         val (mFreq, curFreq) = measure.values
-            .map { (sheaf, freq) -> sheaf.transferDown1(simFun) to freq }.unzip()
+            .map { (sheaf, freq) -> sheaf.transferDown(depthToGo - 1, simFun) to freq }.unzip()
         return mFreq.zip(curFreq).sumByDouble { (f1, f2) -> f1 * f2 }
 
 //        return mFreq.normalize().zip(curFreq).sumByDouble { (v2, v1) -> (v1 - v2) * log2(v1 / (if (v2 == 0.0) 0.0001 else v2)) }
 //            .apply { abs(this) }
     }
 
-    fun transferDown2(simFun: (String) -> Double): Double {
-        return measurePartitions(simFun) + measure.values.sumByDouble { (partition, freq) ->
-            partition.transferDown2(simFun) * freq }
-    }
+//    fun transferDown2(simFun: (String) -> Double): Double {
+//        return measurePartitions(simFun) + measure.values.sumByDouble { (partition, freq) ->
+//            partition.transferDown2(simFun) * freq }
+//    }
 
     fun retrieveLayer(depth: Int): List<Sheaf> =
         if (depth == 0) listOf(this)
@@ -131,6 +132,7 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
 
 
 class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
+    val sheaves = arrayListOf<Sheaf>()
 
     fun unigramFreq(text: String): Map<String, Double> =
         AnalyzerFunctions.createTokenList(text, analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH)
@@ -160,6 +162,12 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
                 .groupingBy(::identity)
                 .eachCount()
                 .normalize()
+
+    fun evaluateMeasure(startingLayer: Int, measureLayer: Int, measure: (String) -> Double) =
+            extractSheaves(startingLayer)
+                .flatMap { (topName, sheafLayer) ->
+                    sheafLayer.map { sheaf ->
+                        sheaf.name to sheaf.transferDown(measureLayer - startingLayer, measure) } }
 
 
 
@@ -191,6 +199,8 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
 
     }
 
+    fun extractSheaves(level: Int) =
+        sheaves.map { sheaf -> sheaf.name to sheaf.retrieveLayer(level) }
 
     fun trainParagraphs(filterList: List<String> = emptyList()) {
         File(paragraphIndex)
@@ -199,16 +209,27 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
             .forEach { file -> trainParagraph(file.name, file) }
     }
 
-    fun loadSheaves(sheafIndex: String) =
+    fun loadSheaves(sheafIndex: String, filterWords: List<String> = emptyList()) =
             File(sheafIndex)
                 .listFiles()
+                .filter { file -> filterWords.isEmpty() || file.name in filterWords }
                 .map { file ->
                     val reader = ObjectInputStream(FileInputStream(file))
-                    reader.readObject() as Sheaf
-                }
+                    reader.readObject() as Sheaf}
+                .onEach { sheaf -> sheaves += sheaf }
 
 
+    fun inferMetric(text: String, startingLayer: Int, measureLayer: Int,
+                    doNormalize: Boolean = true,
+                    reductionMethod: ReductionMethod = ReductionMethod.REDUCTION_MAX): TopicMixtureResult {
 
+        val mySentence = bindSims(text, reductionMethod = reductionMethod)
+        val res = evaluateMeasure(startingLayer, measureLayer, mySentence)
+            .toMap()
+            .run { if (doNormalize) normalize() else this }
+
+        return TopicMixtureResult(res.toSortedMap(), 0.0)
+    }
 }
 
 fun averageSim(w1: String, w2: String): Double =
@@ -229,10 +250,21 @@ fun tokenizedSim(w1: String, w2: String): Double {
 }
 
 
-fun bindSims(text: String): List<(String) -> Double> {
+
+fun bindSims(text: String, reductionMethod: ReductionMethod): (String) -> Double {
     val splitreg = "[ ]".toRegex()
     val words = splitreg.split(text.toLowerCase())
-    return words.map { word -> {otherWord: String -> averageSim(word, otherWord)} }
+    return { otherWord ->
+        words.map { word -> averageSim(word, otherWord) }
+            .run {
+                when(reductionMethod) {
+                    ReductionMethod.REDUCTION_AVERAGE -> average()
+                    ReductionMethod.REDUCTION_MAX -> max()!!
+                    ReductionMethod.REDUCTION_SUM -> sum()
+                }
+            }
+    }
+//    return words.map { word -> {otherWord: String -> averageSim(word, otherWord)} }
 //    return words.map { word -> {otherWord: String -> 1.0} }
 }
 
@@ -245,53 +277,43 @@ fun createWordAverage(text: String): (String) -> Double {
 
 }
 
-fun testStuff(metaAnalyzer: KotlinMetaKernelAnalyzer) {
-//    val sentence = "Tanks tanks tanks"
-//    val mySentence = listOf(createWordAverage(sentence))
-    val sheaves = metaAnalyzer.loadSheaves("descent_data/")
-//    val mySentence = bindSims("Here is some  and some medicine and some people")
-    val text = """
-        Cooking or cookery is the art, technology, science and craft of preparing food for consumption with or without the use of fire or heat. Cooking techniques and ingredients vary widely across the world, from grilling food over an open fire to using electric stoves, to baking in various types of ovens, reflecting unique environmental, economic, and cultural traditions and trends. The ways or types of cooking also depend on the skill and type of training an individual cook has. Cooking is done both by people in their own dwellings and by professional cooks and chefs in restaurants and other food establishments. Cooking can also occur through chemical reactions without the presence of heat, such as in ceviche, a traditional South American dish where fish is cooked with the acids in lemon or lime juice.
-            """
-    val mySentence = bindSims(text)
-//    val mySentence = bindSims("Philosophy is an old time historical traditional thing")
-
-//    val mySentence = listOf({ w: String -> tokenizedSim(sentence, w)})
-
-    sheaves.flatMap { sheaf -> sheaf.retrieveLayer(3) }
-        .map { sheaf ->
-//            sheaf.transferMeasure { word -> mySentence.map { myword -> myword(word) }.max()!!.defaultWhenNotFinite(0.0) } }
-            sheaf.transferMeasure { word -> mySentence.map {
-                myword -> myword(word) }.max()!!.defaultWhenNotFinite(0.0).let { res -> if (res > 0.8) res else 0.0 } } }
-        .groupBy { it.first }
-//        .mapValues { (key, values) -> values.sumByDouble { it.second } / values.size }
-//        .mapValues { (key, values) -> values.sumByDouble { it.second }  }
-        .mapValues { (key, values) -> values.sumByDouble { it.second }  }
-//        .fold(0.0) { cur, acc -> cur + acc.second}
-        .filter { it.value.isFinite() }
-//        .filter { it.key == "Medicine" }
-//        .normalize()
-        .entries.sortedByDescending { it.value }
-        .forEach(::println)
-
-//        .map { it.partitions.joinToString("|||") }
-//        .joinToString("\n------\n")
-//        .apply(::println)
-
-}
 
 fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
-    val sheaves = metaAnalyzer.loadSheaves("descent_data/")
+    val sheaves = metaAnalyzer.loadSheaves("descent_data/", filterWords = listOf("Medicine", "Cooking"))
     val text = """
-        engineering
+        Philosophy (from Greek φιλοσοφία, philosophia, literally "love of wisdom"[1][2][3][4]) is the study of general and fundamental problems concerning matters such as existence, knowledge, values, reason, mind, and language.[5][6] The term was probably coined by Pythagoras (c. 570–495 BCE). Philosophical methods include questioning, critical discussion, rational argument, and systematic presentation.[7][8] Classic philosophical questions include: Is it possible to know anything and to prove it?[9][10][11] What is most real? Philosophers also pose more practical and concrete questions such as: Is there a best way to live? Is it better to be just or unjust (if one can get away with it)?[12] Do humans have free will?[13]
+        Cooking or cookery is the art, technology, science and craft of preparing food for consumption with or without the use of fire or heat. Cooking techniques and ingredients vary widely across the world, from grilling food over an open fire to using electric stoves, to baking in various types of ovens, reflecting unique environmental, economic, and cultural traditions and trends. The ways or types of cooking also depend on the skill and type of training an individual cook has. Cooking is done both by people in their own dwellings and by professional cooks and chefs in restaurants and other food establishments. Cooking can also occur through chemical reactions without the presence of heat, such as in ceviche, a traditional South American dish where fish is cooked with the acids in lemon or lime juice.
+        A hospital is a health care institution providing patient treatment with specialized medical and nursing staff and medical equipment.[1] The best-known type of hospital is the general hospital, which typically has an emergency department to treat urgent health problems ranging from fire and accident victims to a heart attack. A district hospital typically is the major health care facility in its region, with large numbers of beds for intensive care and additional beds for patients who need long-term care. Specialised hospitals include trauma centres, rehabilitation hospitals, children's hospitals, seniors' (geriatric) hospitals, and hospitals for dealing with specific medical needs such as psychiatric treatment (see psychiatric hospital) and certain disease categories. Specialised hospitals can help reduce health care costs compared to general hospitals.[2]
+        A hospital is a health care institution providing patient treatment with specialized medical and nursing staff and medical equipment.[1] The best-known type of hospital is the general hospital, which typically has an emergency department to treat urgent health problems ranging from fire and accident victims to a heart attack. A district hospital typically is the major health care facility in its region, with large numbers of beds for intensive care and additional beds for patients who need long-term care. Specialised hospitals include trauma centres, rehabilitation hospitals, children's hospitals, seniors' (geriatric) hospitals, and hospitals for dealing with specific medical needs such as psychiatric treatment (see psychiatric hospital) and certain disease categories. Specialised hospitals can help reduce health care costs compared to general hospitals.[2]
+        A hospital is a health care institution providing patient treatment with specialized medical and nursing staff and medical equipment.[1] The best-known type of hospital is the general hospital, which typically has an emergency department to treat urgent health problems ranging from fire and accident victims to a heart attack. A district hospital typically is the major health care facility in its region, with large numbers of beds for intensive care and additional beds for patients who need long-term care. Specialised hospitals include trauma centres, rehabilitation hospitals, children's hospitals, seniors' (geriatric) hospitals, and hospitals for dealing with specific medical needs such as psychiatric treatment (see psychiatric hospital) and certain disease categories. Specialised hospitals can help reduce health care costs compared to general hospitals.[2]
+        A hospital is a health care institution providing patient treatment with specialized medical and nursing staff and medical equipment.[1] The best-known type of hospital is the general hospital, which typically has an emergency department to treat urgent health problems ranging from fire and accident victims to a heart attack. A district hospital typically is the major health care facility in its region, with large numbers of beds for intensive care and additional beds for patients who need long-term care. Specialised hospitals include trauma centres, rehabilitation hospitals, children's hospitals, seniors' (geriatric) hospitals, and hospitals for dealing with specific medical needs such as psychiatric treatment (see psychiatric hospital) and certain disease categories. Specialised hospitals can help reduce health care costs compared to general hospitals.[2]
             """
-    val mySentence = bindSims(text)
-    sheaves
-        .map { sheaf -> sheaf.name to mySentence.map{ f -> sheaf.transferDown1(f) }.max()!! }
-        .toMap()
-        .normalize()
-        .entries.sortedByDescending { it.value }
-        .forEach { println(it) }
+
+    val bb = """
+        Health health medicine health bacteria
+            """
+    val red = ReductionMethod.REDUCTION_AVERAGE
+    val result = metaAnalyzer.inferMetric(text, 0, 3, doNormalize = false, reductionMethod = red)
+    val result2 = metaAnalyzer.inferMetric(bb, 0, 3, doNormalize = false, reductionMethod = red)
+    result.reportResults()
+    result2.reportResults()
+    println(result.euclideanDistance(result2))
+//    val mySentence = bindSims2(text, doAverage = true)
+////    println(sheaves.first().transferDown(3, mySentence))
+//    val res = metaAnalyzer.evaluateMeasure(0, 3, mySentence)
+//        .toMap()
+//        .normalize()
+////
+//    res.entries
+//        .filter { it.value > 0.0 }
+//        .sortedByDescending { it.value }.forEach(::println)
+
+//    sheaves
+//        .map { sheaf -> sheaf.name to mySentence.map{ f -> sheaf.transferDown(3, f) }.max()!! }
+//        .toMap()
+//        .normalize()
+//        .entries.sortedByDescending { it.value }
+//        .forEach { println(it) }
 
 }
 
@@ -300,7 +322,7 @@ fun showSheaves(metaAnalyzer: KotlinMetaKernelAnalyzer) {
     val res = sheaves
         .filter { sheaf -> sheaf.name == "Engineering" }
         .map { sheaf ->
-        sheaf.retrieveLayer(2)
+        sheaf.retrieveLayer(0)
             .map { s ->
                 val parentScore = s.cover?.run { measure[s.name]!!.second }.toString()
                 s.partitions.joinToString(" ") + ":\n\t$parentScore\n"  }
@@ -320,6 +342,7 @@ fun main(args: Array<String>) {
     val metaAnalyzer = KotlinMetaKernelAnalyzer("paragraphs/")
 //    metaAnalyzer.trainParagraphs(listOf("Medicine", "Cooking"))
 //    metaAnalyzer.trainParagraphs()
-//    testStuff2(metaAnalyzer)
-    showSheaves(metaAnalyzer)
+    testStuff2(metaAnalyzer)
+//    showSheaves(metaAnalyzer)
+//    println(metaAnalyzer.extractSheaves(1))
 }
