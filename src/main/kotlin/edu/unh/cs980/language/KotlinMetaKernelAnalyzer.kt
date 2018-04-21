@@ -141,8 +141,8 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
 
 class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
     val sheaves = arrayListOf<Sheaf>()
-//    private val sim = NormalizedLevenshtein()
-    private val sim = Jaccard(4)
+    private val sim = NormalizedLevenshtein()
+//    private val sim = Jaccard(4)
 
     fun unigramFreq(text: String): Map<String, Double> =
         AnalyzerFunctions.createTokenList(text, analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH)
@@ -271,7 +271,7 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
 
     fun averageSim(w1: String, w2: String): Double =
 //            (1.0 - sim.distance(w1, w2)).run { if (this < 0.5) 0.0 else 1.0 }
-                (1.0 - sim.distance(w1, w2)).run { if (this < 0.8) 0.0 else this }
+                (1.0 - sim.distance(w1, w2)).run { if (this < 0.5) 0.0 else this }
 //                (sim.similarity(w1, w2)).run { if (this < 0.5) 0.0 else 1.0 }
 
     fun productMaxMax(w1: List<String>, w2: List<String>): Double =
@@ -388,9 +388,9 @@ fun exploreSheaves(metaAnalyzer: KotlinMetaKernelAnalyzer) {
 
 fun main(args: Array<String>) {
     val metaAnalyzer = KotlinMetaKernelAnalyzer("paragraphs/")
-    metaAnalyzer.trainParagraphs(listOf("Medicine", "Cooking"))
+//    metaAnalyzer.trainParagraphs(listOf("Medicine", "Cooking"))
 //    metaAnalyzer.combinedTraining(listOf("Medicine", "Cooking", "Warfare"))
-//    testStuff2(metaAnalyzer)
+    testStuff2(metaAnalyzer)
 //    showSheaves(metaAnalyzer)
 //    println(metaAnalyzer.extractSheaves(1))
 }
