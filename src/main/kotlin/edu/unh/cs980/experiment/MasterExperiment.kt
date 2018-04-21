@@ -73,20 +73,20 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                 normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.DELTA_SIM,
                 queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
 
-//        val boundSheafDistFunction2 = bindSheafDist(
-//                startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
-//                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN,
-//                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
-//
-//        val boundSheafDistFunction3 = bindSheafDist(
-//                startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
-//                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN,
-//                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
+        val boundSheafDistFunction2 = bindSheafDist(
+                startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
+                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN,
+                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
+
+        val boundSheafDistFunction3 = bindSheafDist(
+                startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
+                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN,
+                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
 
         formatter.addBM25(normType = NormType.ZSCORE)
         formatter.addFeature(boundSheafDistFunction, normType = NormType.ZSCORE)
-//        formatter.addFeature(boundSheafDistFunction2, normType = NormType.ZSCORE)
-//        formatter.addFeature(boundSheafDistFunction3, normType = NormType.ZSCORE)
+        formatter.addFeature(boundSheafDistFunction2, normType = NormType.ZSCORE)
+        formatter.addFeature(boundSheafDistFunction3, normType = NormType.ZSCORE)
     }
 
 
