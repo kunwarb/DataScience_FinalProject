@@ -41,7 +41,7 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
             .normalize()
 
 
-        val perturbations = perturb(1000, coveringSim)
+        val perturbations = perturb(5000, coveringSim)
         val integrator = KotlinStochasticIntegrator(perturbations, partitionSims + (name to coveringSim), {null}, false)
         val integrals = integrator.integrate()
 
@@ -49,7 +49,7 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
         val (featureNames, featureFreqs) = integrals.filter { it.first != name }.unzip()
 
         val stepper = PartitionDescenter(identityFreq, featureFreqs)
-        val (weights, kld) = stepper.startDescent(500)
+        val (weights, kld) = stepper.startDescent(2000)
 
         val results = featureNames.zip(weights).toMap()
         val partitionTextMap = partitionTexts.toMap()
@@ -89,8 +89,8 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
 
     fun measurePartitions(simFun: (String) -> Double): Double  =
 //        partitions.map { partition -> simFun(partition) }.max()!!.defaultWhenNotFinite(0.01)
-//            partitions.map { partition -> simFun(partition) }.average()!!.defaultWhenNotFinite(0.01)
-            simFun(partitions.first())
+            partitions.map { partition -> simFun(partition) }.average()!!.defaultWhenNotFinite(0.01)
+//            simFun(partitions.first())
 //            simFun(partitions.joinToString("\n"))
 //        partitions.map { partition -> simFun(partition) }.max()!!.defaultWhenNotFinite(0.01)
 
@@ -106,7 +106,7 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
             .sumByDouble { (sheaf, freq) ->
                 sheaf.transferDown(depthToGo - 1, simFun) * freq
             }
-//        return mFreq.zip(curFreq).sumByDouble { (f1, f2) -> f1 * f2 }
+////        return mFreq.zip(curFreq).sumByDouble { (f1, f2) -> f1 * f2 }
 
 //        return mFreq.normalize().zip(curFreq).sumByDouble { (v2, v1) -> (v1 - v2) * log2(v1 / (if (v2 == 0.0) 0.0001 else v2)) }
 //            .apply { abs(this) }
@@ -141,8 +141,8 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
 
 class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
     val sheaves = arrayListOf<Sheaf>()
-    private val sim = NormalizedLevenshtein()
-//    private val sim = Jaccard(4)
+//    private val sim = NormalizedLevenshtein()
+    private val sim = Jaccard(4)
 
     fun unigramFreq(text: String): Map<String, Double> =
         AnalyzerFunctions.createTokenList(text, analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH)
@@ -328,8 +328,8 @@ fun filterWords(text: String) =
 
 
 fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
-//    val sheaves = metaAnalyzer.loadSheaves("descent_data/", filterWords = listOf("Medicine", "Cooking"))
-    val sheaves = metaAnalyzer.loadSheaves("descent_data/")
+    val sheaves = metaAnalyzer.loadSheaves("descent_data/", filterWords = listOf("Medicine", "Cooking"))
+//    val sheaves = metaAnalyzer.loadSheaves("descent_data/")
     val text = """
         Philosophy (from Greek φιλοσοφία, philosophia, literally "love of wisdom"[1][2][3][4]) is the study of general and fundamental problems concerning matters such as existence, knowledge, values, reason, mind, and language.[5][6] The term was probably coined by Pythagoras (c. 570–495 BCE). Philosophical methods include questioning, critical discussion, rational argument, and systematic presentation.[7][8] Classic philosophical questions include: Is it possible to know anything and to prove it?[9][10][11] What is most real? Philosophers also pose more practical and concrete questions such as: Is there a best way to live? Is it better to be just or unjust (if one can get away with it)?[12] Do humans have free will?[13]
         Cooking or cookery is the art, technology, science and craft of preparing food for consumption with or without the use of fire or heat. Cooking techniques and ingredients vary widely across the world, from grilling food over an open fire to using electric stoves, to baking in various types of ovens, reflecting unique environmental, economic, and cultural traditions and trends. The ways or types of cooking also depend on the skill and type of training an individual cook has. Cooking is done both by people in their own dwellings and by professional cooks and chefs in restaurants and other food establishments. Cooking can also occur through chemical reactions without the presence of heat, such as in ceviche, a traditional South American dish where fish is cooked with the acids in lemon or lime juice.
@@ -338,7 +338,7 @@ fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
             """
 
     val bb = """
-        Health health medicine health bacteria
+        health medicine health
             """
     val red = ReductionMethod.REDUCTION_AVERAGE
     val result = metaAnalyzer.inferMetric(text, 0, 3, doNormalize = true, reductionMethod = red)
@@ -388,8 +388,8 @@ fun exploreSheaves(metaAnalyzer: KotlinMetaKernelAnalyzer) {
 
 fun main(args: Array<String>) {
     val metaAnalyzer = KotlinMetaKernelAnalyzer("paragraphs/")
-//    metaAnalyzer.trainParagraphs(listOf("Medicine", "Cooking"))
-    metaAnalyzer.combinedTraining(listOf("Medicine", "Cooking", "Warfare"))
+    metaAnalyzer.trainParagraphs(listOf("Medicine", "Cooking"))
+//    metaAnalyzer.combinedTraining(listOf("Medicine", "Cooking", "Warfare"))
 //    testStuff2(metaAnalyzer)
 //    showSheaves(metaAnalyzer)
 //    println(metaAnalyzer.extractSheaves(1))

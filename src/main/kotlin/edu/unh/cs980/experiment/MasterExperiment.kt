@@ -71,17 +71,17 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
         val boundSheafDistFunction = bindSheafDist(
                 startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
                 normalize = false, mixtureDistanceMeasure = MixtureDistanceMeasure.DELTA_SIM,
-                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
+                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION)
 
         val boundSheafDistFunction2 = bindSheafDist(
                 startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
                 normalize = false, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN,
-                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
+                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION)
 
         val boundSheafDistFunction3 = bindSheafDist(
                 startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_MAX_MAX,
                 normalize = false, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN,
-                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
+                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION)
 
         formatter.addBM25(normType = NormType.ZSCORE)
         formatter.addFeature(boundSheafDistFunction, normType = NormType.ZSCORE)
