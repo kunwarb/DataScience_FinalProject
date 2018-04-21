@@ -67,7 +67,7 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 
     fun doClust() {
 //        metaAnalyzer.loadSheaves(descent_data, filterWords = listOf("Medicine", "Cooking", "Warfare", "Society"))
-//        metaAnalyzer.loadSheaves(descent_data, filterWords = listOf("Medicine", "Cooking"))
+        metaAnalyzer.loadSheaves(descent_data, filterWords = listOf("Medicine", "Cooking", "Society"))
         metaAnalyzer.loadSheaves(descent_data)
         val boundSheafDistFunction = bindSheafDist(
                 startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
@@ -75,8 +75,8 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                 queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
 
         val boundSheafDistFunction2 = bindSheafDist(
-                startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
-                normalize = false, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
+                startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
+                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN,
                 queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
 
         val boundSheafDistFunction3 = bindSheafDist(
@@ -84,6 +84,7 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                 normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN,
                 queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
 
+        formatter.addBM25(normType = NormType.ZSCORE)
         formatter.addFeature(boundSheafDistFunction, normType = NormType.ZSCORE)
         formatter.addFeature(boundSheafDistFunction2, normType = NormType.ZSCORE)
         formatter.addFeature(boundSheafDistFunction3, normType = NormType.ZSCORE)
