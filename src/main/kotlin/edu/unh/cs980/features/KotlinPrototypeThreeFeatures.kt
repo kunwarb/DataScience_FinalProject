@@ -87,7 +87,7 @@ fun featSheafDist(query: String, tops: TopDocs, indexSearcher: IndexSearcher, an
             measureLayer = measureLayer, reductionMethod = reductionMethod)
 
     val embeddedParagraphs = paragraphs.map { paragraph ->
-        analyzer.inferMetric(text = queryText, startingLayer = startLayer, doNormalize = normalize,
+        analyzer.inferMetric(text = paragraph, startingLayer = startLayer, doNormalize = normalize,
             measureLayer = measureLayer, reductionMethod = reductionMethod) }
 
     return embeddedParagraphs
