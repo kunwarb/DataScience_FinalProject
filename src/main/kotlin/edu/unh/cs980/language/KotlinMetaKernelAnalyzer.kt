@@ -13,7 +13,7 @@ import kotlin.math.abs
 import kotlin.math.log2
 
 enum class ReductionMethod {
-    REDUCTION_SUM, REDUCTION_AVERAGE, REDUCTION_MAX
+    REDUCTION_MAX_MAX, REDUCTION_AVERAGE, REDUCTION_MAX_AVERAGE
 }
 
 data class DescentData(val simFun: (String) -> Map<String, Double>,
@@ -90,7 +90,10 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
     }
 
     fun measurePartitions(simFun: (String) -> Double): Double  =
-        partitions.map { partition -> simFun(partition) }.max()!!.defaultWhenNotFinite(0.01)
+//        partitions.map { partition -> simFun(partition) }.max()!!.defaultWhenNotFinite(0.01)
+            partitions.map { partition -> simFun(partition) }.average()!!.defaultWhenNotFinite(0.01)
+//            simFun(partitions.joinToString("\n"))
+//        partitions.map { partition -> simFun(partition) }.max()!!.defaultWhenNotFinite(0.01)
 
     fun transferDown(depthToGo: Int, simFun: (String) -> Double): Double {
         if (depthToGo == 0) return measurePartitions(simFun)
@@ -221,7 +224,7 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
 
     fun inferMetric(text: String, startingLayer: Int, measureLayer: Int,
                     doNormalize: Boolean = true,
-                    reductionMethod: ReductionMethod = ReductionMethod.REDUCTION_MAX): TopicMixtureResult {
+                    reductionMethod: ReductionMethod = ReductionMethod.REDUCTION_MAX_AVERAGE): TopicMixtureResult {
 
         val mySentence = bindSims(text, reductionMethod = reductionMethod)
         val res = evaluateMeasure(startingLayer, measureLayer, mySentence)
@@ -249,20 +252,47 @@ fun tokenizedSim(w1: String, w2: String): Double {
         .average()!!.defaultWhenNotFinite(0.0)
 }
 
+fun productSim(w1: String, w2: List<String>): Double {
+    return w2.map { word2 -> averageSim(w1, word2) }.average()!!
+}
+
+fun productSim2(w1: List<String>, w2: List<String>): Double {
+//    return w1.flatMap { word1 -> w2.map { word2 -> averageSim(word1, word2) } }.average()!!
+    return w1.map { word1 -> w2.map { word2 -> averageSim(word1, word2) }.max()!! }.sum()!!
+}
+
+fun productMaxMax(w1: List<String>, w2: List<String>): Double =
+    w1.map { word1 -> w2.map { word2 -> averageSim(word1, word2) }.max()!! }.max()!!
+
+fun productMaxAverage(w1: List<String>, w2: List<String>): Double =
+        w1.map { word1 -> w2.map { word2 -> averageSim(word1, word2) }.max()!! }.average()
+
+fun productAverage(w1: List<String>, w2: List<String>): Double =
+        w1.flatMap { word1 -> w2.map { word2 -> averageSim(word1, word2) } }.average()
 
 
 fun bindSims(text: String, reductionMethod: ReductionMethod): (String) -> Double {
     val splitreg = "[ ]".toRegex()
-    val words = splitreg.split(text.toLowerCase())
-    return { otherWord ->
-        words.map { word -> averageSim(word, otherWord) }
-            .run {
-                when(reductionMethod) {
-                    ReductionMethod.REDUCTION_AVERAGE -> average()
-                    ReductionMethod.REDUCTION_MAX -> max()!!
-                    ReductionMethod.REDUCTION_SUM -> sum()
-                }
-            }
+//    val words = splitreg.split(text.toLowerCase())
+    val w1 = filterWords(text)
+    return { otherWords ->
+        val target = filterWords(otherWords)
+        productAverage(w1, target)
+        when (reductionMethod) {
+            ReductionMethod.REDUCTION_MAX_MAX -> productMaxMax(w1, target)
+            ReductionMethod.REDUCTION_AVERAGE -> productAverage(w1, target)
+            ReductionMethod.REDUCTION_MAX_AVERAGE -> productMaxAverage(w1, target)
+        }
+//        words.map { word -> averageSim(word, otherWord) }
+//        productSim2(words, target)
+//        words.map { word -> productSim(word, target) }.average()!!
+//            .run {
+//                when(reductionMethod) {
+//                    ReductionMethod.REDUCTION_AVERAGE -> average()
+//                    ReductionMethod.REDUCTION_MAX -> max()!!
+//                    ReductionMethod.REDUCTION_SUM -> sum()
+//                }
+//            }
     }
 //    return words.map { word -> {otherWord: String -> averageSim(word, otherWord)} }
 //    return words.map { word -> {otherWord: String -> 1.0} }
@@ -272,10 +302,6 @@ fun bindSims(text: String, reductionMethod: ReductionMethod): (String) -> Double
 //    return {w2: String -> tokenizedSim(text, w2) }
 //}
 
-fun createWordAverage(text: String): (String) -> Double {
-    return { w: String -> tokenizedSim(text, w) }
-
-}
 
 
 fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
@@ -297,7 +323,7 @@ fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
     val result2 = metaAnalyzer.inferMetric(bb, 0, 3, doNormalize = false, reductionMethod = red)
     result.reportResults()
     result2.reportResults()
-    println(result.euclideanDistance(result2))
+    println(result.manhattenDistance(result2))
 //    val mySentence = bindSims2(text, doAverage = true)
 ////    println(sheaves.first().transferDown(3, mySentence))
 //    val res = metaAnalyzer.evaluateMeasure(0, 3, mySentence)

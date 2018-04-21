@@ -2,12 +2,13 @@ package edu.unh.cs980.experiment
 
 import edu.unh.cs980.Main
 import edu.unh.cs980.context.HyperlinkIndexer
+import edu.unh.cs980.features.SheafQueryEmbeddingMethod
 import edu.unh.cs980.features.featSDM
+import edu.unh.cs980.features.featSheafDist
 import edu.unh.cs980.features.featSplitSim
 import edu.unh.cs980.getIndexSearcher
 import edu.unh.cs980.identity
-import edu.unh.cs980.language.KotlinAbstractAnalyzer
-import edu.unh.cs980.language.KotlinGramAnalyzer
+import edu.unh.cs980.language.*
 import edu.unh.cs980.misc.MethodContainer
 import edu.unh.cs980.misc.buildResourceDispatcher
 import edu.unh.cs980.ranklib.KotlinRanklibFormatter
@@ -23,12 +24,16 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
     val qrelPath: String by resources
     val queryPath: String by resources
     val gram: KotlinGramAnalyzer by resources
-    val abstract: KotlinAbstractAnalyzer by resources
-    val hyperlink: HyperlinkIndexer by resources
+    val descent_data: String by resources
+    val paragraphs: String by resources
+
+//    val abstract: KotlinAbstractAnalyzer by resources
+//    val hyperlink: HyperlinkIndexer by resources
     val out: String by resources
 
     val formatter = KotlinRanklibFormatter(queryPath, qrelPath, indexPath)
     val indexer = getIndexSearcher(indexPath)
+    val metaAnalyzer = KotlinMetaKernelAnalyzer(paragraphs)
 
 
     fun wee() {
@@ -43,6 +48,31 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
         formatter.addFeature({ query, tops, indexSearcher ->
             featSplitSim(query, tops, indexSearcher, bindSDM, weights)
         }, normType = NormType.ZSCORE)
+    }
+
+
+//    fun featSheafDist(query: String, tops: TopDocs, indexSearcher: IndexSearcher, analyzer: KotlinMetaKernelAnalyzer,
+//                      startLayer: Int, measureLayer: Int, reductionMethod: ReductionMethod,
+//                      normalize: Boolean, mixtureDistanceMeasure: MixtureDistanceMeasure,
+//                      queryEmbeddingMethod: SheafQueryEmbeddingMethod): List<Double> {
+
+    fun bindSheafDist(startLayer: Int, measureLayer: Int, reductionMethod: ReductionMethod,
+                      normalize: Boolean, mixtureDistanceMeasure: MixtureDistanceMeasure,
+                      queryEmbeddingMethod: SheafQueryEmbeddingMethod) =
+        { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
+            featSheafDist(query, tops, indexSearcher, metaAnalyzer, startLayer, measureLayer, reductionMethod,
+                    normalize, mixtureDistanceMeasure, queryEmbeddingMethod)
+        }
+
+
+    fun doClust() {
+
+        val boundSheafDistFunction = bindSheafDist(
+                startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
+                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
+                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
+
+        formatter.addFeature(boundSheafDistFunction, normType = NormType.ZSCORE)
     }
 
 
@@ -92,7 +122,7 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                 buildResourceDispatcher {
 
                     methods<MasterExperiment> {
-                        trainMethod("wee") { wee() }
+                        trainMethod("doClust") { doClust() }
                         queryMethod("wee2") { wee() }
                     }
 
@@ -118,22 +148,34 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                         loader = ::identity
                     }
 
-                    resource("hyperlink") {
-                        help = "Location to hyperlink index database (Default: /trec_data/team_1/entity_mentions.db)"
-                        default = "/trec_data/team_1/entity_mentions.db"
-                        loader = { path -> HyperlinkIndexer(path, true) }
-                    }
-
-                    resource("abstract") {
-                        help = "Location to abstract Lucene index (Default: /trec_data/team_1/abstract)"
-                        default = "/trec_data/team_1/abstract/"
-                        loader = { path -> KotlinAbstractAnalyzer(getIndexSearcher(path)) }
-                    }
+//                    resource("hyperlink") {
+//                        help = "Location to hyperlink index database (Default: /trec_data/team_1/entity_mentions.db)"
+//                        default = "/trec_data/team_1/entity_mentions.db"
+//                        loader = { path -> HyperlinkIndexer(path, true) }
+//                    }
+//
+//                    resource("abstract") {
+//                        help = "Location to abstract Lucene index (Default: /trec_data/team_1/abstract)"
+//                        default = "/trec_data/team_1/abstract/"
+//                        loader = { path -> KotlinAbstractAnalyzer(getIndexSearcher(path)) }
+//                    }
 
                     resource("gram") {
                         help = "Location to gram Lucene index (Default: /trec_data/team_1/gram)"
                         default = "/trec_data/team_1/gram/"
                         loader = { path -> KotlinGramAnalyzer(getIndexSearcher(path)) }
+                    }
+
+                    resource("paragraphs") {
+                        help = "Location to paragraphs training directory (Default: /trec_data/team_1/paragraphs)"
+                        default = "/trec_data/team_1/paragraphs/"
+                        loader = ::identity
+                    }
+
+                    resource("descent_data") {
+                        help = "Location to descent data directory (Default: /trec_data/team_1/descent_data)"
+                        default = "/trec_data/team_1/descent_data/"
+                        loader = ::identity
                     }
 
                 }
