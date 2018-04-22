@@ -70,15 +70,15 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 //        metaAnalyzer.loadSheaves(descent_data, filterWords = listOf("Combined"))
         embedder.loadTopics(paragraphs)
 
-        val bindEmbed = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
-            featUseEmbeddedQuery(query, tops, indexSearcher, embedder) }
+//        val bindEmbed = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
+//            featUseEmbeddedQuery(query, tops, indexSearcher, embedder) }
 
 
 
-//        val boundSheafDistFunction = bindSheafDist(
-//                startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
-//                normalize = false, mixtureDistanceMeasure = MixtureDistanceMeasure.DELTA_SIM,
-//                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION)
+        val boundSheafDistFunction = bindSheafDist(
+                startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
+                normalize = false, mixtureDistanceMeasure = MixtureDistanceMeasure.DELTA_SIM,
+                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION)
 //
 //        val boundSheafDistFunction2 = bindSheafDist(
 //                startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
@@ -91,8 +91,8 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 //                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION)
 
         formatter.addBM25(normType = NormType.ZSCORE)
-        formatter.addFeature(bindEmbed, normType = NormType.ZSCORE)
-//        formatter.addFeature(boundSheafDistFunction, normType = NormType.ZSCORE)
+//        formatter.addFeature(bindEmbed, normType = NormType.ZSCORE)
+        formatter.addFeature(boundSheafDistFunction, normType = NormType.ZSCORE)
 //        formatter.addFeature(boundSheafDistFunction2, normType = NormType.ZSCORE)
 //        formatter.addFeature(boundSheafDistFunction3, normType = NormType.ZSCORE)
     }

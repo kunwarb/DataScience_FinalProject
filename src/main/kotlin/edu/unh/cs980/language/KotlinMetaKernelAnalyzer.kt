@@ -106,28 +106,18 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
                     (1 / log2(cover!!.partitions.size.toDouble())).defaultWhenNotFinite(0.0)
 
     fun transferDown(depthToGo: Int, simFun: (String) -> Double): Double {
-        if (depthToGo == 0) {
-            val score = measurePartitions(simFun)
-//            val parentName = cover!!.name
-//            val parentMeasure = cover!!.cover!!.measure[parentName]!!.second!!
-//            val mymeasure = cover!!.measure[name]!!.second
-//            if (score > 0.0) {
-//                if (name.contains("Warfare")) {
-//                    println("${partitions.first()}: $score * ${mymeasure}:  ${mymeasure * parentMeasure} ")
-//                }
-//            }
-            return score
-        }
+        if (depthToGo == 0) return measurePartitions(simFun)
 
 
         val results = measure.values.map { (sheaf, freq) ->
-                sheaf.transferDown(depthToGo - 1, simFun) * freq }
+//                sheaf.transferDown(depthToGo - 1, simFun) * freq * (sheaf.partitions.size.toDouble() ).defaultWhenNotFinite(1.0) }
+        sheaf.transferDown(depthToGo - 1, simFun) * freq.defaultWhenNotFinite(1.0) }
 
         val highest = results.max() ?: 0.0
         val total = results.sum()
 //        val total = (results.max() ?: 0.0) * (1.0 + results.count { it > 1 / max(1.0, partitions.size.toDouble()) })
 
-        if (total < 1/(max(1.0, partitions.size.toDouble()))) return 0.00 else return total
+        if (total < 1/(max(1.0, partitions.size.toDouble()))) return 0.00 else return pow(total, 1.0)
 //        if (highest < minFreq) return 0.00 else return pow(total, 1.0)
 //        if (total < 1/(log2(partitions.size.toDouble())).defaultWhenNotFinite(0.0)) return 0.00 else return pow(total, 1.0)
 
@@ -266,29 +256,6 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
             .joinToString(". ") }
 
 
-//    fun combinedTraining(filterList: List<String> = emptyList()) {
-//        val allParas = File(paragraphIndex)
-//            .listFiles()
-//            .filter { file -> filterList.isEmpty() || file.name in filterList }
-//            .flatMap { file -> extractTopicText(file) }
-//
-//        val sheaf = Sheaf("Combined", allParas)
-//        val descentData = listOf(
-//                DescentData(this::unigramFreq, this::splitSentence),
-//                DescentData(bindFreq(3), this::splitWord),
-////                DescentData(bindFreq(2), this::splitWord),
-//                DescentData(bindFreq(2), ::listOf)
-////                DescentData(this::singleLetterFreq, ::listOf)
-////                DescentData(bindFreq(1), ::listOf)
-//        )
-//        sheaf.descend(descentData)
-//        File("descent_data/").let { file -> if (!file.exists()) file.mkdir() }
-//        val f = FileOutputStream("descent_data/Combined")
-//        val of = ObjectOutputStream(f)
-//        of.writeObject(sheaf)
-//        of.close()
-//        f.close()
-//    }
 
     fun loadSheaves(sheafIndex: String, filterWords: List<String> = emptyList()) =
             File(sheafIndex)
@@ -325,6 +292,7 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
         val misses = results.count { it == 0.0 }
         val hits = results.sum()
 //        val highest = results.max()!!
+//        val sizeSmooth = 1.0 + 200 / (1.0 + misses.toDouble())
         val sizeSmooth = 1.0 + 200 / (1.0 + misses.toDouble())
 
         return hits * sizeSmooth
@@ -363,15 +331,17 @@ fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
             """
 
     val bb = """
-        bacteria
+        personal personal personal personal
     """
     val red = ReductionMethod.REDUCTION_MAX_AVERAGE
     val result = metaAnalyzer.inferMetric(text, 0, 3, doNormalize = false, reductionMethod = red)
     val result2 = metaAnalyzer.inferMetric(bb, 0, 3, doNormalize = false, reductionMethod = red)
     result.reportResults()
     result2.reportResults()
+    println(result.results.values.sum())
+    println(result2.results.values.sum())
 //    result2.reportResults()
-//    println(result.manhattenDistance(result2))
+    println(result.manhattenDistance(result2))
 
 }
 
@@ -392,16 +362,6 @@ fun showSheaves(metaAnalyzer: KotlinMetaKernelAnalyzer) {
 }
 
 
-fun exploreSheaves(metaAnalyzer: KotlinMetaKernelAnalyzer) {
-    val sheaves = metaAnalyzer.loadSheaves("descent_data/")
-}
-
-fun buildStopWords() {
-    val stops = EnglishAnalyzer.getDefaultStopSet()
-    stops.addAll(listOf(
-            "which", "this", "other", "than", "within"
-    ))
-}
 
 fun main(args: Array<String>) {
     val metaAnalyzer = KotlinMetaKernelAnalyzer("paragraphs/")
