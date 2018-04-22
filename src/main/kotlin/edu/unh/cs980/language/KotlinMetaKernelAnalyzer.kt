@@ -10,7 +10,9 @@ import org.apache.commons.math3.distribution.NormalDistribution
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import java.io.*
 import java.lang.Integer.max
+import java.lang.Math.max
 import java.lang.Math.pow
+import kotlin.math.log2
 
 enum class ReductionMethod {
     REDUCTION_MAX_MAX, REDUCTION_AVERAGE, REDUCTION_MAX_AVERAGE
@@ -103,12 +105,21 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
         if (depthToGo == 0) return measurePartitions(simFun)
 
 
-        val total = measure.values
-            .sumByDouble { (sheaf, freq) ->
-                sheaf.transferDown(depthToGo - 1, simFun) * freq
-            }
+//        val total = measure.values
+//            .sumByDouble { (sheaf, freq) ->
+//                sheaf.transferDown(depthToGo - 1, simFun) * freq
+//            }
+        val results = measure.values.map { (sheaf, freq) ->
+                sheaf.transferDown(depthToGo - 1, simFun) * freq }
+
+        val total = results.max() ?: 0.0
+
+
 //        println("$name: $total")
-        if (total < 1/max(1, partitions.size).toDouble()) return 0.0 else return total
+//        if (total < 1/max(1.toDouble(), partitions.size.toDouble())) {
+//            if (!name.contains("_")) return 0.0 else return 0.01 / max(1.0, partitions.size.toDouble())
+//        } else return total
+        if (total < 1/max(1.toDouble(), partitions.size.toDouble())) return 0.00 else return total
 
 //        return total
     }
@@ -305,7 +316,7 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
         val hits = results.sum()
 //        return hits/pow(max(1, misses).toDouble(), 2.0)
 //        return hits/max(1, misses)
-        return results.sum()
+        return hits * (100.0 / misses)
 //        return w1.flatMap { word1 -> w2.map { word2 -> averageSim(word1, word2) } }.sum()
     }
 
@@ -341,9 +352,9 @@ fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
             """
 
     val bb = """
-        Nursing is a profession within the health care sector focused on the care of individuals, families, and communities so they may attain, maintain, or recover optimal health and quality of life. Nurses may be differentiated from other health care providers by their approach to patient care, training, and scope of practice. Nurses practice in many specialties with differing levels of prescription authority. Many nurses provide care within the ordering scope of physicians, and this traditional role has shaped the public image of nurses as care providers. However, nurse practitioners are permitted by most jurisdictions to practice independently in a variety of settings. In the postwar period, nurse education has undergone a process of diversification towards advanced and specialized credentials, and many of the traditional regulations and provider roles are changing.[1][2]
+        Consider a discrete probability distribution among m mutually exclusive propositions. The most informative distribution would occur when one of the propositions was known to be true. In that case, the information entropy would be equal to zero. The least informative distribution would occur when there is no reason to favor any one of the propositions over the others. In that case, the only reasonable probability distribution would be uniform, and then the information entropy would be equal to its maximum possible value, log m. The information entropy can therefore be seen as a numerical measure which describes how uninformative a particular probability distribution is, ranging from zero (completely informative) to log m (completely uninformative).
 
-Nurses develop a plan of care, working collaboratively with physicians, therapists, the patient, the patient's family and other team members, that focuses on treating illness to improve quality of life. In the United States and the United Kingdom, advanced practice nurses, such as clinical nurse specialists and nurse practitioners, diagnose health problems and prescribe medications and other therapies, depending on individual state regulations. Nurses may help coordinate the patient care performed by other members of a multidisciplinary health care team such as therapists, medical practitioners and dietitians. Nurses provide care both interdependently, for example, with physicians, and independently as nursing professionals.
+By choosing to use the distribution with the maximum entropy allowed by our information, the argument goes, we are choosing the most uninformative distribution possible. To choose a distribution with lower entropy would be to assume information we do not possess. Thus the maximum entropy distribution is the only reasonable distribution.
     """
     val red = ReductionMethod.REDUCTION_MAX_AVERAGE
     val result = metaAnalyzer.inferMetric(text, 0, 3, doNormalize = true, reductionMethod = red)
