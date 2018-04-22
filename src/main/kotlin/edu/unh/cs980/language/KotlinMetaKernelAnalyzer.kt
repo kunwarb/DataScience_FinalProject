@@ -18,7 +18,7 @@ import kotlin.math.log10
 import kotlin.math.log2
 
 enum class ReductionMethod {
-    REDUCTION_MAX_MAX, REDUCTION_AVERAGE, REDUCTION_MAX_AVERAGE
+    REDUCTION_MAX_MAX, REDUCTION_AVERAGE, REDUCTION_SMOOTHED_THRESHOLD
 }
 
 data class DescentData(val simFun: (String) -> Map<String, Double>,
@@ -269,7 +269,7 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
 
     fun inferMetric(text: String, startingLayer: Int, measureLayer: Int,
                     doNormalize: Boolean = true,
-                    reductionMethod: ReductionMethod = ReductionMethod.REDUCTION_MAX_AVERAGE): TopicMixtureResult {
+                    reductionMethod: ReductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD): TopicMixtureResult {
 
         val mySentence = bindSims(text, reductionMethod = reductionMethod)
         val res = evaluateMeasure(startingLayer, measureLayer, mySentence)
@@ -287,7 +287,7 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
     fun productMaxMax(w1: List<String>, w2: List<String>): Double =
             w1.map { word1 -> w2.map { word2 -> averageSim(word1, word2) }.max()!! }.max()!!
 
-    fun productMaxAverage(w1: List<String>, w2: List<String>): Double {
+    fun productSmoothThreshold(w1: List<String>, w2: List<String>): Double {
         val results = w1.flatMap { word1 -> w2.map { word2 -> averageSim(word1, word2) } }
         val misses = results.count { it == 0.0 }
         val hits = results.sum()
@@ -309,7 +309,7 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
             when (reductionMethod) {
                 ReductionMethod.REDUCTION_MAX_MAX     -> productMaxMax(w1, target)
                 ReductionMethod.REDUCTION_AVERAGE     -> productAverage(w1, target)
-                ReductionMethod.REDUCTION_MAX_AVERAGE -> productMaxAverage(w1, target)
+                ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD -> productSmoothThreshold(w1, target)
             }
         }
     }
@@ -331,9 +331,9 @@ fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
             """
 
     val bb = """
-        personal personal personal personal
+        The character of Socrates as exhibited in Apology, Crito, Phaedo and Symposium concurs with other sources to an extent to which it seems possible to rely on the Platonic Socrates, as demonstrated in the dialogues, as a representation of the actual Socrates as he lived in history.[26] At the same time, however, many scholars believe that in some works, Plato, being a literary artist, pushed his avowedly brightened-up version of "Socrates" far beyond anything the historical Socrates was likely to have done or said. Also, Xenophon, being an historian, is a more reliable witness to the historical Socrates. It is a matter of much debate over which Socrates it is whom Plato is describing at any given point—the historical figure, or Plato's fictionalization. As British philosopher Martin Cohen has put it, "Plato, the idealist, offers an idol, a master figure, for philosophy. A Saint, a prophet of 'the Sun-God', a teacher condemned for his teachings as a heretic."[27]
     """
-    val red = ReductionMethod.REDUCTION_MAX_AVERAGE
+    val red = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD
     val result = metaAnalyzer.inferMetric(text, 0, 3, doNormalize = false, reductionMethod = red)
     val result2 = metaAnalyzer.inferMetric(bb, 0, 3, doNormalize = false, reductionMethod = red)
     result.reportResults()
