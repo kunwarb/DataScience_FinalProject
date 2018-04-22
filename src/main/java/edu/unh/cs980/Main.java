@@ -282,8 +282,50 @@ public class Main {
 				.setDefault("func", new Exec(Main::runHyperlinkIndexer))
 				.help("Builds an entity likelihood model given entity mentions in page corpus.");
 		hyperlinkIndexerParser.addArgument("corpus").help("Location of all alllButBenchmark corpus.");
+		
+		
+		// -----------------------------------Added on 22nd April By Bindu -----------------------------------------
+		
+		// Argument parser for Contextual Similarity with Query Expansion
+            Subparser ContextSimilarityQueryExpanParser = subparsers.addParser("context_queryeexpansion")
+						.setDefault("func", new Exec(Main::runConQuerExpansion)).help("Use Contextual Similarity with Query expansion");
+            ContextSimilarityQueryExpanParser.addArgument("query_choice").choices("page")
+						.help("\tpage: Page of paragraph corpus\n");
+            ContextSimilarityQueryExpanParser.addArgument("multi_thread").choices("true", "false").setDefault("false")
+						.help("\ttrue: Run Multi Thread function. (Not Stable)\n" + "\tfalse: Use normal function\n");
 
-		return parser;
+            ContextSimilarityQueryExpanParser.addArgument("index").help("Location of Lucene index directory.");
+            ContextSimilarityQueryExpanParser.addArgument("abstract").help("Location of Lucene entity abstract index directory.");
+            ContextSimilarityQueryExpanParser.addArgument("query_file").help("Location of the query file (.cbor)");
+            ContextSimilarityQueryExpanParser.addArgument("--out").setDefault("ContextQuerySimilarity.run")
+						.help("The name of the trec_eval compatible run file to write. (default: ContextQuerySimilarity.run)");
+		
+		    
+            
+             // Argument parser for top_k_treecontextualsimilarity (Added By Bindu)
+
+    		Subparser TopktreeConSimParser = subparsers.addParser("top_k_treecontextualsimilarity")
+    				.setDefault("func", new Exec(Main::runtopktreeContSim)).help("Run top k tree contextualSimilarity Passer");
+
+    		TopktreeConSimParser.addArgument("index").help("Location of Lucene index directory.");
+    		TopktreeConSimParser.addArgument("query_file").help("Location of the query file (.cbor)");
+    		TopktreeConSimParser.addArgument("--out") 
+    				.setDefault("topk_treeConSimParser.run")
+    				.help("The name of the trec_eval compatible run file to write. (default: topk_treeConSimParser.run)");
+   
+    		
+    		// Argument parser for ParaRank With DependencyParser
+
+    		Subparser ParaRankWithDepParser = subparsers.addParser("pararank_with_depparser")
+    				.setDefault("func", new Exec(Main::runParaGraphRankWithDepParser)).help(" Paragraph Ranking with dependency Parser");
+
+    		ParaRankWithDepParser.addArgument("index").help("Location of Lucene index directory.");
+    		ParaRankWithDepParser.addArgument("query_file").help("Location of the query file (.cbor)");
+    		ParaRankWithDepParser.addArgument("--out") 
+    				.setDefault("pararankdepparser.run")
+    				.help("The name of the trec_eval compatible run file to write. (default: pararankdepparser.run)");
+               //******************  Bindu Parser completed ******************************************
+			return parser;
 	}
 
 	private static void runIndexer(Namespace params) {
@@ -629,7 +671,81 @@ public class Main {
 		KotlinRankLibTrainer kotTrainer = new KotlinRankLibTrainer(indexLocation, queryLocation, "", hyperLoc,
 				abstractLoc, gramLoc);
 		kotTrainer.runRanklibQuery(method, out);
-	}
+	}  
+	
+	// ******************************* Adding calling method which is mentioned in Parser call ( By Bindu ) ***********************
+	
+	// Run  Contextual Query Expansion
+
+		private static void runConQuerExpansion(Namespace params) {
+			try {
+				String indexLocation = params.getString("index");
+				String abstract_indexLocation = params.getString("abstract");
+				String queryFile = params.getString("query_file");
+				String queryChoice = params.getString("query_choice");
+				String multi = params.getString("multi_thread");
+				Boolean runMultiThread = Boolean.valueOf(multi.toLowerCase());
+				String out = params.getString("out");
+				QueryBuilder queryBuilder = new QueryBuilder(queryFile);
+				if (queryChoice.equalsIgnoreCase("page")) {
+					ArrayList<String> pages_queries = queryBuilder.getAllpageQueries();
+
+					if (runMultiThread) {
+						ArrayList<String> page_run = Contextual_QueryExpansion.TrueWithMultiThread(pages_queries,
+								indexLocation, abstract_indexLocation);
+						ProjectUtils.writeToFile(out, page_run);
+					} else {
+						ArrayList<String> page_run = Contextual_QueryExpansion.getContextualResults(pages_queries, indexLocation,
+								abstract_indexLocation);
+						ProjectUtils.writeToFile(out, page_run);
+					}
+
+				}  else {
+					System.out.println("Error: QueryType was not recognized");
+				}
+
+			} catch (Throwable e) {
+				System.out.println(e.getMessage());
+			}
+		}
+  
+		// Added on 22nd April By Bindu
+		  public static void runtopktreeContSim(Namespace params) {
+			try {
+				String indexLocation = params.getString("index");
+				String queryLocation = params.getString("query_file"); 
+				String rankingOutputLocation = params.getString("out");
+
+				ArrayList<Data.Page> pagelist = getAllPageFromPath(indexLocation, queryLocation, rankingOutputLocation);
+
+				TopktreeContextualSimilarity ts = new TopktreeContextualSimilarity(pagelist, 100, indexLocation);
+				ts.writeContextualParagraphScore(rankingOutputLocation);
+
+			} catch (Exception e) {
+				logger.error(e.getMessage());
+			}
+
+		}
+		  
+		    // for Paragraph Ranking with Dependency parser with full tree with BM25 Similarity
+		  public static void runParaGraphRankWithDepParser(Namespace params) {
+			try {
+				String indexLocation = params.getString("index");
+				String queryLocation = params.getString("query_file"); 
+				String rankingOutputLocation = params.getString("out");
+
+				ArrayList<Data.Page> pagelist = getAllPageFromPath(indexLocation, queryLocation, rankingOutputLocation);
+
+				ParaRankWithDepParser ps = new ParaRankWithDepParser(pagelist, 100, indexLocation);
+				ps.writeParaRankWithDepParser(rankingOutputLocation);
+
+			} catch (Exception e) {
+				logger.error(e.getMessage());
+			}
+
+		}
+	
+	  //******************************** Completed on 22nd April  ( By Bindu )****************************************
 
 	// This is an example of a method that is compatible with
 	// KotlinRanklibFormatter's addFeature
