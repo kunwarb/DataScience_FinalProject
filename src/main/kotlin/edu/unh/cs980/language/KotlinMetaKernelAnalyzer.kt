@@ -9,6 +9,8 @@ import info.debatty.java.stringsimilarity.*
 import org.apache.commons.math3.distribution.NormalDistribution
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import java.io.*
+import java.lang.Integer.max
+import java.lang.Math.pow
 
 enum class ReductionMethod {
     REDUCTION_MAX_MAX, REDUCTION_AVERAGE, REDUCTION_MAX_AVERAGE
@@ -100,10 +102,15 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
     fun transferDown(depthToGo: Int, simFun: (String) -> Double): Double {
         if (depthToGo == 0) return measurePartitions(simFun)
 
-        return measure.values
+
+        val total = measure.values
             .sumByDouble { (sheaf, freq) ->
                 sheaf.transferDown(depthToGo - 1, simFun) * freq
             }
+//        println("$name: $total")
+        if (total < 1/max(1, partitions.size).toDouble()) return 0.0 else return total
+
+//        return total
     }
 
 
@@ -285,15 +292,22 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
     }
 
     fun averageSim(w1: String, w2: String): Double =
-                (1.0 - sim.distance(w1, w2)).run { if (this < 0.7) 0.0 else this }
+                (1.0 - sim.distance(w1, w2)).run { if (this < 0.8) 0.0 else 1.0 }
 //                    .apply { if (this > 0.9) println("$w1: $w2: $this") }
 
 
     fun productMaxMax(w1: List<String>, w2: List<String>): Double =
             w1.map { word1 -> w2.map { word2 -> averageSim(word1, word2) }.max()!! }.max()!!
 
-    fun productMaxAverage(w1: List<String>, w2: List<String>): Double =
-            w1.map { word1 -> w2.map { word2 -> averageSim(word1, word2) }.max()!! }.average()
+    fun productMaxAverage(w1: List<String>, w2: List<String>): Double {
+        val results = w1.flatMap { word1 -> w2.map { word2 -> averageSim(word1, word2) } }
+        val misses = results.count { it == 0.0 }
+        val hits = results.sum()
+//        return hits/pow(max(1, misses).toDouble(), 2.0)
+//        return hits/max(1, misses)
+        return results.sum()
+//        return w1.flatMap { word1 -> w2.map { word2 -> averageSim(word1, word2) } }.sum()
+    }
 
     fun productAverage(w1: List<String>, w2: List<String>): Double =
             w1.flatMap { word1 -> w2.map { word2 -> averageSim(word1, word2) } }.average()
@@ -320,7 +334,8 @@ fun filterWords(text: String) =
 
 
 fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
-    val sheaves = metaAnalyzer.loadSheaves("descent_data/", filterWords = listOf("Medicine", "Cooking"))
+//    val sheaves = metaAnalyzer.loadSheaves("descent_data/", filterWords = listOf("Medicine", "Cooking"))
+    val sheaves = metaAnalyzer.loadSheaves("descent_data/")
     val text = """
         Instead of table service, there are food-serving counters/stalls, either in a line or allowing arbitrary walking paths. Customers take the food that they desire as they walk along, placing it on a tray. In addition, there are often stations where customers order food and wait while it is prepared, particularly for items such as hamburgers or tacos which must be served hot and can be immediately prepared. Alternatively, the patron is given a number and the item is brought to their table. For some food items and drinks, such as sodas, water, or the like, customers collect an empty container, pay at the check-out, and fill the container after the check-out. Free unlimited second servings are often allowed under this system. For legal purposes (and the consumption patterns of customers), this system is rarely, if at all, used for alcoholic beverages in the US.
             """
@@ -330,7 +345,7 @@ fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
 
 Nurses develop a plan of care, working collaboratively with physicians, therapists, the patient, the patient's family and other team members, that focuses on treating illness to improve quality of life. In the United States and the United Kingdom, advanced practice nurses, such as clinical nurse specialists and nurse practitioners, diagnose health problems and prescribe medications and other therapies, depending on individual state regulations. Nurses may help coordinate the patient care performed by other members of a multidisciplinary health care team such as therapists, medical practitioners and dietitians. Nurses provide care both interdependently, for example, with physicians, and independently as nursing professionals.
     """
-    val red = ReductionMethod.REDUCTION_AVERAGE
+    val red = ReductionMethod.REDUCTION_MAX_AVERAGE
     val result = metaAnalyzer.inferMetric(text, 0, 3, doNormalize = true, reductionMethod = red)
     val result2 = metaAnalyzer.inferMetric(bb, 0, 3, doNormalize = true, reductionMethod = red)
     result.reportResults()
@@ -370,7 +385,7 @@ fun buildStopWords() {
 
 fun main(args: Array<String>) {
     val metaAnalyzer = KotlinMetaKernelAnalyzer("paragraphs/")
-    metaAnalyzer.trainParagraphs()
+//    metaAnalyzer.trainParagraphs()
 //    metaAnalyzer.trainParagraphs(listOf("Cooking"))
 //    metaAnalyzer.combinedTraining(listOf("Medicine", "Cooking", "Warfare"))
     testStuff2(metaAnalyzer)
