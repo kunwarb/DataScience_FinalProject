@@ -113,11 +113,11 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
 //                sheaf.transferDown(depthToGo - 1, simFun) * freq * (sheaf.partitions.size.toDouble() ).defaultWhenNotFinite(1.0) }
         sheaf.transferDown(depthToGo - 1, simFun) * freq.defaultWhenNotFinite(1.0) }
 
-        val highest = results.max() ?: 0.0
+//        val highest = results.max() ?: 0.0
         val total = results.sum()
 //        val total = (results.max() ?: 0.0) * (1.0 + results.count { it > 1 / max(1.0, partitions.size.toDouble()) })
 
-        if (total < 1/(max(1.0, partitions.size.toDouble()))) return 0.00 else return pow(total, 1.0)
+        if (total < 1/(max(1.0, partitions.size.toDouble()))) return 0.00 else return total
 //        if (highest < minFreq) return 0.00 else return pow(total, 1.0)
 //        if (total < 1/(log2(partitions.size.toDouble())).defaultWhenNotFinite(0.0)) return 0.00 else return pow(total, 1.0)
 
@@ -184,20 +184,9 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
             .eachCount()
             .normalize()
 
-    fun letterFreq2(windowSize: Int, text: String, partial: Boolean) =
-            AnalyzerFunctions.createTokenList(text, analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH_STOPPED)
-                .flatMap { token -> token.windowed(windowSize, partialWindows = partial).flatMap { window -> listOf(window, window.reversed())} }
-                .groupingBy(::identity)
-                .eachCount()
-                .normalize()
 
     fun bindFreq(windowSize: Int, partial: Boolean = false) = { text: String -> letterFreq(windowSize, text, partial)}
 
-    fun singleLetterFreq(text: String) =
-            text.map(Char::toString)
-                .groupingBy(::identity)
-                .eachCount()
-                .normalize()
 
     fun evaluateMeasure(startingLayer: Int, measureLayer: Int, measure: (String) -> Double) =
             extractSheaves(startingLayer)
@@ -306,6 +295,7 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
         val w1 = filterWords(text)
         return { otherWords ->
             val target = filterWords(otherWords)
+//            val target = listOf(otherWords)
             when (reductionMethod) {
                 ReductionMethod.REDUCTION_MAX_MAX     -> productMaxMax(w1, target)
                 ReductionMethod.REDUCTION_AVERAGE     -> productAverage(w1, target)
