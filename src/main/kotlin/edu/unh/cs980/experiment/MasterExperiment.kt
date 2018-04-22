@@ -66,8 +66,8 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 
 
     fun doClust() {
-//        metaAnalyzer.loadSheaves(descent_data, filterWords = listOf("Medicine", "Cooking", "Warfare", "Society"))
-        metaAnalyzer.loadSheaves(descent_data)
+        metaAnalyzer.loadSheaves(descent_data, filterWords = listOf("Medicine", "Cooking", "Games", "Society"))
+//        metaAnalyzer.loadSheaves(descent_data)
 //        embedder.loadTopics(paragraphs)
 
 //        val bindEmbed = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
