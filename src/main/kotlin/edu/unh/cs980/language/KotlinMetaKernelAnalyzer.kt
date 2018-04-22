@@ -16,6 +16,8 @@ import kotlin.math.exp
 import kotlin.math.ln
 import kotlin.math.log10
 import kotlin.math.log2
+import kotlin.system.measureNanoTime
+import kotlin.system.measureTimeMillis
 
 enum class ReductionMethod {
     REDUCTION_MAX_MAX, REDUCTION_AVERAGE, REDUCTION_SMOOTHED_THRESHOLD
@@ -294,8 +296,8 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
     fun bindSims(text: String, reductionMethod: ReductionMethod): (String) -> Double {
         val w1 = filterWords(text)
         return { otherWords ->
-            val target = filterWords(otherWords)
-//            val target = listOf(otherWords)
+//            val target = filterWords(otherWords)
+            val target = listOf(otherWords)
             when (reductionMethod) {
                 ReductionMethod.REDUCTION_MAX_MAX     -> productMaxMax(w1, target)
                 ReductionMethod.REDUCTION_AVERAGE     -> productAverage(w1, target)
@@ -358,7 +360,9 @@ fun main(args: Array<String>) {
 //    metaAnalyzer.trainParagraphs()
 //    metaAnalyzer.trainParagraphs(listOf("Cooking"))
 //    metaAnalyzer.combinedTraining(listOf("Medicine", "Cooking", "Warfare"))
-    testStuff2(metaAnalyzer)
+    measureTimeMillis {
+        testStuff2(metaAnalyzer)
+    }.apply(::println)
 //    showSheaves(metaAnalyzer)
 //    println(metaAnalyzer.extractSheaves(1))
 }
