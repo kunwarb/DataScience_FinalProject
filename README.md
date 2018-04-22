@@ -1,22 +1,20 @@
 ## Results and Report
-The newest results for prototype 2 can be found in the results_prototype2 directory. The results are as follows
+The newest results for prototype 3 can be found in the results_prototype3 directory. The results are as follows
 
-**results_prototype2/report.pdf**: The group report for the current prototype.
+**results_prototype3/report.pdf**: The group report for the current prototype.
 
-**results_prototype2/jordan/**: Runfiles and trec eval stats for each of Jordan's methods
+**results_prototype3/jordan/**: Runfiles and trec eval stats for each of Jordan's methods
 
-**results_prototype2/kevin/**: Trec eval stats and run files for Kevin's methods.
+**results_prototype3/kevin/**: Trec eval stats and run files for Kevin's methods.
 
-**results_prototype2/bindu/**: Trec eval stats and run files for Bindu's methods.
+**results_prototype3/bindu/**: Trec eval stats and run files for Bindu's methods.
  
- **results_prototype2/public_test/** Compressed run files for runs on benchmark_kY1_public_query test data. Contains the following:
- - **combined_method.run.gz**: This was run using the combined method (see ranklib_query combined method below)
- - **sdm_section.run.gz**: This was run using the sdm_section method (see ranklib_query sdm_section method below)
- - **alternative_to_prototype_1_run/sdm_run.run.gz**: If possible, we would like our third run file to be the run file from prototype 1 (**results/benchmark_kY1_public_query.run.gz**). If that is not allowed, then we will have our third run be **sdm_run.run.gz**, which was run using the sdm method (see ranklib_query sdm method below).
+ **results_prototype3/public_test/** Compressed run files for runs on benchmark_kY1_public_query test data. Contains the following:
+ 
 
 ___
 ## Installation Instructions
-Because of the balloiining size of the precompiled jar, it is no longer being tracked on GitHub. You can find a precompiled version of prototype 2's program on the server at: **/trec_data/team_1/program.jar**
+Because of the balloiining size of the precompiled jar, it is no longer being tracked on GitHub. You can find a precompiled version of prototype 3's program on the server at: **/trec_data/team_1/program.jar**
 
 You may also compile the jar directly from the source code in this repository by entering the following command, or by running ./compile.sh while in the project directory:
 
