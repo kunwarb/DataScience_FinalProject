@@ -24,6 +24,10 @@ import edu.unh.cs980.WordEmbedding.Lucene_Query_Creator;
 import edu.unh.cs980.WordEmbedding.ParagraphSimilarity;
 import edu.unh.cs980.WordEmbedding.ParagraphWithWordnet;
 import edu.unh.cs980.WordEmbedding.TfIdfSimilarity;
+
+import edu.unh.cs980.WordEmbedding.ParaRankWithDepParser;
+import edu.unh.cs980.WordEmbedding.TopktreeContextualSimilarity;
+import edu.unh.cs980.WordEmbedding.Contextual_QueryExpansion;
 import edu.unh.cs980.context.HyperlinkIndexer;
 import edu.unh.cs980.language.KotlinAbstractAnalyzer;
 import edu.unh.cs980.language.KotlinAbstractExtractor;
