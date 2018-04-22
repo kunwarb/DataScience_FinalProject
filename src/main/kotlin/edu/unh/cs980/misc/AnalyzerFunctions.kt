@@ -1,6 +1,7 @@
 package edu.unh.cs980.misc
 
 import edu.unh.cs980.CONTENT
+import org.apache.lucene.analysis.CharArraySet
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
@@ -8,8 +9,15 @@ import org.apache.lucene.index.Term
 import org.apache.lucene.search.BooleanClause
 import org.apache.lucene.search.BooleanQuery
 import org.apache.lucene.search.TermQuery
+import java.io.File
 import java.io.StringReader
 import kotlin.coroutines.experimental.buildSequence
+
+private fun buildStopWords(): CharArraySet {
+    val stops = CharArraySet.copy(EnglishAnalyzer.getDefaultStopSet())
+     stops.addAll( File("aggressive_stops.txt").readLines() )
+    return stops
+}
 
 /**
  * Static Class: AnalyzerFunctions
@@ -18,8 +26,9 @@ import kotlin.coroutines.experimental.buildSequence
 object AnalyzerFunctions {
     private val standardAnalyzer = StandardAnalyzer()
     private val englishAnalyzer = EnglishAnalyzer()
+    private val englishStopped = EnglishAnalyzer(buildStopWords())
 
-    enum class AnalyzerType { ANALYZER_STANDARD, ANALYZER_ENGLISH }
+    enum class AnalyzerType { ANALYZER_STANDARD, ANALYZER_ENGLISH, ANALYZER_ENGLISH_STOPPED }
 
     /**
      * Class: createTokenSequence
@@ -35,6 +44,7 @@ object AnalyzerFunctions {
         val analyzer = when (analyzerType) {
             AnalyzerType.ANALYZER_STANDARD -> standardAnalyzer
             AnalyzerType.ANALYZER_ENGLISH  -> englishAnalyzer
+            AnalyzerType.ANALYZER_ENGLISH_STOPPED  -> englishStopped
         }
 
         val replaceNumbers = """(\d+|enwiki:)""".toRegex()

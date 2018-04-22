@@ -7,6 +7,7 @@ import edu.unh.cs980.misc.PartitionDescenter
 import edu.unh.cs980.paragraph.KotlinStochasticIntegrator
 import info.debatty.java.stringsimilarity.*
 import org.apache.commons.math3.distribution.NormalDistribution
+import org.apache.lucene.analysis.en.EnglishAnalyzer
 import java.io.*
 
 enum class ReductionMethod {
@@ -40,10 +41,10 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
             .normalize()
 
 
-        val (featureNames, weights) = (0 until 1).map {
+        val (featureNames, weights) = (0 until 3).map {
             doPerturb(coveringSim, partitionSims = partitionSims)}
             .reduce { acc, list -> acc.zip(list).map { (f1, f2) -> f1.first to f2.second + f1.second } }
-            .map { it.first to it.second / 1 }.unzip()
+            .map { it.first to it.second / 3 }.unzip()
 
         val results = featureNames.zip(weights).toMap()
         val partitionTextMap = partitionTexts.toMap()
@@ -69,7 +70,7 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
     }
 
     fun doPerturb(coveringSim: Map<String, Double>, partitionSims: List<Pair<String, Map<String, Double>>>): List<Pair<String, Double>> {
-        val perturbations = perturb(300, coveringSim)
+        val perturbations = perturb(100, coveringSim)
         val integrator = KotlinStochasticIntegrator(perturbations, partitionSims + (name to coveringSim), {null}, false)
         val integrals = integrator.integrate()
 
@@ -78,7 +79,7 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
 
 //        val stepper = PartitionDescenter(identityFreq, featureFreqs)
         val stepper = GradientDescenter(identityFreq, featureFreqs)
-        val (weights, kld) = stepper.startDescent(1000)
+        val (weights, kld) = stepper.startDescent(800)
         return featureNames.zip(weights)
     }
 
@@ -112,7 +113,7 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
 
     companion object {
         fun perturb(nSamples: Int = 50, sims: Map<String, Double>): Pair<List<String>, List<List<Double>>> {
-            val norm = NormalDistribution(sharedRand, 1.0, 0.5)
+            val norm = NormalDistribution(sharedRand, 1.0, 0.001)
             val (kernelNames, kernelFreqs) = sims.toList().unzip()
 
             val perturbations = (0 until nSamples).map {
@@ -140,7 +141,7 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
             .normalize()
 
     fun bigramFrequency(text: String): Map<String, Double> =
-            AnalyzerFunctions.createTokenList(text, analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH)
+            AnalyzerFunctions.createTokenList(text, analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH_STOPPED)
                 .windowed(2, partialWindows = false)
                 .flatMap { (first, second) -> listOf("${first}_$second", "${second}_$first") }
                 .groupingBy(::identity)
@@ -148,22 +149,29 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
                 .normalize()
 
     fun splitSentence(text: String): List<String> = text.split(".")
-        .filter { it.length > 3 }
+        .filter { it.length > 2 }
 
     fun splitWord(text: String): List<String> =
 //            AnalyzerFunctions.createTokenList(text, analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH)
             "[ ]".toRegex().split(text)
-                .filter { it.length > 3 }
+                .filter { it.length > 2 }
                 .toSet()
                 .toList()
 
 
     fun letterFreq(windowSize: Int, text: String, partial: Boolean) =
-        AnalyzerFunctions.createTokenList(text, analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH)
+        AnalyzerFunctions.createTokenList(text, analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH_STOPPED)
             .flatMap { token -> token.windowed(windowSize, partialWindows = partial) }
             .groupingBy(::identity)
             .eachCount()
             .normalize()
+
+    fun letterFreq2(windowSize: Int, text: String, partial: Boolean) =
+            AnalyzerFunctions.createTokenList(text, analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH_STOPPED)
+                .flatMap { token -> token.windowed(windowSize, partialWindows = partial).flatMap { window -> listOf(window, window.reversed())} }
+                .groupingBy(::identity)
+                .eachCount()
+                .normalize()
 
     fun bindFreq(windowSize: Int, partial: Boolean = false) = { text: String -> letterFreq(windowSize, text, partial)}
 
@@ -184,7 +192,7 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
     private fun trainParagraph(topic: String, directory: File) {
         val paragraphs = directory.listFiles().map { file -> file.readText().toLowerCase().replace(",", " ") }
             .map { text -> splitSentence(text).map {  text ->
-                AnalyzerFunctions.createTokenList(text, analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH).joinToString(" ") }
+                AnalyzerFunctions.createTokenList(text, analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH_STOPPED).joinToString(" ") }
                 .joinToString(". ")
             }
 
@@ -192,8 +200,8 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
         val descentData = listOf(
 //                DescentData(this::unigramFreq, this::splitSentence),
                 DescentData(bindFreq(2), this::splitSentence),
-                DescentData(bindFreq(1), this::splitWord),
-                DescentData(bindFreq(1), ::listOf)
+                DescentData(bindFreq(2), this::splitWord),
+                DescentData(bindFreq(2), ::listOf)
 //                DescentData(this::unigramFreq, ::listOf)
 //                DescentData(bindFreq(4), this::splitSentence),
 //                DescentData(bindFreq(4), this::splitWord),
@@ -226,7 +234,7 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
     fun extractTopicText(topicDir: File): List<String> =
         topicDir.listFiles().map { file -> file.readText().toLowerCase().replace(",", " ") }
             .map { text -> splitSentence(text).map {  text ->
-            AnalyzerFunctions.createTokenList(text, analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH).joinToString(" ") }
+            AnalyzerFunctions.createTokenList(text, analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH_STOPPED).joinToString(" ") }
             .joinToString(". ") }
 
 
@@ -277,7 +285,8 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
     }
 
     fun averageSim(w1: String, w2: String): Double =
-                (1.0 - sim.distance(w1, w2)).run { if (this < 0.8) 0.0 else this }
+                (1.0 - sim.distance(w1, w2)).run { if (this < 0.7) 0.0 else this }
+//                    .apply { if (this > 0.9) println("$w1: $w2: $this") }
 
 
     fun productMaxMax(w1: List<String>, w2: List<String>): Double =
@@ -306,28 +315,26 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
 
 fun filterWords(text: String) =
     AnalyzerFunctions.createTokenList(text.toLowerCase(),
-            analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH)
+            analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH_STOPPED)
 
 
 
 fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
     val sheaves = metaAnalyzer.loadSheaves("descent_data/", filterWords = listOf("Medicine", "Cooking"))
     val text = """
-        Philosophy (from Greek φιλοσοφία, philosophia, literally "love of wisdom"[1][2][3][4]) is the study of general and fundamental problems concerning matters such as existence, knowledge, values, reason, mind, and language.[5][6] The term was probably coined by Pythagoras (c. 570–495 BCE). Philosophical methods include questioning, critical discussion, rational argument, and systematic presentation.[7][8] Classic philosophical questions include: Is it possible to know anything and to prove it?[9][10][11] What is most real? Philosophers also pose more practical and concrete questions such as: Is there a best way to live? Is it better to be just or unjust (if one can get away with it)?[12] Do humans have free will?[13]
-        A hospital is a health care institution providing patient treatment with specialized medical and nursing staff and medical equipment.[1] The best-known type of hospital is the general hospital, which typically has an emergency department to treat urgent health problems ranging from fire and accident victims to a heart attack. A district hospital typically is the major health care facility in its region, with large numbers of beds for intensive care and additional beds for patients who need long-term care. Specialised hospitals include trauma centres, rehabilitation hospitals, children's hospitals, seniors' (geriatric) hospitals, and hospitals for dealing with specific medical needs such as psychiatric treatment (see psychiatric hospital) and certain disease categories. Specialised hospitals can help reduce health care costs compared to general hospitals.[2]
-        A hospital is a health care institution providing patient treatment with specialized medical and nursing staff and medical equipment.[1] The best-known type of hospital is the general hospital, which typically has an emergency department to treat urgent health problems ranging from fire and accident victims to a heart attack. A district hospital typically is the major health care facility in its region, with large numbers of beds for intensive care and additional beds for patients who need long-term care. Specialised hospitals include trauma centres, rehabilitation hospitals, children's hospitals, seniors' (geriatric) hospitals, and hospitals for dealing with specific medical needs such as psychiatric treatment (see psychiatric hospital) and certain disease categories. Specialised hospitals can help reduce health care costs compared to general hospitals.[2]
-        A hospital is a health care institution providing patient treatment with specialized medical and nursing staff and medical equipment.[1] The best-known type of hospital is the general hospital, which typically has an emergency department to treat urgent health problems ranging from fire and accident victims to a heart attack. A district hospital typically is the major health care facility in its region, with large numbers of beds for intensive care and additional beds for patients who need long-term care. Specialised hospitals include trauma centres, rehabilitation hospitals, children's hospitals, seniors' (geriatric) hospitals, and hospitals for dealing with specific medical needs such as psychiatric treatment (see psychiatric hospital) and certain disease categories. Specialised hospitals can help reduce health care costs compared to general hospitals.[2]
+        Instead of table service, there are food-serving counters/stalls, either in a line or allowing arbitrary walking paths. Customers take the food that they desire as they walk along, placing it on a tray. In addition, there are often stations where customers order food and wait while it is prepared, particularly for items such as hamburgers or tacos which must be served hot and can be immediately prepared. Alternatively, the patron is given a number and the item is brought to their table. For some food items and drinks, such as sodas, water, or the like, customers collect an empty container, pay at the check-out, and fill the container after the check-out. Free unlimited second servings are often allowed under this system. For legal purposes (and the consumption patterns of customers), this system is rarely, if at all, used for alcoholic beverages in the US.
             """
 
     val bb = """
-        A kitchen is a room or part of a room used for cooking and food preparation in a dwelling or in a commercial establishment. A modern residential kitchen is typically equipped with a stove, a sink with hot and cold running water, a refrigerator, and it also has counters and kitchen cabinets arranged according to a modular design. Many households have a microwave oven, a dishwasher and other electric appliances. The main function of a kitchen is serving as a location for storing, cooking and preparing food (and doing related tasks such as dishwashing), but it may also be used for dining, entertaining and laundry.
+        The bacterial cell is surrounded by a cell membrane which is made primarily of phospholipids. This membrane encloses the contents of the cell and acts as a barrier to hold nutrients, proteins and other essential components of the cytoplasm within the cell.[44] Unlike eukaryotic cells, bacteria usually lack large membrane-bound structures in their cytoplasm such as a nucleus, mitochondria, chloroplasts and the other organelles present in eukaryotic cells.[45] However, some bacteria have protein-bound organelles in the cytoplasm which compartmentalize aspects of bacterial metabolism,[46][47] such as the carboxysome.[48] Additionally, bacteria have a multi-component cytoskeleton to control the localisation of proteins and nucleic acids within the cell, and to manage the process of cell division.[49][50][51]
     """
     val red = ReductionMethod.REDUCTION_AVERAGE
     val result = metaAnalyzer.inferMetric(text, 0, 3, doNormalize = true, reductionMethod = red)
     val result2 = metaAnalyzer.inferMetric(bb, 0, 3, doNormalize = true, reductionMethod = red)
     result.reportResults()
     result2.reportResults()
-    println(result.manhattenDistance(result2))
+//    result2.reportResults()
+//    println(result.manhattenDistance(result2))
 
 }
 
@@ -350,6 +357,13 @@ fun showSheaves(metaAnalyzer: KotlinMetaKernelAnalyzer) {
 
 fun exploreSheaves(metaAnalyzer: KotlinMetaKernelAnalyzer) {
     val sheaves = metaAnalyzer.loadSheaves("descent_data/")
+}
+
+fun buildStopWords() {
+    val stops = EnglishAnalyzer.getDefaultStopSet()
+    stops.addAll(listOf(
+            "which", "this", "other", "than", "within"
+    ))
 }
 
 fun main(args: Array<String>) {
