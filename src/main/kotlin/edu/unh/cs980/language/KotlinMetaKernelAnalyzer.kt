@@ -2,13 +2,12 @@ package edu.unh.cs980.language
 
 import edu.unh.cs980.*
 import edu.unh.cs980.misc.AnalyzerFunctions
+import edu.unh.cs980.misc.GradientDescenter
 import edu.unh.cs980.misc.PartitionDescenter
 import edu.unh.cs980.paragraph.KotlinStochasticIntegrator
 import info.debatty.java.stringsimilarity.*
 import org.apache.commons.math3.distribution.NormalDistribution
 import java.io.*
-import kotlin.math.abs
-import kotlin.math.log2
 
 enum class ReductionMethod {
     REDUCTION_MAX_MAX, REDUCTION_AVERAGE, REDUCTION_MAX_AVERAGE
@@ -41,24 +40,17 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
             .normalize()
 
 
-        val perturbations = perturb(5000, coveringSim)
-        val integrator = KotlinStochasticIntegrator(perturbations, partitionSims + (name to coveringSim), {null}, false)
-        val integrals = integrator.integrate()
-
-        val identityFreq = integrals.find { it.first == name }!!.second
-        val (featureNames, featureFreqs) = integrals.filter { it.first != name }.unzip()
-
-        val stepper = PartitionDescenter(identityFreq, featureFreqs)
-        val (weights, kld) = stepper.startDescent(2000)
+        val (featureNames, weights) = (0 until 3).map {
+            doPerturb(coveringSim, partitionSims = partitionSims)}
+            .reduce { acc, list -> acc.zip(list).map { (f1, f2) -> f1.first to f2.second + f1.second } }
+            .map { it.first to it.second / 3 }.unzip()
 
         val results = featureNames.zip(weights).toMap()
         val partitionTextMap = partitionTexts.toMap()
+
+
         val mixture =  TopicMixtureResult(results.toSortedMap(), kld)
         mixture.reportResults()
-        if (kld.isNaN()) {
-            println(name)
-            println(partitions)
-        }
 
         partitionSims.mapNotNull { (name, _) -> results[name]?.to(name) }
             .filter { it.first > 0.0 }
@@ -76,6 +68,20 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
 
     }
 
+    fun doPerturb(coveringSim: Map<String, Double>, partitionSims: List<Pair<String, Map<String, Double>>>): List<Pair<String, Double>> {
+        val perturbations = perturb(300, coveringSim)
+        val integrator = KotlinStochasticIntegrator(perturbations, partitionSims + (name to coveringSim), {null}, false)
+        val integrals = integrator.integrate()
+
+        val identityFreq = integrals.find { it.first == name }!!.second
+        val (featureNames, featureFreqs) = integrals.filter { it.first != name }.unzip()
+
+//        val stepper = PartitionDescenter(identityFreq, featureFreqs)
+        val stepper = GradientDescenter(identityFreq, featureFreqs)
+        val (weights, kld) = stepper.startDescent(2000)
+        return featureNames.zip(weights)
+    }
+
     fun transferMeasure(simFun: (String) -> Double): Pair<String, Double> {
         val similarityMeasure =
                 partitions.map(simFun).average().defaultWhenNotFinite(0.0)
@@ -88,34 +94,17 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
     }
 
     fun measurePartitions(simFun: (String) -> Double): Double  =
-//        partitions.map { partition -> simFun(partition) }.max()!!.defaultWhenNotFinite(0.01)
-            partitions.map { partition -> simFun(partition) }.average()!!.defaultWhenNotFinite(0.01)
-//            simFun(partitions.first())
-//            simFun(partitions.joinToString("\n"))
-//        partitions.map { partition -> simFun(partition) }.max()!!.defaultWhenNotFinite(0.01)
+            partitions.map { partition -> simFun(partition) }.average()!!.defaultWhenNotFinite(0.00)
 
     fun transferDown(depthToGo: Int, simFun: (String) -> Double): Double {
         if (depthToGo == 0) return measurePartitions(simFun)
-//        if (measure.isEmpty()) return measurePartitions(simFun)
-
-//        val (mFreq, curFreq) = measure.values
-//            .map { (sheaf, freq) -> sheaf.transferDown(depthToGo - 1, simFun) to freq }.unzip()
-//        return mFreq.zip(curFreq).sumByDouble { (f1, f2) -> f1 * f2 }
 
         return measure.values
             .sumByDouble { (sheaf, freq) ->
                 sheaf.transferDown(depthToGo - 1, simFun) * freq
             }
-////        return mFreq.zip(curFreq).sumByDouble { (f1, f2) -> f1 * f2 }
-
-//        return mFreq.normalize().zip(curFreq).sumByDouble { (v2, v1) -> (v1 - v2) * log2(v1 / (if (v2 == 0.0) 0.0001 else v2)) }
-//            .apply { abs(this) }
     }
 
-//    fun transferDown2(simFun: (String) -> Double): Double {
-//        return measurePartitions(simFun) + measure.values.sumByDouble { (partition, freq) ->
-//            partition.transferDown2(simFun) * freq }
-//    }
 
     fun retrieveLayer(depth: Int): List<Sheaf> =
         if (depth == 0) listOf(this)
@@ -150,22 +139,33 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
             .eachCount()
             .normalize()
 
+    fun bigramFrequency(text: String): Map<String, Double> =
+            AnalyzerFunctions.createTokenList(text, analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH)
+                .windowed(2, partialWindows = false)
+                .flatMap { (first, second) -> listOf("${first}_$second", "${second}_$first") }
+                .groupingBy(::identity)
+                .eachCount()
+                .normalize()
+
     fun splitSentence(text: String): List<String> = text.split(".")
         .filter { it.length > 3 }
 
     fun splitWord(text: String): List<String> =
+//            AnalyzerFunctions.createTokenList(text, analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH)
             "[ ]".toRegex().split(text)
                 .filter { it.length > 3 }
+                .toSet()
+                .toList()
 
 
-    fun letterFreq(windowSize: Int, text: String) =
+    fun letterFreq(windowSize: Int, text: String, partial: Boolean) =
         AnalyzerFunctions.createTokenList(text, analyzerType = AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH)
-            .flatMap { token -> token.windowed(windowSize, partialWindows = false) }
+            .flatMap { token -> token.windowed(windowSize, partialWindows = partial) }
             .groupingBy(::identity)
             .eachCount()
             .normalize()
 
-    fun bindFreq(windowSize: Int) = { text: String -> letterFreq(windowSize, text)}
+    fun bindFreq(windowSize: Int, partial: Boolean = false) = { text: String -> letterFreq(windowSize, text, partial)}
 
     fun singleLetterFreq(text: String) =
             text.map(Char::toString)
@@ -191,10 +191,16 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
         val sheaf = Sheaf(topic, paragraphs)
         val descentData = listOf(
 //                DescentData(this::unigramFreq, this::splitSentence),
-                DescentData(bindFreq(3), this::splitSentence),
-                DescentData(bindFreq(2), this::splitWord),
-//                DescentData(this::singleLetterFreq, ::listOf)
+                DescentData(bindFreq(4), this::splitSentence),
+                DescentData(bindFreq(3), this::splitWord),
                 DescentData(bindFreq(2), ::listOf)
+//                DescentData(this::unigramFreq, ::listOf)
+//                DescentData(bindFreq(4), this::splitSentence),
+//                DescentData(bindFreq(4), this::splitWord),
+//                DescentData(bindFreq(4), ::listOf)
+//                        DescentData(bindFreq(3), this::splitSentence),
+//        DescentData(bindFreq(2), this::splitWord),
+//        DescentData(bindFreq(1), ::listOf)
         )
         sheaf.descend(descentData)
         File("descent_data/").let { file -> if (!file.exists()) file.mkdir() }
@@ -224,28 +230,29 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
             .joinToString(". ") }
 
 
-    fun combinedTraining(filterList: List<String> = emptyList()) {
-        val allParas = File(paragraphIndex)
-            .listFiles()
-            .filter { file -> filterList.isEmpty() || file.name in filterList }
-            .flatMap { file -> extractTopicText(file) }
-
-        val sheaf = Sheaf("Combined", allParas)
-        val descentData = listOf(
-                DescentData(this::unigramFreq, this::splitSentence),
-//                DescentData(bindFreq(3), this::splitSentence),
-                DescentData(bindFreq(2), this::splitWord),
-//                DescentData(this::singleLetterFreq, ::listOf)
-                DescentData(bindFreq(2), ::listOf)
-        )
-        sheaf.descend(descentData)
-        File("descent_data/").let { file -> if (!file.exists()) file.mkdir() }
-        val f = FileOutputStream("descent_data/Combined")
-        val of = ObjectOutputStream(f)
-        of.writeObject(sheaf)
-        of.close()
-        f.close()
-    }
+//    fun combinedTraining(filterList: List<String> = emptyList()) {
+//        val allParas = File(paragraphIndex)
+//            .listFiles()
+//            .filter { file -> filterList.isEmpty() || file.name in filterList }
+//            .flatMap { file -> extractTopicText(file) }
+//
+//        val sheaf = Sheaf("Combined", allParas)
+//        val descentData = listOf(
+//                DescentData(this::unigramFreq, this::splitSentence),
+//                DescentData(bindFreq(3), this::splitWord),
+////                DescentData(bindFreq(2), this::splitWord),
+//                DescentData(bindFreq(2), ::listOf)
+////                DescentData(this::singleLetterFreq, ::listOf)
+////                DescentData(bindFreq(1), ::listOf)
+//        )
+//        sheaf.descend(descentData)
+//        File("descent_data/").let { file -> if (!file.exists()) file.mkdir() }
+//        val f = FileOutputStream("descent_data/Combined")
+//        val of = ObjectOutputStream(f)
+//        of.writeObject(sheaf)
+//        of.close()
+//        f.close()
+//    }
 
     fun loadSheaves(sheafIndex: String, filterWords: List<String> = emptyList()) =
             File(sheafIndex)
@@ -270,9 +277,8 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
     }
 
     fun averageSim(w1: String, w2: String): Double =
-//            (1.0 - sim.distance(w1, w2)).run { if (this < 0.5) 0.0 else 1.0 }
-                (1.0 - sim.distance(w1, w2)).run { if (this < 0.5) 0.0 else this }
-//                (sim.similarity(w1, w2)).run { if (this < 0.5) 0.0 else 1.0 }
+                (1.0 - sim.distance(w1, w2)).run { if (this < 0.8) 0.0 else this }
+
 
     fun productMaxMax(w1: List<String>, w2: List<String>): Double =
             w1.map { word1 -> w2.map { word2 -> averageSim(word1, word2) }.max()!! }.max()!!
@@ -284,28 +290,16 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
             w1.flatMap { word1 -> w2.map { word2 -> averageSim(word1, word2) } }.average()
 
     fun bindSims(text: String, reductionMethod: ReductionMethod): (String) -> Double {
-//        val splitreg = "[ ]".toRegex()
-//    val w1 = splitreg.split(text.toLowerCase())
         val w1 = filterWords(text)
         return { otherWords ->
             val target = filterWords(otherWords)
-            productAverage(w1, target)
             when (reductionMethod) {
-                ReductionMethod.REDUCTION_MAX_MAX -> productMaxMax(w1, target)
-                ReductionMethod.REDUCTION_AVERAGE -> productAverage(w1, target)
+                ReductionMethod.REDUCTION_MAX_MAX     -> productMaxMax(w1, target)
+                ReductionMethod.REDUCTION_AVERAGE     -> productAverage(w1, target)
                 ReductionMethod.REDUCTION_MAX_AVERAGE -> productMaxAverage(w1, target)
             }
-//        words.map { word -> averageSim(word, otherWord) }
-//        productSim2(words, target)
-//        words.map { word -> productSim(word, target) }.average()!!
-//            .run {
-//                when(reductionMethod) {
-//                    ReductionMethod.REDUCTION_AVERAGE -> average()
-//                    ReductionMethod.REDUCTION_MAX -> max()!!
-//                    ReductionMethod.REDUCTION_SUM -> sum()
-//                }
-//            }
         }
+    }
 
 }
 
@@ -316,61 +310,35 @@ fun filterWords(text: String) =
 
 
 
-
-//    return words.map { word -> {otherWord: String -> averageSim(word, otherWord)} }
-//    return words.map { word -> {otherWord: String -> 1.0} }
-}
-
-//fun bindSims2(text: String): List<(String) -> Double> {
-//    return {w2: String -> tokenizedSim(text, w2) }
-//}
-
-
-
 fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
     val sheaves = metaAnalyzer.loadSheaves("descent_data/", filterWords = listOf("Medicine", "Cooking"))
-//    val sheaves = metaAnalyzer.loadSheaves("descent_data/")
     val text = """
         Philosophy (from Greek φιλοσοφία, philosophia, literally "love of wisdom"[1][2][3][4]) is the study of general and fundamental problems concerning matters such as existence, knowledge, values, reason, mind, and language.[5][6] The term was probably coined by Pythagoras (c. 570–495 BCE). Philosophical methods include questioning, critical discussion, rational argument, and systematic presentation.[7][8] Classic philosophical questions include: Is it possible to know anything and to prove it?[9][10][11] What is most real? Philosophers also pose more practical and concrete questions such as: Is there a best way to live? Is it better to be just or unjust (if one can get away with it)?[12] Do humans have free will?[13]
-        Cooking or cookery is the art, technology, science and craft of preparing food for consumption with or without the use of fire or heat. Cooking techniques and ingredients vary widely across the world, from grilling food over an open fire to using electric stoves, to baking in various types of ovens, reflecting unique environmental, economic, and cultural traditions and trends. The ways or types of cooking also depend on the skill and type of training an individual cook has. Cooking is done both by people in their own dwellings and by professional cooks and chefs in restaurants and other food establishments. Cooking can also occur through chemical reactions without the presence of heat, such as in ceviche, a traditional South American dish where fish is cooked with the acids in lemon or lime juice.
+        A hospital is a health care institution providing patient treatment with specialized medical and nursing staff and medical equipment.[1] The best-known type of hospital is the general hospital, which typically has an emergency department to treat urgent health problems ranging from fire and accident victims to a heart attack. A district hospital typically is the major health care facility in its region, with large numbers of beds for intensive care and additional beds for patients who need long-term care. Specialised hospitals include trauma centres, rehabilitation hospitals, children's hospitals, seniors' (geriatric) hospitals, and hospitals for dealing with specific medical needs such as psychiatric treatment (see psychiatric hospital) and certain disease categories. Specialised hospitals can help reduce health care costs compared to general hospitals.[2]
         A hospital is a health care institution providing patient treatment with specialized medical and nursing staff and medical equipment.[1] The best-known type of hospital is the general hospital, which typically has an emergency department to treat urgent health problems ranging from fire and accident victims to a heart attack. A district hospital typically is the major health care facility in its region, with large numbers of beds for intensive care and additional beds for patients who need long-term care. Specialised hospitals include trauma centres, rehabilitation hospitals, children's hospitals, seniors' (geriatric) hospitals, and hospitals for dealing with specific medical needs such as psychiatric treatment (see psychiatric hospital) and certain disease categories. Specialised hospitals can help reduce health care costs compared to general hospitals.[2]
         A hospital is a health care institution providing patient treatment with specialized medical and nursing staff and medical equipment.[1] The best-known type of hospital is the general hospital, which typically has an emergency department to treat urgent health problems ranging from fire and accident victims to a heart attack. A district hospital typically is the major health care facility in its region, with large numbers of beds for intensive care and additional beds for patients who need long-term care. Specialised hospitals include trauma centres, rehabilitation hospitals, children's hospitals, seniors' (geriatric) hospitals, and hospitals for dealing with specific medical needs such as psychiatric treatment (see psychiatric hospital) and certain disease categories. Specialised hospitals can help reduce health care costs compared to general hospitals.[2]
             """
 
     val bb = """
-        health medicine health
-            """
+        A kitchen is a room or part of a room used for cooking and food preparation in a dwelling or in a commercial establishment. A modern residential kitchen is typically equipped with a stove, a sink with hot and cold running water, a refrigerator, and it also has counters and kitchen cabinets arranged according to a modular design. Many households have a microwave oven, a dishwasher and other electric appliances. The main function of a kitchen is serving as a location for storing, cooking and preparing food (and doing related tasks such as dishwashing), but it may also be used for dining, entertaining and laundry.
+
+Commercial kitchens are found in restaurants, cafeterias, hotels, hospitals, educational and workplace facilities, army barracks, and similar establishments. These kitchens are generally larger and equipped with bigger and more heavy-duty equipment than a residential kitchen. For example, a large restaurant may have a huge walk-in refrigerator and a large commercial dishwasher machine. In developed countries, commercial kitchens are generally subject to public health laws. They are inspected periodically by public-health officials, and forced to close if they do not meet hygienic requirements mandated by law.[citation needed]
+    """
     val red = ReductionMethod.REDUCTION_AVERAGE
     val result = metaAnalyzer.inferMetric(text, 0, 3, doNormalize = true, reductionMethod = red)
     val result2 = metaAnalyzer.inferMetric(bb, 0, 3, doNormalize = true, reductionMethod = red)
     result.reportResults()
     result2.reportResults()
     println(result.manhattenDistance(result2))
-//    val mySentence = bindSims2(text, doAverage = true)
-////    println(sheaves.first().transferDown(3, mySentence))
-//    val res = metaAnalyzer.evaluateMeasure(0, 3, mySentence)
-//        .toMap()
-//        .normalize()
-////
-//    res.entries
-//        .filter { it.value > 0.0 }
-//        .sortedByDescending { it.value }.forEach(::println)
-
-//    sheaves
-//        .map { sheaf -> sheaf.name to mySentence.map{ f -> sheaf.transferDown(3, f) }.max()!! }
-//        .toMap()
-//        .normalize()
-//        .entries.sortedByDescending { it.value }
-//        .forEach { println(it) }
 
 }
 
 fun showSheaves(metaAnalyzer: KotlinMetaKernelAnalyzer) {
     val sheaves = metaAnalyzer.loadSheaves("descent_data/")
     val res = sheaves
-        .filter { sheaf -> sheaf.name == "Engineering" }
+        .filter { sheaf -> sheaf.name == "Cuisine" }
         .map { sheaf ->
-        sheaf.retrieveLayer(0)
+        sheaf.retrieveLayer(3)
             .map { s ->
                 val parentScore = s.cover?.run { measure[s.name]!!.second }.toString()
                 s.partitions.joinToString(" ") + ":\n\t$parentScore\n"  }
@@ -388,9 +356,10 @@ fun exploreSheaves(metaAnalyzer: KotlinMetaKernelAnalyzer) {
 
 fun main(args: Array<String>) {
     val metaAnalyzer = KotlinMetaKernelAnalyzer("paragraphs/")
-//    metaAnalyzer.trainParagraphs(listOf("Medicine", "Cooking"))
+    metaAnalyzer.trainParagraphs(listOf("Medicine", "Cooking"))
+//    metaAnalyzer.trainParagraphs(listOf("Cooking"))
 //    metaAnalyzer.combinedTraining(listOf("Medicine", "Cooking", "Warfare"))
-    testStuff2(metaAnalyzer)
+//    testStuff2(metaAnalyzer)
 //    showSheaves(metaAnalyzer)
 //    println(metaAnalyzer.extractSheaves(1))
 }

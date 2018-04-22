@@ -23,7 +23,8 @@ class KotlinEmbedding(indexLoc: String) {
     private val searcher = getIndexSearcher(indexLoc)
     private val memoizedFreqs = ConcurrentHashMap<String, Double>()
     private val kernelAnalyzer =
-            KotlinKernelAnalyzer(0.0, 1.0, corpus = {s -> totalFreqs[s]}, partitioned = true)
+//            KotlinKernelAnalyzer(0.0, 1.0, corpus = {s -> totalFreqs[s]}, partitioned = true)
+                KotlinKernelAnalyzer(0.0, 1.0, corpus = {null}, partitioned = true)
 
 
     var topicTime: Long = 0
@@ -107,41 +108,56 @@ class KotlinEmbedding(indexLoc: String) {
             .map { query(it, nQueries).joinToString("\n") }
             .joinToString()
 
+    private fun runEmbedding(kernelDist: KernelDist, text: String, nSamples: Int = 300, nIterations: Int = 500,
+                             smooth: Boolean = false): Triple<List<String>, List<Double>, Double> {
+
+        val identityFreqs = "identity" to kernelDist.getKernelFreqs()
+
+
+        val samples = kernelDist.perturb(nSamples)
+
+        val topicStats = kernelAnalyzer.retrieveTopicFrequencies() + identityFreqs
+        val stochasticIntegrator = KotlinStochasticIntegrator(samples, topicStats, corpus = {_ -> null})
+        val integrals = stochasticIntegrator.integrate()
+
+        return kernelAnalyzer.classifyByDomainSimplex2(integrals, nIterations = nIterations,smooth = false)
+    }
 
     fun embed(text: String, nSamples: Int = 300, nIterations: Int = 500, smooth: Boolean = false): TopicMixtureResult {
         val kernelDist = KernelDist(0.0, 3.0)
             .apply { analyzePartitionedDocument(text) }
             .apply { normalizeKernels() }
-
-
-        val identityFreqs = "identity" to kernelDist.getKernelFreqs()
-
         if (smooth) {
-            val smoothTime = measureTimeMillis { kernelDist.equilibriumCovariance() }
-
-        }
-//        kernelDist.normalizeByCond2()
-
-        val (timePerturb, samples) = withTime { kernelDist.perturb(nSamples) }
-
-        val (timeIntegrals, integrals) = withTime {
-            val topicStats = kernelAnalyzer.retrieveTopicFrequencies() + identityFreqs
-            val stochasticIntegrator = KotlinStochasticIntegrator(samples, topicStats, corpus = {_ -> null})
-            stochasticIntegrator.integrate()
+            kernelDist.equilibriumCovariance()
         }
 
 
-        val (timeGradient, results) = withTime {
-            kernelAnalyzer.classifyByDomainSimplex2(integrals, nIterations = nIterations,smooth = false)
-        }
+        val nTimes = 1
+        val (names, weights, kld) =
+                (0 until nTimes)
+                    .map { runEmbedding(kernelDist, text, nSamples, nIterations, smooth) }
+                    .reduce { (names, accWeights, accKld), (_, nextWeights, nextKld) ->
+                        val newWeights = accWeights.zip(nextWeights).map { (w1, w2) -> w1 + w2 }
+                        Triple(names, newWeights, accKld + nextKld) }
+                    .let { (names, weights, kld) ->
+                        val finalWeights = weights.map { weight -> weight / nTimes.toDouble() }
+                        Triple(names, finalWeights, kld / nTimes)}
 
 
-//        println("Loaded topics in $topicTime ms")
-//        println("Smoothed in $smoothTime ms")
-//        println("Created $nSamples perturbations in $timePerturb ms")
-//        println("Created integrals in $timeIntegrals ms")
-//        println("Finished Gradient Descent in $timeGradient ms\n")
-        return results
+        val results = names.zip(weights).toMap()
+        return TopicMixtureResult(results.toSortedMap(), kld)
+
+//        val identityFreqs = "identity" to kernelDist.getKernelFreqs()
+
+//        if (smooth) { kernelDist.equilibriumCovariance() }
+//
+//        val samples = kernelDist.perturb(nSamples)
+//
+//        val topicStats = kernelAnalyzer.retrieveTopicFrequencies() + identityFreqs
+//        val stochasticIntegrator = KotlinStochasticIntegrator(samples, topicStats, corpus = {_ -> null})
+//        val integrals = stochasticIntegrator.integrate()
+//
+//        return kernelAnalyzer.classifyByDomainSimplex2(integrals, nIterations = nIterations,smooth = false)
     }
 }
 

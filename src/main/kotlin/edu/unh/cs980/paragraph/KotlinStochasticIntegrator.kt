@@ -3,10 +3,10 @@ package edu.unh.cs980.paragraph
 import edu.unh.cs980.defaultWhenNotFinite
 import edu.unh.cs980.normalize
 import edu.unh.cs980.smooth
-import java.lang.Math.pow
-import java.lang.Math.sqrt
+import java.lang.Math.*
 import kotlin.math.abs
 import kotlin.math.log2
+import kotlin.math.max
 
 
 class KotlinStochasticIntegrator(val perturbations: Pair<List<String>, List<List<Double>>>,
@@ -20,10 +20,16 @@ class KotlinStochasticIntegrator(val perturbations: Pair<List<String>, List<List
     private fun getRestrictedTopic(topic: Pair<String, Map<String, Double>>): List<Double> {
         val topicHash = topic.second
 //        val restrictedFreq = perturbations.first.sumByDouble { word -> topicHash[word] ?: 0.0 } / topicHash.values.sum()
+        val intersect = max(1, topic.second.keys.intersect(perturbations.first).size).toDouble()
+//        val union = max(1, topic.second.keys.union(perturbations.first).size).toDouble()
 
         val focusedHash = perturbations.first.map { word ->
 //            word to (topicHash[word] ?: 1 / perturbations.first.size.toDouble())
+//            word to (topicHash[word] ?: corpus(word)?.run { (1/this) / topicHash.size.toDouble() } ?: 1/(perturbations.first.size.toDouble()))
+//            word to (topicHash[word] ?: corpus(word)?.run { (1/this) / topicHash.size.toDouble() } ?: 1/intersect)
             word to (topicHash[word] ?: corpus(word)?.run { (1/this) / topicHash.size.toDouble() } ?: 1/perturbations.first.size.toDouble())
+//            word to (topicHash[word] ?:  1/topic.second.size.toDouble())
+//            word to (topicHash[word] ?: corpus(word)?.run { (1/this) / topicHash.size.toDouble() } ?: 1/(perturbations.first.size.toDouble() * topic.second.size))
 //            word to (topicHash[word]  ?: 1/perturbations.first.size.toDouble())
 //            word to (topicHash[word] ?: (perturbations.first.size * topic.second.size.toDouble()) )
         }
@@ -50,8 +56,9 @@ class KotlinStochasticIntegrator(val perturbations: Pair<List<String>, List<List
             perturbations.second
                 .map { perturbs ->
 //                    perturbs.zip(topic).sumByDouble { (k1, k2) -> abs(k1  * log2(k1 / k2)) / perturbs.size } }
-//                     perturbs.zip(topic).sumByDouble { (k1, k2) -> k1  * log2(k1 / k2) / perturbs.size } }
-                    perturbs.zip(topic).sumByDouble { (k1, k2) -> abs(k1  * log2(k1 / k2))  } }
+//                     perturbs.zip(topic).sumByDouble { (k1, k2) -> (k1  - k2)  * log2(k1 / k2) / perturbs.size } }
+                    perturbs.zip(topic).sumByDouble { (k1, k2) -> pow(k1 - k2, 2.0) }.run { sqrt(this) } }
+//                    perturbs.zip(topic).sumByDouble { (k1, k2) -> abs((k2 )  * log2(k2 / k1))  } }
                 .normalize()
                 .let {if (smooth) it.smooth() else it }
 

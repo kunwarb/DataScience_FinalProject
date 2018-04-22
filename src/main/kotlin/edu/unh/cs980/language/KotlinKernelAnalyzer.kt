@@ -176,6 +176,12 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
                 .forEach { splitText -> analyzeDocument(splitText, letterGram) }
 
 
+//    fun sampleWavelet(norm: NormalDistribution): List<Double> {
+//        val wavelet = BestLocalizedWavelet(20)
+//        WaveletShrinkage.denoise(values3, wavelet)
+//
+//    }
+
     fun perturb(nSamples: Int = 50): Pair<List<String>, List<List<Double>>> {
         val norm = NormalDistribution(sharedRand, 1.0, 0.0001)
         val (kernelNames, kernelFreqs) = kernels.toList().unzip()
@@ -277,17 +283,17 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double, val corpus: (Strin
 
 
 
-    fun classifyByDomainSimplex2(integrals: List<Pair<String, List<Double>>>, nIterations: Int = 500, smooth: Boolean = false): TopicMixtureResult {
+    fun classifyByDomainSimplex2(integrals: List<Pair<String, List<Double>>>, nIterations: Int = 500, smooth: Boolean = false): Triple<List<String>, List<Double>, Double> {
         val identityFreq = integrals.find { it.first == "identity" }!!.second
         val (featureNames, featureFreqs) = integrals.filter { it.first != "identity" }.unzip()
 
-//        val stepper = GradientDescenter(identityFreq, featureFreqs)
-        val stepper = PartitionDescenter(identityFreq, featureFreqs)
-//        val stepper = MartingaleSolver(identityFreq, featureFreqs)
+        val stepper = GradientDescenter(identityFreq, featureFreqs)
+//        val stepper = PartitionDescenter(identityFreq, featureFreqs)
         val (weights, kld) = stepper.startDescent(nIterations)
-        val results = featureNames.zip(weights).toMap()
+//        val results = featureNames.zip(weights).toMap()
 
-        return TopicMixtureResult(results.toSortedMap(), kld)
+//        return TopicMixtureResult(results.toSortedMap(), kld)
+        return Triple(featureNames, weights, kld)
     }
 
 
