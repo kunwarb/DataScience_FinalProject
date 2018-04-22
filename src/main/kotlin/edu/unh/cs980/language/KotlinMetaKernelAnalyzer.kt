@@ -12,6 +12,9 @@ import java.io.*
 import java.lang.Integer.max
 import java.lang.Math.max
 import java.lang.Math.pow
+import kotlin.math.exp
+import kotlin.math.ln
+import kotlin.math.log10
 import kotlin.math.log2
 
 enum class ReductionMethod {
@@ -99,27 +102,34 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
     }
 
     fun measurePartitions(simFun: (String) -> Double): Double  =
-            partitions.map { partition -> simFun(partition) }.average()!!.defaultWhenNotFinite(0.00)
+            partitions.map { partition -> simFun(partition) }.average()!!.defaultWhenNotFinite(0.00) *
+                    (1 / log2(cover!!.partitions.size.toDouble())).defaultWhenNotFinite(0.0)
 
     fun transferDown(depthToGo: Int, simFun: (String) -> Double): Double {
-        if (depthToGo == 0) return measurePartitions(simFun)
-
-
-//        val total = measure.values
-//            .sumByDouble { (sheaf, freq) ->
-//                sheaf.transferDown(depthToGo - 1, simFun) * freq
+        if (depthToGo == 0) {
+            val score = measurePartitions(simFun)
+//            val parentName = cover!!.name
+//            val parentMeasure = cover!!.cover!!.measure[parentName]!!.second!!
+//            val mymeasure = cover!!.measure[name]!!.second
+//            if (score > 0.0) {
+//                if (name.contains("Warfare")) {
+//                    println("${partitions.first()}: $score * ${mymeasure}:  ${mymeasure * parentMeasure} ")
+//                }
 //            }
+            return score
+        }
+
+
         val results = measure.values.map { (sheaf, freq) ->
                 sheaf.transferDown(depthToGo - 1, simFun) * freq }
 
-        val total = results.max() ?: 0.0
+        val highest = results.max() ?: 0.0
+        val total = results.sum()
+//        val total = (results.max() ?: 0.0) * (1.0 + results.count { it > 1 / max(1.0, partitions.size.toDouble()) })
 
-
-//        println("$name: $total")
-//        if (total < 1/max(1.toDouble(), partitions.size.toDouble())) {
-//            if (!name.contains("_")) return 0.0 else return 0.01 / max(1.0, partitions.size.toDouble())
-//        } else return total
-        if (total < 1/max(1.toDouble(), partitions.size.toDouble())) return 0.00 else return total
+        if (total < 1/(max(1.0, partitions.size.toDouble()))) return 0.00 else return total
+//        if (highest < minFreq) return 0.00 else return pow(total, 1.0)
+//        if (total < 1/(log2(partitions.size.toDouble())).defaultWhenNotFinite(0.0)) return 0.00 else return pow(total, 1.0)
 
 //        return total
     }
@@ -303,7 +313,7 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
     }
 
     fun averageSim(w1: String, w2: String): Double =
-                (1.0 - sim.distance(w1, w2)).run { if (this < 0.8) 0.0 else 1.0 }
+                (1.0 - sim.distance(w1, w2)).run { if (this < 0.8) 0.0 else this }
 //                    .apply { if (this > 0.9) println("$w1: $w2: $this") }
 
 
@@ -314,10 +324,11 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
         val results = w1.flatMap { word1 -> w2.map { word2 -> averageSim(word1, word2) } }
         val misses = results.count { it == 0.0 }
         val hits = results.sum()
-//        return hits/pow(max(1, misses).toDouble(), 2.0)
-//        return hits/max(1, misses)
-        return hits * (100.0 / misses)
-//        return w1.flatMap { word1 -> w2.map { word2 -> averageSim(word1, word2) } }.sum()
+//        val highest = results.max()!!
+        val sizeSmooth = 1.0 + 200 / (1.0 + misses.toDouble())
+
+        return hits * sizeSmooth
+
     }
 
     fun productAverage(w1: List<String>, w2: List<String>): Double =
@@ -352,13 +363,11 @@ fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
             """
 
     val bb = """
-        Consider a discrete probability distribution among m mutually exclusive propositions. The most informative distribution would occur when one of the propositions was known to be true. In that case, the information entropy would be equal to zero. The least informative distribution would occur when there is no reason to favor any one of the propositions over the others. In that case, the only reasonable probability distribution would be uniform, and then the information entropy would be equal to its maximum possible value, log m. The information entropy can therefore be seen as a numerical measure which describes how uninformative a particular probability distribution is, ranging from zero (completely informative) to log m (completely uninformative).
-
-By choosing to use the distribution with the maximum entropy allowed by our information, the argument goes, we are choosing the most uninformative distribution possible. To choose a distribution with lower entropy would be to assume information we do not possess. Thus the maximum entropy distribution is the only reasonable distribution.
+        bacteria
     """
     val red = ReductionMethod.REDUCTION_MAX_AVERAGE
-    val result = metaAnalyzer.inferMetric(text, 0, 3, doNormalize = true, reductionMethod = red)
-    val result2 = metaAnalyzer.inferMetric(bb, 0, 3, doNormalize = true, reductionMethod = red)
+    val result = metaAnalyzer.inferMetric(text, 0, 3, doNormalize = false, reductionMethod = red)
+    val result2 = metaAnalyzer.inferMetric(bb, 0, 3, doNormalize = false, reductionMethod = red)
     result.reportResults()
     result2.reportResults()
 //    result2.reportResults()
