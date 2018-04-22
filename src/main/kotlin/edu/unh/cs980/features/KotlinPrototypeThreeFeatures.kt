@@ -37,9 +37,9 @@ fun featUseEmbeddedQuery(query: String, tops: TopDocs, indexSearcher: IndexSearc
         .map { indexSearcher.doc(it.doc).get(CONTENT)}
 
     val embeddings = paragraphs
-        .map { paragraph ->  embedder.embed(paragraph, 500)}
+        .map { paragraph ->  embedder.embed(paragraph, 50)}
 
-    val queryEmbedding = embedder.embed(query, 500)
+    val queryEmbedding = embedder.embed(query, 50)
     return embeddings.map { projection -> projection.deltaSim(queryEmbedding)}
 }
 

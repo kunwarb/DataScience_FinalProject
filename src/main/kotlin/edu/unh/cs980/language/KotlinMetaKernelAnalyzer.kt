@@ -326,7 +326,9 @@ fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
             """
 
     val bb = """
-        The bacterial cell is surrounded by a cell membrane which is made primarily of phospholipids. This membrane encloses the contents of the cell and acts as a barrier to hold nutrients, proteins and other essential components of the cytoplasm within the cell.[44] Unlike eukaryotic cells, bacteria usually lack large membrane-bound structures in their cytoplasm such as a nucleus, mitochondria, chloroplasts and the other organelles present in eukaryotic cells.[45] However, some bacteria have protein-bound organelles in the cytoplasm which compartmentalize aspects of bacterial metabolism,[46][47] such as the carboxysome.[48] Additionally, bacteria have a multi-component cytoskeleton to control the localisation of proteins and nucleic acids within the cell, and to manage the process of cell division.[49][50][51]
+        Nursing is a profession within the health care sector focused on the care of individuals, families, and communities so they may attain, maintain, or recover optimal health and quality of life. Nurses may be differentiated from other health care providers by their approach to patient care, training, and scope of practice. Nurses practice in many specialties with differing levels of prescription authority. Many nurses provide care within the ordering scope of physicians, and this traditional role has shaped the public image of nurses as care providers. However, nurse practitioners are permitted by most jurisdictions to practice independently in a variety of settings. In the postwar period, nurse education has undergone a process of diversification towards advanced and specialized credentials, and many of the traditional regulations and provider roles are changing.[1][2]
+
+Nurses develop a plan of care, working collaboratively with physicians, therapists, the patient, the patient's family and other team members, that focuses on treating illness to improve quality of life. In the United States and the United Kingdom, advanced practice nurses, such as clinical nurse specialists and nurse practitioners, diagnose health problems and prescribe medications and other therapies, depending on individual state regulations. Nurses may help coordinate the patient care performed by other members of a multidisciplinary health care team such as therapists, medical practitioners and dietitians. Nurses provide care both interdependently, for example, with physicians, and independently as nursing professionals.
     """
     val red = ReductionMethod.REDUCTION_AVERAGE
     val result = metaAnalyzer.inferMetric(text, 0, 3, doNormalize = true, reductionMethod = red)
@@ -368,7 +370,7 @@ fun buildStopWords() {
 
 fun main(args: Array<String>) {
     val metaAnalyzer = KotlinMetaKernelAnalyzer("paragraphs/")
-//    metaAnalyzer.trainParagraphs(listOf("Medicine", "Cooking"))
+    metaAnalyzer.trainParagraphs()
 //    metaAnalyzer.trainParagraphs(listOf("Cooking"))
 //    metaAnalyzer.combinedTraining(listOf("Medicine", "Cooking", "Warfare"))
     testStuff2(metaAnalyzer)
