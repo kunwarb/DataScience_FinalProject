@@ -40,10 +40,10 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
             .normalize()
 
 
-        val (featureNames, weights) = (0 until 3).map {
+        val (featureNames, weights) = (0 until 1).map {
             doPerturb(coveringSim, partitionSims = partitionSims)}
             .reduce { acc, list -> acc.zip(list).map { (f1, f2) -> f1.first to f2.second + f1.second } }
-            .map { it.first to it.second / 3 }.unzip()
+            .map { it.first to it.second / 1 }.unzip()
 
         val results = featureNames.zip(weights).toMap()
         val partitionTextMap = partitionTexts.toMap()
@@ -78,7 +78,7 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
 
 //        val stepper = PartitionDescenter(identityFreq, featureFreqs)
         val stepper = GradientDescenter(identityFreq, featureFreqs)
-        val (weights, kld) = stepper.startDescent(2000)
+        val (weights, kld) = stepper.startDescent(1000)
         return featureNames.zip(weights)
     }
 
@@ -112,7 +112,7 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
 
     companion object {
         fun perturb(nSamples: Int = 50, sims: Map<String, Double>): Pair<List<String>, List<List<Double>>> {
-            val norm = NormalDistribution(sharedRand, 1.0, 0.0001)
+            val norm = NormalDistribution(sharedRand, 1.0, 0.5)
             val (kernelNames, kernelFreqs) = sims.toList().unzip()
 
             val perturbations = (0 until nSamples).map {
@@ -191,9 +191,9 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
         val sheaf = Sheaf(topic, paragraphs)
         val descentData = listOf(
 //                DescentData(this::unigramFreq, this::splitSentence),
-                DescentData(bindFreq(4), this::splitSentence),
-                DescentData(bindFreq(3), this::splitWord),
-                DescentData(bindFreq(2), ::listOf)
+                DescentData(bindFreq(2), this::splitSentence),
+                DescentData(bindFreq(1), this::splitWord),
+                DescentData(bindFreq(1), ::listOf)
 //                DescentData(this::unigramFreq, ::listOf)
 //                DescentData(bindFreq(4), this::splitSentence),
 //                DescentData(bindFreq(4), this::splitWord),
@@ -321,8 +321,6 @@ fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
 
     val bb = """
         A kitchen is a room or part of a room used for cooking and food preparation in a dwelling or in a commercial establishment. A modern residential kitchen is typically equipped with a stove, a sink with hot and cold running water, a refrigerator, and it also has counters and kitchen cabinets arranged according to a modular design. Many households have a microwave oven, a dishwasher and other electric appliances. The main function of a kitchen is serving as a location for storing, cooking and preparing food (and doing related tasks such as dishwashing), but it may also be used for dining, entertaining and laundry.
-
-Commercial kitchens are found in restaurants, cafeterias, hotels, hospitals, educational and workplace facilities, army barracks, and similar establishments. These kitchens are generally larger and equipped with bigger and more heavy-duty equipment than a residential kitchen. For example, a large restaurant may have a huge walk-in refrigerator and a large commercial dishwasher machine. In developed countries, commercial kitchens are generally subject to public health laws. They are inspected periodically by public-health officials, and forced to close if they do not meet hygienic requirements mandated by law.[citation needed]
     """
     val red = ReductionMethod.REDUCTION_AVERAGE
     val result = metaAnalyzer.inferMetric(text, 0, 3, doNormalize = true, reductionMethod = red)
@@ -356,10 +354,10 @@ fun exploreSheaves(metaAnalyzer: KotlinMetaKernelAnalyzer) {
 
 fun main(args: Array<String>) {
     val metaAnalyzer = KotlinMetaKernelAnalyzer("paragraphs/")
-    metaAnalyzer.trainParagraphs(listOf("Medicine", "Cooking"))
+//    metaAnalyzer.trainParagraphs(listOf("Medicine", "Cooking"))
 //    metaAnalyzer.trainParagraphs(listOf("Cooking"))
 //    metaAnalyzer.combinedTraining(listOf("Medicine", "Cooking", "Warfare"))
-//    testStuff2(metaAnalyzer)
+    testStuff2(metaAnalyzer)
 //    showSheaves(metaAnalyzer)
 //    println(metaAnalyzer.extractSheaves(1))
 }

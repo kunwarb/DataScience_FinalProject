@@ -24,14 +24,7 @@ class KotlinStochasticIntegrator(val perturbations: Pair<List<String>, List<List
 //        val union = max(1, topic.second.keys.union(perturbations.first).size).toDouble()
 
         val focusedHash = perturbations.first.map { word ->
-//            word to (topicHash[word] ?: 1 / perturbations.first.size.toDouble())
-//            word to (topicHash[word] ?: corpus(word)?.run { (1/this) / topicHash.size.toDouble() } ?: 1/(perturbations.first.size.toDouble()))
-//            word to (topicHash[word] ?: corpus(word)?.run { (1/this) / topicHash.size.toDouble() } ?: 1/intersect)
             word to (topicHash[word] ?: corpus(word)?.run { (1/this) / topicHash.size.toDouble() } ?: 1/perturbations.first.size.toDouble())
-//            word to (topicHash[word] ?:  1/topic.second.size.toDouble())
-//            word to (topicHash[word] ?: corpus(word)?.run { (1/this) / topicHash.size.toDouble() } ?: 1/(perturbations.first.size.toDouble() * topic.second.size))
-//            word to (topicHash[word]  ?: 1/perturbations.first.size.toDouble())
-//            word to (topicHash[word] ?: (perturbations.first.size * topic.second.size.toDouble()) )
         }
             .toMap()
 //            .normalize()

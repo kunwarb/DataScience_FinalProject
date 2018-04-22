@@ -13,7 +13,10 @@ import kotlin.math.abs
 import kotlin.math.log2
 import kotlin.math.max
 import smile.math.matrix.*
+import smile.regression.LASSO
 import smile.wavelet.*
+import smile.regression.OLS
+import smile.regression.RidgeRegression
 import kotlin.math.sign
 import kotlin.system.exitProcess
 
@@ -164,8 +167,6 @@ class PartitionDescenter(origin: List<Double>, topics: List<List<Double>>, parti
 fun smoothy(values: List<Double>): DoubleArray {
     val total = values.sum()
     val normal = total / values.size.toDouble()
-    println(normal)
-    println(1 / values.size.toDouble())
     return (0 until values.size).map { normal }.toDoubleArray()
 }
 
@@ -194,8 +195,8 @@ class GradientDescenter(val origin: List<Double>, val topics: List<List<Double>>
             .run { div(sum()) }
             .transpose().array()
 //            .run { KullbackLeiblerDivergence(originArray, this.first())}
-//            .run { KullbackLeiblerDivergence(originArray, this.first())}
-            .run { euclid(originArray, this.first())}
+            .run { KullbackLeiblerDivergence(originArray, this.first())}
+//            .run { euclid(originArray, this.first())}
 
 
     fun kld(weights: List<Double>): Double =
