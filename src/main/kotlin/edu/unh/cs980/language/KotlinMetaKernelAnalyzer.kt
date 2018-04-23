@@ -113,7 +113,7 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
 
         val results = measure.values.map { (sheaf, freq) ->
 //                sheaf.transferDown(depthToGo - 1, simFun) * freq * (sheaf.partitions.size.toDouble() ).defaultWhenNotFinite(1.0) }
-            if (freq < 0.03) 0.0
+            if (freq < 0.0001) 0.0
             else sheaf.transferDown(depthToGo - 1, simFun) * freq.defaultWhenNotFinite(1.0)
         }
 
@@ -358,19 +358,19 @@ fun filterWords(text: String) =
 
 
 fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
-//    val sheaves = metaAnalyzer.loadSheaves("descent_data/", filterWords = listOf("Medicine", "Cooking"))
-    val sheaves = metaAnalyzer.loadSheaves("descent_data/")
+    val sheaves = metaAnalyzer.loadSheaves("descent_data/", filterWords = listOf("Combined"))
+//    val sheaves = metaAnalyzer.loadSheaves("descent_data/")
     val text = """
         Instead of table service, there are food-serving counters/stalls, either in a line or allowing arbitrary walking paths. Customers take the food that they desire as they walk along, placing it on a tray. In addition, there are often stations where customers order food and wait while it is prepared, particularly for items such as hamburgers or tacos which must be served hot and can be immediately prepared. Alternatively, the patron is given a number and the item is brought to their table. For some food items and drinks, such as sodas, water, or the like, customers collect an empty container, pay at the check-out, and fill the container after the check-out. Free unlimited second servings are often allowed under this system. For legal purposes (and the consumption patterns of customers), this system is rarely, if at all, used for alcoholic beverages in the US.
             """
 
     val bb = """
-        enwiki:Carbohydrate/Division
+        Tools
     """
     val red = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD
     val (time, result) = withTime {
-        metaAnalyzer.inferMetric(text, 0, 3, doNormalize = false, reductionMethod = red) }
-    val result2 = metaAnalyzer.inferMetric(bb, 0, 3, doNormalize = false, reductionMethod = red)
+        metaAnalyzer.inferMetric(text, 1, 3, doNormalize = false, reductionMethod = red) }
+    val result2 = metaAnalyzer.inferMetric(bb, 1, 3, doNormalize = false, reductionMethod = red)
     result.reportResults()
     result2.reportResults()
     println(result.results.values.sum())
@@ -404,8 +404,8 @@ fun main(args: Array<String>) {
 //    metaAnalyzer.trainParagraphs()
 //    metaAnalyzer.trainParagraphs(listOf("Cooking"))
 //    metaAnalyzer.combinedTraining(listOf("Medicine", "Cooking", "Warfare"))
-//    testStuff2(metaAnalyzer)
-    metaAnalyzer.combinedTraining(listOf("Medicine", "Cooking", "Games", "Society"))
+    testStuff2(metaAnalyzer)
+//    metaAnalyzer.combinedTraining(listOf("Medicine", "Cooking", "Games", "Society"))
 //    showSheaves(metaAnalyzer)
 //    println(metaAnalyzer.extractSheaves(1))
 }
