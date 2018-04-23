@@ -77,7 +77,12 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 
         val boundSheafDistFunction = bindSheafDist(
                 startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
-                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN,
+                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN_SIM,
+                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
+
+        val boundSheafDistFunction2 = bindSheafDist(
+                startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
+                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN_SIM,
                 queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
 //
 //        val boundSheafDistFunction2 = bindSheafDist(
@@ -93,7 +98,7 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
         formatter.addBM25(normType = NormType.ZSCORE)
 //        formatter.addFeature(bindEmbed, normType = NormType.ZSCORE)
         formatter.addFeature(boundSheafDistFunction, normType = NormType.ZSCORE)
-//        formatter.addFeature(boundSheafDistFunction2, normType = NormType.ZSCORE)
+        formatter.addFeature(boundSheafDistFunction2, normType = NormType.ZSCORE)
 //        formatter.addFeature(boundSheafDistFunction3, normType = NormType.ZSCORE)
     }
 

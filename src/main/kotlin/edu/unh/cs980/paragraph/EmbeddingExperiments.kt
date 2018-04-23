@@ -40,16 +40,6 @@ Since 1987, Gates has been included in the Forbes list of the world's wealthiest
 Later in his career and since leaving Microsoft, Gates pursued a number of philanthropic endeavors. He donated large amounts of money to various charitable organizations and scientific research programs through the Bill & Melinda Gates Foundation.[15] In 2009, Gates and Warren Buffett founded The Giving Pledge, whereby they and other billionaires pledge to give at least half of their wealth to philanthropy.[16] The foundation works to save lives and improve global health, and is working with Rotary International to eliminate polio.[17] As of February 17, 2018, Gates had a net worth of ${'$'}91.7 billion, making him the second-richest person in the world, behind Bezos.
         """
 
-//    Computers : 0.4246420329698797
-//    People : 0.129298112951467
-//    Society : 0.12527625637420642
-//    Events : 0.11531319322281833
-//    Organizations : 0.10011617964867575
-//    Games : 0.06963897338413672
-//    Politics : 0.015609683816930661
-//    Science : 0.01287361514520954
-//    Environments : 0.0036717321563766387
-//    Fashion : 0.003560220330299228
 
     return embedder.embed(testText, nSamples = 500, nIterations = 1000, smooth = false)
 }

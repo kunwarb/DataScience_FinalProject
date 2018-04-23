@@ -15,7 +15,7 @@ import java.util.*
 import kotlin.math.log2
 
 enum class MixtureDistanceMeasure {
-    EUCLIDEAN, DELTA_SIM, MINKOWSKI, COSINE, DELTA_DENSITY, MANHATTAN
+    EUCLIDEAN, DELTA_SIM, MINKOWSKI, COSINE, DELTA_DENSITY, MANHATTAN, EUCLIDEAN_SIM
 }
 
 data class TopicMixtureResult(val results: SortedMap<String, Double>, val kld: Double) {
@@ -33,6 +33,7 @@ data class TopicMixtureResult(val results: SortedMap<String, Double>, val kld: D
     fun distance(other: TopicMixtureResult, distType: MixtureDistanceMeasure = MixtureDistanceMeasure.MINKOWSKI) =
         when(distType) {
             MixtureDistanceMeasure.EUCLIDEAN -> euclideanDistance(other)
+            MixtureDistanceMeasure.EUCLIDEAN_SIM -> euclideanSim(other)
             MixtureDistanceMeasure.DELTA_SIM -> deltaSim(other)
             MixtureDistanceMeasure.COSINE -> cosineSim(other)
             MixtureDistanceMeasure.MINKOWSKI -> minkowskiDistance(other)
@@ -44,6 +45,11 @@ data class TopicMixtureResult(val results: SortedMap<String, Double>, val kld: D
             results.values.zip(other.results.values)
                 .sumByDouble { (x, y) -> (pow(x - y, 2.0)) }
                 .apply { sqrt(this)  }
+
+    fun euclideanSim(other: TopicMixtureResult): Double =
+            results.values.zip(other.results.values)
+                .sumByDouble { (x, y) -> (pow(x - y, 2.0)) }
+                .apply { (1 / sqrt(this)).defaultWhenNotFinite(0.0)  }
 
     fun minkowskiDistance(other: TopicMixtureResult): Double =
         results.values.zip(other.results.values)
@@ -176,11 +182,6 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
                 .forEach { splitText -> analyzeDocument(splitText, letterGram) }
 
 
-//    fun sampleWavelet(norm: NormalDistribution): List<Double> {
-//        val wavelet = BestLocalizedWavelet(20)
-//        WaveletShrinkage.denoise(values3, wavelet)
-//
-//    }
 
     fun perturb(nSamples: Int = 50): Pair<List<String>, List<List<Double>>> {
         val norm = NormalDistribution(sharedRand, 1.0, 0.001)
