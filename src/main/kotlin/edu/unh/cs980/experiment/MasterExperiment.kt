@@ -77,12 +77,12 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 
         val boundSheafDistFunction = bindSheafDist(
                 startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
-                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.DELTA_SIM,
+                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
                 queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
 
         val boundSheafDistFunction2 = bindSheafDist(
                 startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
-                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.DELTA_SIM,
+                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
                 queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
 //
 //        val boundSheafDistFunction2 = bindSheafDist(
@@ -176,17 +176,6 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                         loader = ::identity
                     }
 
-//                    resource("hyperlink") {
-//                        help = "Location to hyperlink index database (Default: /trec_data/team_1/entity_mentions.db)"
-//                        default = "/trec_data/team_1/entity_mentions.db"
-//                        loader = { path -> HyperlinkIndexer(path, true) }
-//                    }
-//
-//                    resource("abstract") {
-//                        help = "Location to abstract Lucene index (Default: /trec_data/team_1/abstract)"
-//                        default = "/trec_data/team_1/abstract/"
-//                        loader = { path -> KotlinAbstractAnalyzer(getIndexSearcher(path)) }
-//                    }
 
                     resource("gram") {
                         help = "Location to gram Lucene index (Default: /trec_data/team_1/gram)"

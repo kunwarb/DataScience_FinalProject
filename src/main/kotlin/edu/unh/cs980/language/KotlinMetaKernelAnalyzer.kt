@@ -113,7 +113,7 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
 
         val results = measure.values.map { (sheaf, freq) ->
 //                sheaf.transferDown(depthToGo - 1, simFun) * freq * (sheaf.partitions.size.toDouble() ).defaultWhenNotFinite(1.0) }
-            if (freq < 0.0001) 0.0
+            if (freq < 0.2) 0.0
             else sheaf.transferDown(depthToGo - 1, simFun) * freq.defaultWhenNotFinite(1.0)
         }
 
@@ -192,8 +192,9 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
     fun bindFreq(windowSize: Int, partial: Boolean = false) = { text: String -> letterFreq(windowSize, text, partial)}
 
 
-    fun evaluateMeasure(startingLayer: Int, measureLayer: Int, measure: (String) -> Double) =
+    fun evaluateMeasure(startingLayer: Int, measureLayer: Int, measure: (String) -> Double, filterList: List<String>) =
             extractSheaves(startingLayer)
+                .filter { (topName, _) -> filterList.isEmpty() || topName in filterList }
                 .flatMap { (topName, sheafLayer) ->
                     sheafLayer.map { sheaf ->
                         sheaf.name to sheaf.transferDown(measureLayer - startingLayer, measure) } }
@@ -284,10 +285,11 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
 
     fun inferMetric(text: String, startingLayer: Int, measureLayer: Int,
                     doNormalize: Boolean = true,
-                    reductionMethod: ReductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD): TopicMixtureResult {
+                    reductionMethod: ReductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
+                    filterList: List<String> = emptyList()): TopicMixtureResult {
 
         val mySentence = bindSims(text, reductionMethod = reductionMethod)
-        val res = evaluateMeasure(startingLayer, measureLayer, mySentence)
+        val res = evaluateMeasure(startingLayer, measureLayer, mySentence, filterList)
             .toMap()
             .run { if (doNormalize) normalize() else this }
 
@@ -328,14 +330,6 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
             w1.flatMap { word1 -> w2.map { word2 -> averageSim(word1, word2) } }.average()
 
 
-//    fun bindSims(text: String, reductionMethod: ReductionMethod): (String) -> Double {
-//        val w1 = filterWords(text)
-//        return when (reductionMethod) {
-//                ReductionMethod.REDUCTION_MAX_MAX     -> {w2: String -> productMaxMax(w1, listOf(w2)) }
-//                ReductionMethod.REDUCTION_AVERAGE     -> {w2: String -> productAverage(w1, listOf(w2)) }
-//                ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD -> {w2: String -> productSmoothThreshold(w1, w2) }
-//            }
-//    }
 
     fun bindSims(text: String, reductionMethod: ReductionMethod): (String) -> Double {
         val w1 = filterWords(text)
@@ -369,12 +363,12 @@ fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
     """
     val red = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD
     val (time, result) = withTime {
-        metaAnalyzer.inferMetric(text, 1, 3, doNormalize = false, reductionMethod = red) }
-    val result2 = metaAnalyzer.inferMetric(bb, 1, 3, doNormalize = false, reductionMethod = red)
+        metaAnalyzer.inferMetric(text, 1, 3, doNormalize = true, reductionMethod = red) }
+    val result2 = metaAnalyzer.inferMetric(bb, 1, 3, doNormalize = true, reductionMethod = red)
     result.reportResults()
     result2.reportResults()
-    println(result.results.values.sum())
-    println(result2.results.values.sum())
+//    println(result.results.values.sum())
+//    println(result2.results.values.sum())
 //    result2.reportResults()
     println(result.manhattenDistance(result2))
     println("TIME: $time")
