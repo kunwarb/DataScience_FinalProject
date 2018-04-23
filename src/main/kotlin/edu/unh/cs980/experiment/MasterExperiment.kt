@@ -76,7 +76,7 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 
 
         val boundSheafDistFunction = bindSheafDist(
-                startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
+                startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
                 normalize = false, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN,
                 queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
 //

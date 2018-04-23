@@ -278,8 +278,18 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
     fun productMaxMax(w1: List<String>, w2: List<String>): Double =
             w1.map { word1 -> w2.map { word2 -> averageSim(word1, word2) }.max()!! }.max()!!
 
-    fun productSmoothThreshold(w1: List<String>, w2: List<String>): Double {
-        val results = w1.flatMap { word1 -> w2.map { word2 -> averageSim(word1, word2) } }
+//    fun productSmoothThreshold(w1: List<String>, w2: List<String>): Double {
+//        val results = w1.flatMap { word1 -> w2.map { word2 -> averageSim(word1, word2) } }
+//        val misses = results.count { it == 0.0 }
+//        val hits = results.sum()
+////        val highest = results.max()!!
+////        val sizeSmooth = 1.0 + 200 / (1.0 + misses.toDouble())
+//        val sizeSmooth = 1.0 + 200 / (1.0 + misses.toDouble())
+//        return hits * sizeSmooth
+//    }
+
+    fun productSmoothThreshold(w1: List<String>, w2: String): Double {
+        val results = w1.map { word1 -> averageSim(word1, w2) }
         val misses = results.count { it == 0.0 }
         val hits = results.sum()
 //        val highest = results.max()!!
@@ -293,15 +303,23 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
     fun productAverage(w1: List<String>, w2: List<String>): Double =
             w1.flatMap { word1 -> w2.map { word2 -> averageSim(word1, word2) } }.average()
 
+
+//    fun bindSims(text: String, reductionMethod: ReductionMethod): (String) -> Double {
+//        val w1 = filterWords(text)
+//        return when (reductionMethod) {
+//                ReductionMethod.REDUCTION_MAX_MAX     -> {w2: String -> productMaxMax(w1, listOf(w2)) }
+//                ReductionMethod.REDUCTION_AVERAGE     -> {w2: String -> productAverage(w1, listOf(w2)) }
+//                ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD -> {w2: String -> productSmoothThreshold(w1, w2) }
+//            }
+//    }
+
     fun bindSims(text: String, reductionMethod: ReductionMethod): (String) -> Double {
         val w1 = filterWords(text)
-        return { otherWords ->
-//            val target = filterWords(otherWords)
-            val target = listOf(otherWords)
+        return { w2 ->
             when (reductionMethod) {
-                ReductionMethod.REDUCTION_MAX_MAX     -> productMaxMax(w1, target)
-                ReductionMethod.REDUCTION_AVERAGE     -> productAverage(w1, target)
-                ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD -> productSmoothThreshold(w1, target)
+                ReductionMethod.REDUCTION_MAX_MAX            -> productMaxMax(w1, listOf(w2))
+                ReductionMethod.REDUCTION_AVERAGE            -> productAverage(w1, listOf(w2))
+                ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD -> productSmoothThreshold(w1, w2)
             }
         }
     }
@@ -323,10 +341,11 @@ fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
             """
 
     val bb = """
-        The character of Socrates as exhibited in Apology, Crito, Phaedo and Symposium concurs with other sources to an extent to which it seems possible to rely on the Platonic Socrates, as demonstrated in the dialogues, as a representation of the actual Socrates as he lived in history.[26] At the same time, however, many scholars believe that in some works, Plato, being a literary artist, pushed his avowedly brightened-up version of "Socrates" far beyond anything the historical Socrates was likely to have done or said. Also, Xenophon, being an historian, is a more reliable witness to the historical Socrates. It is a matter of much debate over which Socrates it is whom Plato is describing at any given point—the historical figure, or Plato's fictionalization. As British philosopher Martin Cohen has put it, "Plato, the idealist, offers an idol, a master figure, for philosophy. A Saint, a prophet of 'the Sun-God', a teacher condemned for his teachings as a heretic."[27]
+        enwiki:Carbohydrate/Division
     """
     val red = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD
-    val result = metaAnalyzer.inferMetric(text, 0, 3, doNormalize = false, reductionMethod = red)
+    val (time, result) = withTime {
+        metaAnalyzer.inferMetric(text, 0, 3, doNormalize = false, reductionMethod = red) }
     val result2 = metaAnalyzer.inferMetric(bb, 0, 3, doNormalize = false, reductionMethod = red)
     result.reportResults()
     result2.reportResults()
@@ -334,8 +353,9 @@ fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
     println(result2.results.values.sum())
 //    result2.reportResults()
     println(result.manhattenDistance(result2))
-
+    println("TIME: $time")
 }
+
 
 fun showSheaves(metaAnalyzer: KotlinMetaKernelAnalyzer) {
     val sheaves = metaAnalyzer.loadSheaves("descent_data/")
@@ -360,9 +380,7 @@ fun main(args: Array<String>) {
 //    metaAnalyzer.trainParagraphs()
 //    metaAnalyzer.trainParagraphs(listOf("Cooking"))
 //    metaAnalyzer.combinedTraining(listOf("Medicine", "Cooking", "Warfare"))
-    measureTimeMillis {
-        testStuff2(metaAnalyzer)
-    }.apply(::println)
+    testStuff2(metaAnalyzer)
 //    showSheaves(metaAnalyzer)
 //    println(metaAnalyzer.extractSheaves(1))
 }
