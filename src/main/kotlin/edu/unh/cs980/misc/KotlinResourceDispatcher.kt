@@ -1,5 +1,6 @@
 package edu.unh.cs980.misc
 
+import edu.unh.cs980.identity
 import net.sourceforge.argparse4j.inf.Namespace
 import net.sourceforge.argparse4j.inf.Subparser
 
@@ -108,7 +109,7 @@ class MethodContainerBuilder<T>(val arg: String) {
 class ResourceContainerBuilder(val arg: String) {
     var help: String = ""
     var default: String = ""
-    var loader: (String) -> Any = {}
+    var loader: (String) -> Any = ::identity
 
     fun build(): ResourceContainer {
         return ResourceContainer(arg = arg, help = help, default = default, loader = loader)

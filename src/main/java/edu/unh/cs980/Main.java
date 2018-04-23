@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import edu.unh.cs980.experiment.LaunchSparqlDownloader;
+import edu.unh.cs980.experiment.LaunchTopicDecomposer;
 import edu.unh.cs980.experiment.MasterExperiment;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -296,6 +297,7 @@ public class Main {
 //		StupidTest.Companion.register("train", myTestParser);
 		MasterExperiment.Companion.addExperiments(subparsers);
 		LaunchSparqlDownloader.Companion.addExperiments(subparsers);
+		LaunchTopicDecomposer.Companion.addExperiments(subparsers);
 
 		return parser;
 	}
