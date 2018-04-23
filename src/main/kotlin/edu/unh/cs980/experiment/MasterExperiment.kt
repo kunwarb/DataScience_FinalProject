@@ -72,7 +72,8 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 //        metaAnalyzer.loadSheaves(descent_data)
 //        embedder.loadTopics(paragraphs)
 
-        val myFilter = listOf("Medicine", "Cooking", "Games", "Society")
+//        val myFilter = listOf("Medicine", "Cooking", "Games", "Society")
+        val myFilter = emptyList<String>()
 //        val bindEmbed = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
 //            featUseEmbeddedQuery(query, tops, indexSearcher, embedder) }
 
