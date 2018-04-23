@@ -66,7 +66,7 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 
 
     fun doClust() {
-        metaAnalyzer.loadSheaves(descent_data, filterWords = listOf("Medicine", "Cooking", "Games", "Society","Warfare", "Engineering", "Science"))
+        metaAnalyzer.loadSheaves(descent_data, filterWords = listOf("Medicine", "Cooking", "Games", "Society"))
 //        metaAnalyzer.loadSheaves(descent_data)
 //        embedder.loadTopics(paragraphs)
 
