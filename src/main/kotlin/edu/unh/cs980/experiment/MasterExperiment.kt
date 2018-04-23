@@ -80,10 +80,10 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 
         listOf("Medicine", "Cooking", "Games", "Society").forEach { topic ->
             val boundSheafDistFunction = bindSheafDist(
-                    startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
-                    normalize = false, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
+                    startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
+                    normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
                     queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION, filterList = listOf(topic))
-                    formatter.addFeature(boundSheafDistFunction, normType = NormType.ZSCORE)
+            formatter.addFeature(boundSheafDistFunction, normType = NormType.ZSCORE)
 
         }
 
