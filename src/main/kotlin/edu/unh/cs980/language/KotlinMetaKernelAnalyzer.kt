@@ -113,7 +113,7 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
 
         val results = measure.values.map { (sheaf, freq) ->
 //                sheaf.transferDown(depthToGo - 1, simFun) * freq * (sheaf.partitions.size.toDouble() ).defaultWhenNotFinite(1.0) }
-            if (freq < 0.2) 0.0
+            if (freq < 0.15) 0.0
             else sheaf.transferDown(depthToGo - 1, simFun) * freq.defaultWhenNotFinite(1.0)
         }
 
@@ -121,7 +121,8 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
         val total = results.sum()
 //        val total = (results.max() ?: 0.0) * (1.0 + results.count { it > 1 / max(1.0, partitions.size.toDouble()) })
 
-        if (total < 1/(max(1.0, partitions.size.toDouble()))) return 0.00 else return total
+//        if (total < 1/(max(1.0, partitions.size.toDouble()))) return 0.00 else return total
+        return total
 //        if (highest < minFreq) return 0.00 else return pow(total, 1.0)
 //        if (total < 1/(log2(partitions.size.toDouble())).defaultWhenNotFinite(0.0)) return 0.00 else return pow(total, 1.0)
 
@@ -359,7 +360,7 @@ fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
             """
 
     val bb = """
-        Tools
+        food
     """
     val red = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD
     val (time, result) = withTime {
