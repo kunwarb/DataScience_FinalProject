@@ -61,6 +61,11 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                     normalize, mixtureDistanceMeasure, queryEmbeddingMethod, filterList, ascentType)
         }
 
+    fun bindEmbedding() =
+            { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
+                featUseEmbeddedQuery(query, tops, indexSearcher, embedder)
+            }
+
 
     /**
      * Func: trainClusters
@@ -220,6 +225,11 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
         }
     }
 
+    fun trainPerturbationEmbedding(weights: List<Double>? = null) {
+        formatter.addBM25(normType = NormType.ZSCORE, weight = weights?.get(0) ?: 1.0)
+        formatter.addFeature(bindEmbedding(), normType = NormType.ZSCORE, weight = weights?.get(1) ?: 1.0)
+    }
+
     fun doClust() {
         metaAnalyzer.loadSheaves(descent_data)
         formatter.addBM25(normType = NormType.ZSCORE)
@@ -334,6 +344,7 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                         method("train", "query_embedding_methods") { trainQueryEmbeddingMethods() }
                         method("train", "reduction_methods") { trainReductionMethods() }
                         method("train", "metrics") { trainMetrics() }
+                        method("train", "perturbation_embedding") { trainPerturbationEmbedding() }
 
                         method("query", "ascent_methods") {
                             val weights = listOf(0.7979897527484472, 0.12058376153063591, -0.011997198702279513,
