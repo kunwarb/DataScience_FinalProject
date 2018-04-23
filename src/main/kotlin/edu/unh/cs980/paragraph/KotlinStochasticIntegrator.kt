@@ -37,6 +37,8 @@ class KotlinStochasticIntegrator(val perturbations: Pair<List<String>, List<List
             perturbations.second
                 .map { perturbs ->
                     perturbs.zip(topic).sumByDouble { (k1, k2) -> pow(k1 - k2, 2.0) }.run { sqrt(this) } }
+//                        perturbs.zip(topic).sumByDouble { (k1, k2) -> abs(k1 - k2) } }
+//                            perturbs.zip(topic).sumByDouble { (k1, k2) -> k1 - k2 } }
                 .normalize()
                 .let {if (smooth) it.smooth() else it }
 

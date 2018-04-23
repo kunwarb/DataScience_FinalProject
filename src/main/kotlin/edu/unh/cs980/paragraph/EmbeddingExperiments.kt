@@ -41,7 +41,7 @@ Later in his career and since leaving Microsoft, Gates pursued a number of phila
         """
 
 
-    return embedder.embed(testText, nSamples = 500, nIterations = 1000, smooth = false)
+    return embedder.embed(testText, nSamples = 100000, nIterations = 1000, smooth = false)
 }
 
 fun main(args: Array<String>) {

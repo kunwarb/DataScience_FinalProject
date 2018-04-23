@@ -10,19 +10,33 @@ data class ResourceContainer(val arg: String, val help: String, val default: Str
 data class MethodCaller<T> (val choice: String, val method: T.() -> Unit)
 
 data class MethodContainer<T>(val arg: String, val help: String,
-                              val queryMethods: List<MethodCaller<T>>,
-                              val trainMethods: List<MethodCaller<T>>) {
+                              val methodMap: Map<String, List<MethodCaller<T>>>) {
+//                              val queryMethods: List<MethodCaller<T>>,
+//                              val trainMethods: List<MethodCaller<T>>) {
+
+//    fun getMethod(methodType: String, methodName: String): (T.() -> Unit)? {
+//        val methods = if (methodType == "query") queryMethods else trainMethods
+//        return methods
+//            .find { methodCaller -> methodCaller.choice == methodName}
+//            ?.method
+//    }
 
     fun getMethod(methodType: String, methodName: String): (T.() -> Unit)? {
-        val methods = if (methodType == "query") queryMethods else trainMethods
-        return methods
+        return methodMap[methodType]!!
             .find { methodCaller -> methodCaller.choice == methodName}
             ?.method
+
+//        val methods = if (methodType == "query") queryMethods else trainMethods
+//        return methods
+//            .find { methodCaller -> methodCaller.choice == methodName}
+//            ?.method
     }
 
     fun getMethodChoices(methodType: String): List<String> {
-        val methods = if (methodType == "query") queryMethods else trainMethods
-        return methods.map { method -> method.choice }
+        return methodMap[methodType]!!.map { method -> method.choice }
+
+//        val methods = if (methodType == "query") queryMethods else trainMethods
+//        return methods.map { method -> method.choice }
     }
 }
 
@@ -65,19 +79,26 @@ class KotlinResourceDispatcher(val resourceContainers: List<ResourceContainer>,
 @DispatchDSL
 class MethodContainerBuilder<T>(val arg: String) {
     var help: String = ""
-    private val trainMethods = ArrayList<MethodCaller<T>>()
-    private val queryMethods = ArrayList<MethodCaller<T>>()
+    private val methods = HashMap<String, ArrayList<MethodCaller<T>>>()
+//    private val trainMethods = ArrayList<MethodCaller<T>>()
+//    private val queryMethods = ArrayList<MethodCaller<T>>()
 
-    fun trainMethod(choice: String, method: T.() -> Unit) {
-        trainMethods += MethodCaller(choice, method)
-    }
+//    fun trainMethod(choice: String, method: T.() -> Unit) {
+//        trainMethods += MethodCaller(choice, method)
+//    }
+//
+//    fun queryMethod(choice: String, method: T.() -> Unit) {
+//        queryMethods += MethodCaller(choice, method)
+//    }
 
-    fun queryMethod(choice: String, method: T.() -> Unit) {
-        queryMethods += MethodCaller(choice, method)
+    fun method(category: String, choice: String, method: T.() -> Unit) {
+        methods.computeIfAbsent(category, { arrayListOf() }).add(MethodCaller(choice, method))
+//        queryMethods += MethodCaller(choice, method)
     }
 
     fun build(): MethodContainer<T> {
-        return MethodContainer(arg, help, queryMethods = queryMethods, trainMethods = trainMethods)
+//        return MethodContainer(arg, help, queryMethods = queryMethods, trainMethods = trainMethods)
+        return MethodContainer(arg, help, methodMap = methods)
     }
 
 }
@@ -125,87 +146,3 @@ fun buildResourceDispatcher(setup: ResourceDispatchBuilder.() -> Unit): KotlinRe
     return dispatchBuilder.build()
 }
 
-fun main(args: Array<String>) {
-//    val b = buildResourceDispatcher {
-//        resource("index") {
-//            help = "Location of Lucene index."
-//            loader = { "hi" }
-//        }
-//
-//        resource("number") {
-//            help = "Number to add things to."
-//            loader = { 20 }
-//        }
-//    }
-//
-//    b.resourceContainers.forEach { container ->
-//        println("${container.arg}: ${container.help} : ${container.loader("hi")}")
-//    }
-}
-
-//data class MethodChoice(val arg: String, val help: String, val methods: ArrayList<MethodCaller> = arrayListOf()) {
-//    fun addChoice(caller: MethodCaller) = apply { methods += caller }
-//}
-//
-//data class MethodCaller(val choice: String, val method: () -> Unit)
-
-//class Dispatcher() {
-//}
-//
-//
-//class MethodCallerBuilder(val methodName: String) {
-//
-//}
-//
-//class MethodChoiceBuilder(val arg: String) {
-//    var help: String = ""
-//    private val methods = ArrayList<MethodCaller>()
-//
-//    fun method() {
-//
-//    }
-//
-//}
-//
-//class ResourceContainerBuilder(val arg: String) {
-//    var help: String = ""
-//    var loader: () -> Any = {}
-//
-//    fun build(): ResourceContainer {
-//        return ResourceContainer(arg = arg, help = help, loader = loader)
-//    }
-//}
-//
-//class DispatchBuilder() {
-//    private val resourceContainers = ArrayList<ResourceContainer>()
-//    private val methodChoices = ArrayList<MethodChoice>()
-//
-//    fun build(): Dispatcher {
-//        return Dispatcher()
-//    }
-//
-//    fun resource(argName: String, setup: ResourceContainerBuilder.() -> Unit) {
-//        val resourceContainerBuilder = ResourceContainerBuilder(argName)
-//        resourceContainerBuilder.setup()
-//        resourceContainers += resourceContainerBuilder.build()
-//    }
-//
-//    fun methodChoice(argName: String) {
-//
-//    }
-//}
-//
-//fun buildDispatcher(setup: DispatchBuilder.() -> Unit): Dispatcher {
-//    val dispatchBuilder = DispatchBuilder()
-//    dispatchBuilder.setup()
-//    return dispatchBuilder.build()
-//}
-//
-//fun main(args: Array<String>) {
-//    val dispatcher = KotlinResourceDispatcher()
-//
-////    fun methodChoice(init: MethodChoice.() -> Unit): MethodChoice {
-////        val method = MethodChoice()
-////    }
-//
-//}

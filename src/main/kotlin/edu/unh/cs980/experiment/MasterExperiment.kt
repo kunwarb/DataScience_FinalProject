@@ -83,7 +83,7 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 //        val bindEmbed = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
 //            featUseEmbeddedQuery(query, tops, indexSearcher, embedder) }
 
-        val distances = listOf(MixtureDistanceMeasure.DELTA_SIM, MixtureDistanceMeasure.DELTA_DENSITY, MixtureDistanceMeasure.EUCLIDEAN)
+        val distances = listOf(MixtureDistanceMeasure.DELTA_DENSITY, MixtureDistanceMeasure.EUCLIDEAN)
 
         distances.forEach { curDist ->
             val boundSheaf = bindSheafDist(
@@ -154,6 +154,7 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                 val instance = MasterExperiment(resources)
                 val method = dispatcher.methodContainer!! as MethodContainer<MasterExperiment>
                 method.getMethod(methodType, methodName)?.invoke(instance)
+
                 if (methodType == "query") {
                     instance.formatter
                         .apply { rerankQueries() }
@@ -173,8 +174,8 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                 buildResourceDispatcher {
 
                     methods<MasterExperiment> {
-                        trainMethod("doClust") { doClust() }
-                        queryMethod("wee2") { wee() }
+                        method("train", "doClust") { doClust() }
+                        method("query", "wee2") { wee() }
                     }
 
                     resource("indexPath") {
