@@ -113,7 +113,7 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
 
         val results = measure.values.map { (sheaf, freq) ->
 //                sheaf.transferDown(depthToGo - 1, simFun) * freq * (sheaf.partitions.size.toDouble() ).defaultWhenNotFinite(1.0) }
-            if (freq < 0.15) 0.0
+            if (freq < 0.2) 0.0
             else sheaf.transferDown(depthToGo - 1, simFun) * freq.defaultWhenNotFinite(1.0)
         }
 
@@ -363,6 +363,7 @@ fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
         food
     """
     val red = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD
+//    val red = ReductionMethod.REDUCTION_MAX_MAX
     val (time, result) = withTime {
         metaAnalyzer.inferMetric(text, 0, 3, doNormalize = true, reductionMethod = red) }
     val result2 = metaAnalyzer.inferMetric(bb, 0, 3, doNormalize = true, reductionMethod = red)

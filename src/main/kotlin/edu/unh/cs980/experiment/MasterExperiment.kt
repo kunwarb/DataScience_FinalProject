@@ -84,14 +84,14 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                 normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
                 queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION, filterList = myFilter)
 
-//        val boundSheafDistFunction2 = bindSheafDist(
-//                startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
-//                normalize = false, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
-//                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION, filterList = myFilter)
-//
+        val boundSheafDistFunction2 = bindSheafDist(
+                startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
+                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
+                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION, filterList = myFilter)
+
 //        val boundSheafDistFunction3 = bindSheafDist(
 //                startLayer = 2, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
-//                normalize = false, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
+//                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
 //                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION, filterList = myFilter)
 //
 //
@@ -103,7 +103,7 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
         formatter.addBM25(normType = NormType.ZSCORE)
 //        formatter.addFeature(bindEmbed, normType = NormType.ZSCORE)
         formatter.addFeature(boundSheafDistFunction, normType = NormType.ZSCORE)
-//        formatter.addFeature(boundSheafDistFunction2, normType = NormType.ZSCORE)
+        formatter.addFeature(boundSheafDistFunction2, normType = NormType.ZSCORE)
 //        formatter.addFeature(boundSheafDistFunction3, normType = NormType.ZSCORE)
     }
 
