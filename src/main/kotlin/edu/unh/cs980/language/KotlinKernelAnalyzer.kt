@@ -3,6 +3,7 @@ package edu.unh.cs980.language
 import edu.unh.cs980.*
 import edu.unh.cs980.misc.AnalyzerFunctions
 import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH
+import edu.unh.cs980.misc.AnalyzerFunctions.AnalyzerType.ANALYZER_ENGLISH_STOPPED
 import edu.unh.cs980.misc.GradientDescenter
 import edu.unh.cs980.misc.PartitionDescenter
 import org.apache.commons.math3.distribution.NormalDistribution
@@ -149,11 +150,11 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
     fun analyzeDocument(text: String, letterGram: Boolean = false) {
         val filterPattern = "[\\d+]".toRegex()
         val filteredText = filterPattern.replace(text, "")
-        val terms = AnalyzerFunctions.createTokenList(filteredText, analyzerType = analyzer)
+        val terms = AnalyzerFunctions.createTokenList(filteredText, analyzerType = ANALYZER_ENGLISH_STOPPED)
 
-        if (letterGram) {
+        if (true) {
             terms.forEach { term ->
-                term.windowed(2, partialWindows = false)
+                term.windowed(4, partialWindows = false)
                     .forEach { lGram -> kernels.computeIfAbsent(lGram, { WordKernel(term) }).frequency += 1.0 }
             }
             return
