@@ -226,6 +226,7 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
     }
 
     fun trainPerturbationEmbedding(weights: List<Double>? = null) {
+        embedder.loadTopics(paragraphs)
         formatter.addBM25(normType = NormType.ZSCORE, weight = weights?.get(0) ?: 1.0)
         formatter.addFeature(bindEmbedding(), normType = NormType.ZSCORE, weight = weights?.get(1) ?: 1.0)
     }
