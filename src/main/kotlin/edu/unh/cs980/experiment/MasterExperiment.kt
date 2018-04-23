@@ -21,7 +21,7 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
     val indexPath: String by resources
     val qrelPath: String by resources
     val queryPath: String by resources
-    val gram: KotlinGramAnalyzer by resources
+//    val gram: KotlinGramAnalyzer by resources
     val descent_data: String by resources
     val paragraphs: String by resources
 
@@ -33,19 +33,19 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
     val embedder = KotlinEmbedding(indexPath)
 
 
-    fun wee() {
-        val weights = listOf(0.08047025663846726, 0.030239885393043505, 0.15642380129849698, 0.45881012321282,
-                0.1370279667285861, 0.1370279667285861
-        )
-
-        val bindSDM = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
-            featSDM(query, tops, indexSearcher, gram, 4.0)
-        }
-
-        formatter.addFeature({ query, tops, indexSearcher ->
-            featSplitSim(query, tops, indexSearcher, bindSDM, weights)
-        }, normType = NormType.ZSCORE)
-    }
+//    fun wee() {
+//        val weights = listOf(0.08047025663846726, 0.030239885393043505, 0.15642380129849698, 0.45881012321282,
+//                0.1370279667285861, 0.1370279667285861
+//        )
+//
+//        val bindSDM = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
+//            featSDM(query, tops, indexSearcher, gram, 4.0)
+//        }
+//
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featSplitSim(query, tops, indexSearcher, bindSDM, weights)
+//        }, normType = NormType.ZSCORE)
+//    }
 
 
 
@@ -316,9 +316,9 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                 }
             }
 
-            parser
-                .help("Collection of features involving the embedding of queries/paragraphs in structures" +
-                        " representing topic models.")
+//            parser
+//                .help("Collection of features involving the embedding of queries/paragraphs in structures" +
+//                        " representing topic models.")
             parser.setDefault("func", exec)
             dispatcher.generateArguments(methodType, parser)
         }
@@ -328,34 +328,34 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                 buildResourceDispatcher {
 
                     methods<MasterExperiment> {
-                        method("train", "AscentMethods") { trainAscentMethods() }
-                        method("train", "Clusters") { trainClusters() }
-                        method("train", "SubClusters") { trainSubClusters() }
-                        method("train", "QueryEmbeddingMethods") { trainQueryEmbeddingMethods() }
-                        method("train", "ReductionMethods") { trainReductionMethods() }
-                        method("train", "Metrics") { trainMetrics() }
+                        method("train", "ascent_methods") { trainAscentMethods() }
+                        method("train", "clusters") { trainClusters() }
+                        method("train", "subclusters") { trainSubClusters() }
+                        method("train", "query_embedding_methods") { trainQueryEmbeddingMethods() }
+                        method("train", "reduction_methods") { trainReductionMethods() }
+                        method("train", "metrics") { trainMetrics() }
 
-                        method("query", "AscentMethods") {
+                        method("query", "ascent_methods") {
                             val weights = listOf(1.0, 1.0, 1.0, 1.0, 1.0)
                             trainAscentMethods(weights)
                         }
-                        method("query", "Clusters") {
+                        method("query", "clusters") {
                             val weights = listOf(1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
                             trainClusters(level = 0, weights = weights)
                         }
-                        method("query", "SubClusters") {
+                        method("query", "subclusters") {
                             val weights = listOf(1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
                             trainSubClusters(weights)
                         }
-                        method("query", "QueryEmbeddingMethods") {
+                        method("query", "query_embedding_methods") {
                             val weights = listOf(1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
                             trainQueryEmbeddingMethods(weights)
                         }
-                        method("query", "ReductionMethods") {
+                        method("query", "reduction_methods") {
                             val weights = listOf(1.0, 1.0, 1.0, 1.0)
                             trainReductionMethods(weights)
                         }
-                        method("query", "Metrics") {
+                        method("query", "metrics") {
                             val weights = listOf(1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
                             trainMetrics(weights)
                         }
@@ -386,11 +386,11 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                     }
 
 
-                    resource("gram") {
-                        help = "Location to gram Lucene index (Default: /trec_data/team_1/gram)"
-                        default = "/trec_data/team_1/gram/"
-                        loader = { path -> KotlinGramAnalyzer(getIndexSearcher(path)) }
-                    }
+//                    resource("gram") {
+//                        help = "Location to gram Lucene index (Default: /trec_data/team_1/gram)"
+//                        default = "/trec_data/team_1/gram/"
+//                        loader = { path -> KotlinGramAnalyzer(getIndexSearcher(path)) }
+//                    }
 
                     resource("paragraphs") {
                         help = "Location to paragraphs training directory (Default: /trec_data/team_1/paragraphs)"
