@@ -66,6 +66,11 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                 featUseEmbeddedQuery(query, tops, indexSearcher, embedder)
             }
 
+    fun bindEmbeddingExpansion() =
+            { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
+                featUseExpandedEmbeddedQuery(query, tops, indexSearcher, embedder)
+            }
+
 
     /**
      * Func: trainClusters
@@ -229,6 +234,7 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
         embedder.loadTopics(paragraphs)
         formatter.addBM25(normType = NormType.ZSCORE, weight = weights?.get(0) ?: 1.0)
         formatter.addFeature(bindEmbedding(), normType = NormType.ZSCORE, weight = weights?.get(1) ?: 1.0)
+        formatter.addFeature(bindEmbeddingExpansion(), normType = NormType.ZSCORE, weight = weights?.get(2) ?: 1.0)
     }
 
     fun doClust() {
