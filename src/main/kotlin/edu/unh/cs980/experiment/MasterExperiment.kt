@@ -83,11 +83,11 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 //        val bindEmbed = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
 //            featUseEmbeddedQuery(query, tops, indexSearcher, embedder) }
 
-        val distances = listOf(MixtureDistanceMeasure.DELTA_SIM, MixtureDistanceMeasure.DELTA_DENSITY, MixtureDistanceMeasure.MINKOWSKI, MixtureDistanceMeasure.KLD)
+        val distances = listOf(MixtureDistanceMeasure.DELTA_SIM, MixtureDistanceMeasure.DELTA_DENSITY, MixtureDistanceMeasure.EUCLIDEAN)
 
         distances.forEach { curDist ->
             val boundSheaf = bindSheafDist(
-                    startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
+                    startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
                     normalize = true, mixtureDistanceMeasure = curDist,
                     queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION, filterList = myFilter)
             formatter.addFeature(boundSheaf, normType = NormType.ZSCORE)
