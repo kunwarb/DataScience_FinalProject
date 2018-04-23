@@ -15,7 +15,7 @@ import java.util.*
 import kotlin.math.log2
 
 enum class MixtureDistanceMeasure {
-    EUCLIDEAN, DELTA_SIM, MINKOWSKI, COSINE, DELTA_DENSITY, MANHATTAN, EUCLIDEAN_SIM
+    EUCLIDEAN, DELTA_SIM, MINKOWSKI, COSINE, DELTA_DENSITY, MANHATTAN, EUCLIDEAN_SIM, KLD
 }
 
 data class TopicMixtureResult(val results: SortedMap<String, Double>, val kld: Double) {
@@ -39,6 +39,7 @@ data class TopicMixtureResult(val results: SortedMap<String, Double>, val kld: D
             MixtureDistanceMeasure.MINKOWSKI -> minkowskiDistance(other)
             MixtureDistanceMeasure.DELTA_DENSITY -> deltaDensity(other)
             MixtureDistanceMeasure.MANHATTAN -> manhattenDistance(other)
+            MixtureDistanceMeasure.KLD -> kld(other)
         }
 
     fun euclideanDistance(other: TopicMixtureResult): Double =
