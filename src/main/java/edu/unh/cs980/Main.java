@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import edu.unh.cs980.experiment.MasterExperiment;
-import edu.unh.cs980.experiment.StupidTest;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
