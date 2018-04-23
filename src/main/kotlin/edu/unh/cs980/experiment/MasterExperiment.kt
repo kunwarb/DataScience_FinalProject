@@ -57,19 +57,22 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 
     fun bindSheafDist(startLayer: Int, measureLayer: Int, reductionMethod: ReductionMethod,
                       normalize: Boolean, mixtureDistanceMeasure: MixtureDistanceMeasure,
-                      queryEmbeddingMethod: SheafQueryEmbeddingMethod) =
+                      queryEmbeddingMethod: SheafQueryEmbeddingMethod,
+                      filterList: List<String> = emptyList()) =
         { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
             featSheafDist(query, tops, indexSearcher, metaAnalyzer, startLayer, measureLayer, reductionMethod,
-                    normalize, mixtureDistanceMeasure, queryEmbeddingMethod)
+                    normalize, mixtureDistanceMeasure, queryEmbeddingMethod, filterList)
         }
 
 
 
     fun doClust() {
-        metaAnalyzer.loadSheaves(descent_data, filterWords = listOf("Medicine", "Cooking", "Games", "Society"))
+//        metaAnalyzer.loadSheaves(descent_data, filterWords = listOf("Medicine", "Cooking", "Games", "Society"))
+        metaAnalyzer.loadSheaves(descent_data)
 //        metaAnalyzer.loadSheaves(descent_data)
 //        embedder.loadTopics(paragraphs)
 
+        val myFilter = listOf("Medicine", "Cooking", "Games", "Society")
 //        val bindEmbed = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
 //            featUseEmbeddedQuery(query, tops, indexSearcher, embedder) }
 
@@ -78,12 +81,12 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
         val boundSheafDistFunction = bindSheafDist(
                 startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
                 normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
-                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
+                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY, filterList = myFilter)
 
         val boundSheafDistFunction2 = bindSheafDist(
                 startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
                 normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
-                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
+                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY, filterList = myFilter)
 //
 //        val boundSheafDistFunction2 = bindSheafDist(
 //                startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,

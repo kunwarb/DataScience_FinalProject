@@ -72,7 +72,7 @@ fun featUseExpandedEmbeddedQuery(query: String, tops: TopDocs, indexSearcher: In
 fun featSheafDist(query: String, tops: TopDocs, indexSearcher: IndexSearcher, analyzer: KotlinMetaKernelAnalyzer,
                   startLayer: Int, measureLayer: Int, reductionMethod: ReductionMethod,
                   normalize: Boolean, mixtureDistanceMeasure: MixtureDistanceMeasure,
-                  queryEmbeddingMethod: SheafQueryEmbeddingMethod): List<Double> {
+                  queryEmbeddingMethod: SheafQueryEmbeddingMethod, filterList: List<String>): List<Double> {
 
     val paragraphs = tops.scoreDocs
         .map { indexSearcher.doc(it.doc).get(CONTENT)}
@@ -84,11 +84,11 @@ fun featSheafDist(query: String, tops: TopDocs, indexSearcher: IndexSearcher, an
 
     val queryEmbedding = analyzer.inferMetric(
             text = queryText, startingLayer = startLayer, doNormalize = normalize,
-            measureLayer = measureLayer, reductionMethod = reductionMethod)
+            measureLayer = measureLayer, reductionMethod = reductionMethod, filterList = filterList)
 
     val embeddedParagraphs = paragraphs.map { paragraph ->
         analyzer.inferMetric(text = paragraph, startingLayer = startLayer, doNormalize = normalize,
-            measureLayer = measureLayer, reductionMethod = reductionMethod) }
+            measureLayer = measureLayer, reductionMethod = reductionMethod, filterList = filterList) }
 
     return embeddedParagraphs
         .map { embeddedParagraph ->
