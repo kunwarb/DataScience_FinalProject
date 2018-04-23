@@ -2,7 +2,6 @@ package edu.unh.cs980.misc
 
 import edu.unh.cs980.features.featSDMWithEntityQueryExpansion
 import edu.unh.cs980.normalize
-import edu.unh.cs980.paragraph.topics
 import edu.unh.cs980.sharedRand
 import org.apache.commons.math3.distribution.NormalDistribution
 import org.apache.commons.math3.geometry.Vector
