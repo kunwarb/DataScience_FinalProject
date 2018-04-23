@@ -34,9 +34,9 @@ fun featUseEmbeddedQuery(query: String, tops: TopDocs, indexSearcher: IndexSearc
         .map { indexSearcher.doc(it.doc).get(CONTENT)}
 
     val embeddings = paragraphs
-        .map { paragraph ->  embedder.embed(paragraph, 50)}
+        .map { paragraph ->  embedder.embed(paragraph, 100)}
 
-    val queryEmbedding = embedder.embed(query, 50)
+    val queryEmbedding = embedder.embed(query, 100)
     return embeddings.map { projection -> projection.manhattenDistance(queryEmbedding)}
 }
 
@@ -56,11 +56,11 @@ fun featUseExpandedEmbeddedQuery(query: String, tops: TopDocs, indexSearcher: In
         .map { indexSearcher.doc(it.doc).get(CONTENT)}
 
     val embeddings = paragraphs
-        .map { paragraph ->  embedder.embed(paragraph, 500)}
+        .map { paragraph ->  embedder.embed(paragraph, 100)}
 
     val expanded = expandQuery(query, indexSearcher)
 
-    val queryEmbedding = embedder.embed(expanded, 500)
+    val queryEmbedding = embedder.embed(expanded, 100)
     return embeddings.map { projection -> projection.manhattenDistance(queryEmbedding)}
 }
 
