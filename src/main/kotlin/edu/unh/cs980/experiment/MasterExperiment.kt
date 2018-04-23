@@ -73,19 +73,28 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 //        embedder.loadTopics(paragraphs)
         formatter.addBM25(normType = NormType.ZSCORE)
 
+        // Medicine not so good, so is society
         val myFilter = listOf("Medicine", "Cooking", "Games", "Society")
+        val myFilter2 = listOf("Warfare", "Biology")
+        val myFilter3 = listOf("Technology", "Travel")
+        val myFilter4 = listOf("Mathematics", "Fashion", "Engineering")
+        val myFilter5 = listOf("Events", "Organizations", "People")
 //        val myFilter = emptyList<String>()
 //        val bindEmbed = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
 //            featUseEmbeddedQuery(query, tops, indexSearcher, embedder) }
 
-        listOf("Medicine", "Cooking", "Games", "Society").forEach { topic ->
-            val boundSheafDistFunction = bindSheafDist(
+        listOf(myFilter, myFilter2, myFilter3, myFilter4, myFilter5).forEach { curFilter ->
+            val boundSheaf = bindSheafDist(
                     startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
                     normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
-                    queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION, filterList = listOf(topic))
-            formatter.addFeature(boundSheafDistFunction, normType = NormType.ZSCORE)
+                    queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION, filterList = curFilter)
+            formatter.addFeature(boundSheaf, normType = NormType.ZSCORE)
 
         }
+
+
+
+
 
 
 //        val boundSheafDistFunction = bindSheafDist(
