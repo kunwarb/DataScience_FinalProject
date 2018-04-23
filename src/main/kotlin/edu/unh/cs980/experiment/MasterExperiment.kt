@@ -77,12 +77,12 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 
         val boundSheafDistFunction = bindSheafDist(
                 startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
-                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN_SIM,
+                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.DELTA_SIM,
                 queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
 
         val boundSheafDistFunction2 = bindSheafDist(
                 startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
-                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN_SIM,
+                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.DELTA_SIM,
                 queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY)
 //
 //        val boundSheafDistFunction2 = bindSheafDist(

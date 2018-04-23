@@ -232,6 +232,7 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
 
     }
 
+
     fun extractSheaves(level: Int) =
         sheaves.map { sheaf -> sheaf.name to sheaf.retrieveLayer(level) }
 
@@ -240,6 +241,27 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
             .listFiles()
             .filter { file -> file.isDirectory && (filterList.isEmpty() || file.name in filterList)  }
             .forEach { file -> trainParagraph(file.name, file) }
+    }
+
+    fun combinedTraining(filterList: List<String>) {
+        val pars = File(paragraphIndex)
+            .listFiles()
+            .filter { file -> filterList.isEmpty() || file.name in filterList }
+            .flatMap { file -> extractTopicText(file) }
+
+        val sheaf = Sheaf("Combined", pars)
+        val descentData = listOf(
+                DescentData(bindFreq(2), this::splitSentence),
+                DescentData(bindFreq(2), this::splitWord),
+                DescentData(bindFreq(2), ::listOf)
+        )
+        sheaf.descend(descentData)
+        File("descent_data/").let { file -> if (!file.exists()) file.mkdir() }
+        val f = FileOutputStream("descent_data/Combined")
+        val of = ObjectOutputStream(f)
+        of.writeObject(sheaf)
+        of.close()
+        f.close()
     }
 
     fun extractTopicText(topicDir: File): List<String> =
@@ -382,7 +404,8 @@ fun main(args: Array<String>) {
 //    metaAnalyzer.trainParagraphs()
 //    metaAnalyzer.trainParagraphs(listOf("Cooking"))
 //    metaAnalyzer.combinedTraining(listOf("Medicine", "Cooking", "Warfare"))
-    testStuff2(metaAnalyzer)
+//    testStuff2(metaAnalyzer)
+    metaAnalyzer.combinedTraining(listOf("Medicine", "Cooking", "Games", "Society"))
 //    showSheaves(metaAnalyzer)
 //    println(metaAnalyzer.extractSheaves(1))
 }
