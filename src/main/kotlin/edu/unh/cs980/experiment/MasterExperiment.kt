@@ -72,8 +72,8 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 //        metaAnalyzer.loadSheaves(descent_data)
 //        embedder.loadTopics(paragraphs)
 
-//        val myFilter = listOf("Medicine", "Cooking", "Games", "Society")
-        val myFilter = emptyList<String>()
+        val myFilter = listOf("Medicine", "Cooking", "Games", "Society")
+//        val myFilter = emptyList<String>()
 //        val bindEmbed = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
 //            featUseEmbeddedQuery(query, tops, indexSearcher, embedder) }
 
@@ -82,12 +82,12 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
         val boundSheafDistFunction = bindSheafDist(
                 startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
                 normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
-                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION, filterList = myFilter)
+                queryEmbeddingMethod = SheafQueryEmbeddingMethod.MEAN, filterList = myFilter)
 
         val boundSheafDistFunction2 = bindSheafDist(
                 startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
                 normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
-                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION, filterList = myFilter)
+                queryEmbeddingMethod = SheafQueryEmbeddingMethod.MEAN, filterList = myFilter)
 //
 //        val boundSheafDistFunction2 = bindSheafDist(
 //                startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
