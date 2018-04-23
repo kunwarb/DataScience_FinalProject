@@ -365,8 +365,8 @@ fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
     val red = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD
 //    val red = ReductionMethod.REDUCTION_MAX_MAX
     val (time, result) = withTime {
-        metaAnalyzer.inferMetric(text, 0, 3, doNormalize = true, reductionMethod = red) }
-    val result2 = metaAnalyzer.inferMetric(bb, 0, 3, doNormalize = true, reductionMethod = red)
+        metaAnalyzer.inferMetric(text, 0, 3, doNormalize = false, reductionMethod = red) }
+    val result2 = metaAnalyzer.inferMetric(bb, 0, 3, doNormalize = false, reductionMethod = red)
     result.reportResults()
     result2.reportResults()
 //    println(result.results.values.sum())
