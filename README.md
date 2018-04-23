@@ -99,58 +99,7 @@ Where:
 
 **--spotlight_folder**: Is the directory where a runnable DBPedia Spotlight Jar and model are located. If the folder does not contain the required files, the contents are automatically downloaded and unpacked to the folder. If no folder is specified, then entity-linking with Spotlight is skipped during indexing. **A copy of the spotlight_folder is available at: /trec_data/team_1/spotlight_server**
 
-___
-#### Abstract Indexer (abstract_indexer)
-Given the location of unprocessAllButBenchmark page corpus, extracts page names (used to represent an entity) and the first three paragraphs (used to represent the abstract of the entity). Unigrams, bigrams, and windowed bigrams are also indexed for each of the entity abstracts.
 
-The resulting Lucene index will be named "abstract" and is created in the current working directory. **Note that an already indexed version of abstract can be found on the server at: /trec_data/team_1/abstract**
-
-```bash
-program.jar abstract_indexer corpus
-```
-
-Where **corpus** is the location of the allButBenchmark corpus. 
- - A copy of the corpus is located on the server at: /trec_data/unprocessedAllButBenchmark/unprocessedAllButBenchmark.cbor
-___
-### Gram Indexer (gram_indexer)
-Given location of paragraphCorpus, this indexes stemmed unigrams, bigrams, and windowed bigrams for 33% fo the documents in the corpus (I did not do more due to size constraints on the erver). 
-
-The resulting index is named "gram" and is created in the current working directory. **Note that an already indexed version of abstract can be found on the server at: /trec_data/team_1/gram**
-
-```bash
-program.jar gram_indexer corpus
-```
-
-Where **corpus** is the location of the paragraphCorpus. 
- - A copy of the corpus is located on the server at: /trec_data/paragraphCorpus/dedup.articles-paragraphs.cbor
- ___
-### Hyperlink Indexer (hyperlink_indexer)
-Given location of unprocessedAllButBenchmark page corpus, parses pages for anchor text and links and makes not of the frequencies of entities given entity mentions. The resulting database is stored in the working directory and is named "entity_mentions.db". 
-
-**Note: there is an already indexed version of this database on the server and it is located at: /trec_data/team_1/entity_mentions.db**
-
-```bash
-program.jar hyperlink_indexer corpus
-```
-
-Where **corpus** is the location of the allButBenchmark corpus. 
- - A copy of the corpus is located on the server at: /trec_data/unprocessedAllButBenchmark/unprocessedAllButBenchmark.cbor
-___
-### Feature Selection (feature_selection)
-Given a Ranklib-compatible feature file, this tool will either perform subset selection (to find the best features), or report pairwise combinations of features (used in determining alpha parameters for my SDM and Abstract SDM methods). 
-
-**Note that this command requires a path to a RankLib jar file. There is such a file on the server at: /trec_data/team_1/RankLib-2.1-patched.jar**
-
-```bash
-program.jar feature_Selection [--features FEATURES] ranklib_jar method
-```
-
-Where:
-
-**ranklib_jar**: is the location of a RankLib jar file. One is available at /trec_data/team_1/RankLib-2.1-patched.jar
-**method**: Is one of the following:
- - **alpha_selection**: Runs each feature pairwise with feature 1 (assumed to be BM25 feature) and selects the pair with the best MAP. This is used to determine the alpha parameter for SDM and Abstract SDM, where each of the features are just copies of the SDM at different alpha values.
- - **subset_selection**: Attempts to do forward subset selection, where features are added to a set if they raise the MAP score by a significant amount. Prints the final set and the trained model weights.
 
 ___ 
 ### Ranklib Trainer (ranklib_trainer)
