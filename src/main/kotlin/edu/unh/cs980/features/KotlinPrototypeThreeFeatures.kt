@@ -47,9 +47,8 @@ private fun expandQuery(query: String, indexSearcher: IndexSearcher): String =
     AnalyzerFunctions.createQueryList(query, useFiltering = true)
         .map { booleanQuery ->
             indexSearcher.search(booleanQuery, 1)
-                .scoreDocs.first()
-                .doc
-                .let { docId -> indexSearcher.doc(docId).get(CONTENT) } }
+                .scoreDocs.firstOrNull()
+                ?.let { scoreDoc -> indexSearcher.doc(scoreDoc.doc).get(CONTENT) } ?: " " }
         .joinToString("\n")
 
 
