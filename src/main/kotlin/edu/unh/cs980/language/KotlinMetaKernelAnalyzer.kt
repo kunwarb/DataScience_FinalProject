@@ -113,7 +113,9 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
 
         val results = measure.values.map { (sheaf, freq) ->
 //                sheaf.transferDown(depthToGo - 1, simFun) * freq * (sheaf.partitions.size.toDouble() ).defaultWhenNotFinite(1.0) }
-        sheaf.transferDown(depthToGo - 1, simFun) * freq.defaultWhenNotFinite(1.0) }
+            if (freq < 0.04) 0.0
+            else sheaf.transferDown(depthToGo - 1, simFun) * freq.defaultWhenNotFinite(1.0)
+        }
 
 //        val highest = results.max() ?: 0.0
         val total = results.sum()
