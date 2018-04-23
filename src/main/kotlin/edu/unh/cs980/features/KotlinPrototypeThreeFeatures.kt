@@ -1,10 +1,7 @@
 package edu.unh.cs980.features
 
 import edu.unh.cs980.CONTENT
-import edu.unh.cs980.language.KotlinMetaKernelAnalyzer
-import edu.unh.cs980.language.MixtureDistanceMeasure
-import edu.unh.cs980.language.ReductionMethod
-import edu.unh.cs980.language.Sheaf
+import edu.unh.cs980.language.*
 import edu.unh.cs980.misc.AnalyzerFunctions
 import edu.unh.cs980.paragraph.KotlinEmbedding
 import org.apache.lucene.search.IndexSearcher
@@ -71,7 +68,8 @@ fun featUseExpandedEmbeddedQuery(query: String, tops: TopDocs, indexSearcher: In
 fun featSheafDist(query: String, tops: TopDocs, indexSearcher: IndexSearcher, analyzer: KotlinMetaKernelAnalyzer,
                   startLayer: Int, measureLayer: Int, reductionMethod: ReductionMethod,
                   normalize: Boolean, mixtureDistanceMeasure: MixtureDistanceMeasure,
-                  queryEmbeddingMethod: SheafQueryEmbeddingMethod, filterList: List<String>): List<Double> {
+                  queryEmbeddingMethod: SheafQueryEmbeddingMethod, filterList: List<String>,
+                  ascentType: AscentType): List<Double> {
 
     val paragraphs = tops.scoreDocs
         .map { indexSearcher.doc(it.doc).get(CONTENT)}
@@ -83,11 +81,13 @@ fun featSheafDist(query: String, tops: TopDocs, indexSearcher: IndexSearcher, an
 
     val queryEmbedding = analyzer.inferMetric(
             text = queryText, startingLayer = startLayer, doNormalize = normalize,
-            measureLayer = measureLayer, reductionMethod = reductionMethod, filterList = filterList)
+            measureLayer = measureLayer, reductionMethod = reductionMethod, filterList = filterList,
+            ascentType = ascentType)
 
     val embeddedParagraphs = paragraphs.map { paragraph ->
         analyzer.inferMetric(text = paragraph, startingLayer = startLayer, doNormalize = normalize,
-            measureLayer = measureLayer, reductionMethod = reductionMethod, filterList = filterList) }
+            measureLayer = measureLayer, reductionMethod = reductionMethod, filterList = filterList,
+                ascentType = ascentType) }
 
     return embeddedParagraphs
         .map { embeddedParagraph ->

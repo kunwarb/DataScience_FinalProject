@@ -25,8 +25,6 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
     val descent_data: String by resources
     val paragraphs: String by resources
 
-//    val abstract: KotlinAbstractAnalyzer by resources
-//    val hyperlink: HyperlinkIndexer by resources
     val out: String by resources
 
     val formatter = KotlinRanklibFormatter(queryPath, qrelPath, indexPath)
@@ -50,27 +48,180 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
     }
 
 
-//    fun featSheafDist(query: String, tops: TopDocs, indexSearcher: IndexSearcher, analyzer: KotlinMetaKernelAnalyzer,
-//                      startLayer: Int, measureLayer: Int, reductionMethod: ReductionMethod,
-//                      normalize: Boolean, mixtureDistanceMeasure: MixtureDistanceMeasure,
-//                      queryEmbeddingMethod: SheafQueryEmbeddingMethod): List<Double> {
 
+    // Sorry for the mess... Partially binds my sheaf distance feature so that it's compatible with the
+    // signature expected by my formatter.
     fun bindSheafDist(startLayer: Int, measureLayer: Int, reductionMethod: ReductionMethod,
                       normalize: Boolean, mixtureDistanceMeasure: MixtureDistanceMeasure,
                       queryEmbeddingMethod: SheafQueryEmbeddingMethod,
-                      filterList: List<String> = emptyList()) =
+                      filterList: List<String> = emptyList(),
+                      ascentType: AscentType = AscentType.ASCENT_SUM) =
         { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
             featSheafDist(query, tops, indexSearcher, metaAnalyzer, startLayer, measureLayer, reductionMethod,
-                    normalize, mixtureDistanceMeasure, queryEmbeddingMethod, filterList)
+                    normalize, mixtureDistanceMeasure, queryEmbeddingMethod, filterList, ascentType)
         }
 
 
+    /**
+     * Func: trainClusters
+     * Desc: In this method, I divide 15 topics into "clusters" of 3. Distances between the query and a paragraph are
+     *       obtained by projecting them onto points on a 3D simplex and taking Manhattan distance.
+     */
+    fun trainClusters(level: Int = 0, weights: List<Double>? = null) {
+        metaAnalyzer.loadSheaves(descent_data)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = weights?.get(0) ?: 1.0)
+
+        // Of the 21 features, I am partitioning 15 into five "clusters" and treating each as a feature
+        val clusters = listOf(
+                listOf("Cooking", "Games", "Society"),
+                listOf("Warfare", "Biology", "Politics"),
+                listOf("Technology", "Travel", "Environments"),
+                listOf("Mathematics", "Fashion", "Engineering"),
+                listOf("Events", "Organizations", "People") )
+
+
+        clusters.forEachIndexed { index, cluster ->
+            val boundSheaf = bindSheafDist(
+                    startLayer = level, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
+                    normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
+                    queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY, filterList = cluster)
+
+            formatter.addFeature(boundSheaf, normType = NormType.ZSCORE, weight = weights?.get(index + 1) ?: 1.0)
+        }
+    }
+
+    /**
+     * Func: trainSubClusters
+     * Desc: As above, except I treat the dimensions of the simplex are equal to the number of paragraphs that were used
+     *       to construct each topic. The number is not exact because some of the paragraphs are "not important" the
+     *       topic and were eliminated when decomposing the topics into their basis paragraphs.
+     * @see Sheaf
+     * @see Sheaf.descend  # to see how I decompose topics into paragraphs, paragraphs into sentences, etc.
+     */
+    fun trainSubClusters(weights: List<Double>? = null) {
+        trainClusters(level = 1, weights = weights) // Level determines which sheaf we should have a distribution over
+        // Level 0 = topic sheaves
+        // Level 1 = paragraph sheaves
+        // Level 2 = sentence sheaves
+        // Level 3 = word sheaves
+    }
+
+
+    /**
+     * Func: trainMetrics
+     * Desc: I experiment with different distance measures between simplexes: Euclinean, Manhattan, Cosine, Minkowski.
+     *       I am only considering a subset of topics (Cooking, Games, Society)
+     */
+    fun trainMetrics(weights: List<Double>? = null) {
+        metaAnalyzer.loadSheaves(descent_data)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = weights?.get(0) ?: 1.0)
+
+        val myFilter = listOf("Cooking", "Games", "Society")
+
+        val distances = listOf(MixtureDistanceMeasure.KLD,
+                MixtureDistanceMeasure.EUCLIDEAN,
+                MixtureDistanceMeasure.MANHATTAN,
+                MixtureDistanceMeasure.COSINE,
+                MixtureDistanceMeasure.MINKOWSKI)
+
+        distances.forEachIndexed { index, curDist ->
+            val boundSheaf = bindSheafDist(
+                    startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
+                    normalize = true, mixtureDistanceMeasure = curDist,
+                    queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY, filterList = myFilter)
+            formatter.addFeature(boundSheaf, normType = NormType.ZSCORE, weight = weights?.get(index + 1) ?: 1.0)
+
+        }
+    }
+
+    /**
+     * Func: trainQueryEmbeddingMethods
+     * Desc: In this experiment, I consider different approaches to embedding the query.
+     *       QUERY: just use the query as-is
+     *       MEAN:  merge the top 100 documents and project onto simplex. Order documents by their distance to
+     *              this simplex (think of it like the "center" of a cluster).
+     *       QUERY_EXPANSION: split query into tokens, query Lucene with each token, and merge first top document from
+     *                        each search result into one giant query
+     */
+    fun trainQueryEmbeddingMethods(weights: List<Double>? = null) {
+        metaAnalyzer.loadSheaves(descent_data)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = weights?.get(0) ?: 1.0)
+
+        val myFilter = listOf("Cooking", "Games", "Society")
+
+        val queryEmbeddingMethods = listOf( SheafQueryEmbeddingMethod.QUERY,
+                SheafQueryEmbeddingMethod.MEAN, SheafQueryEmbeddingMethod.QUERY_EXPANSION)
+
+        queryEmbeddingMethods.forEachIndexed { index, embeddingMethod ->
+            val boundSheaf = bindSheafDist(
+                    startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
+                    normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
+                    queryEmbeddingMethod = embeddingMethod, filterList = myFilter)
+            formatter.addFeature(boundSheaf, normType = NormType.ZSCORE, weight = weights?.get(index + 1) ?: 1.0)
+        }
+    }
+
+    /**
+     * Func: trainReductionMethods
+     * Desc: In this experiment, I consider different approaches to integration by parts.
+     *       AVERAGE: Average the similarities from words in query/paragraphs to those in words in bottom-most sheaf.
+     *       MAX_MAX:  Sum up the maximum similarities of each word in query/paragraphs to words in  bottom-most sheaf.
+     *       SMOOTHED_THRESHOLD: When the size of the query/paragraph is small, its distance to words matters more.
+     *                           The similarity score from words in the query/paragraph is boosted when the size of
+     *                           the query/paragraph is small.
+     */
+    fun trainReductionMethods(weights: List<Double>? = null) {
+        metaAnalyzer.loadSheaves(descent_data)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = weights?.get(0) ?: 1.0)
+
+        val myFilter = listOf("Cooking", "Games", "Society")
+        val reductions = listOf(ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD, ReductionMethod.REDUCTION_MAX_MAX,
+                ReductionMethod.REDUCTION_AVERAGE)
+
+
+        reductions.forEachIndexed { index, reduction ->
+            val boundSheaf = bindSheafDist(
+                    startLayer = 0, measureLayer = 3, reductionMethod = reduction,
+                    normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
+                    queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY, filterList = myFilter)
+            formatter.addFeature(boundSheaf, normType = NormType.ZSCORE, weight = weights?.get(index + 1) ?: 1.0)
+        }
+    }
+
+    /**
+     * Func: trainAscentMethods
+     * Desc: The value of a topic with respect to a query/paragraph is normally expressed by the sum of distances
+     *       to the topic's words (weighted by how important the words are to the topic).
+     *       Other methods are explored below:
+     *       SUM: The normal method.
+     *       MAX: At each level, take only the maximum similarity score of the sheaf's partitions after adjusting
+     *            for the importance of each partition.
+     *       THRESHOLD_SUM: Similarity scores are only passed up the sheaf if the sum meets a certain threshold.
+     *                      (Think of activation threshold in neural networks)
+     *       THRESHOLD_MAX: As above, except the threshold is based on the maximal score returned from the
+     *                      lower sheaves.
+     */
+    fun trainAscentMethods(weights: List<Double>? = null) {
+        metaAnalyzer.loadSheaves(descent_data)
+        formatter.addBM25(normType = NormType.ZSCORE, weight = weights?.get(0) ?: 1.0)
+
+        val myFilter = listOf("Cooking", "Games", "Society")
+        val ascentTypes = listOf(AscentType.ASCENT_SUM, AscentType.ASCENT_MAX,
+                AscentType.ASCENT_THRESHOLD_SUM, AscentType.ASCENT_THRESHOLD_MAX)
+
+
+        ascentTypes.forEachIndexed { index, ascentType ->
+            val boundSheaf = bindSheafDist(
+                    startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
+                    normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
+                    queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY, filterList = myFilter,
+                    ascentType = ascentType)
+            formatter.addFeature(boundSheaf, normType = NormType.ZSCORE, weight = weights?.get(index + 1) ?: 1.0)
+        }
+    }
 
     fun doClust() {
-//        metaAnalyzer.loadSheaves(descent_data, filterWords = listOf("Medicine", "Cooking", "Games", "Society"))
         metaAnalyzer.loadSheaves(descent_data)
-//        metaAnalyzer.loadSheaves(descent_data)
-//        embedder.loadTopics(paragraphs)
         formatter.addBM25(normType = NormType.ZSCORE)
 
         // Medicine not so good, so is society
@@ -129,8 +280,9 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 
     companion object {
         fun addExperiments(mainSubparser: Subparsers) {
-            val mainParser = mainSubparser.addParser("hi")
-                .help("Hello")
+            val mainParser = mainSubparser.addParser("sheaf_embedding")
+                .help("Collection of features involving the embedding of queries/paragraphs in structures" +
+                        " representing topic models.")
 //            dispatcher.generateArguments("", mainParser)
 
 //            val exec = Main.buildExec { namespace: Namespace -> MasterExperiment(namespace).run() }
@@ -164,7 +316,9 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                 }
             }
 
-            parser.help("Does stuff")
+            parser
+                .help("Collection of features involving the embedding of queries/paragraphs in structures" +
+                        " representing topic models.")
             parser.setDefault("func", exec)
             dispatcher.generateArguments(methodType, parser)
         }
@@ -174,8 +328,38 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                 buildResourceDispatcher {
 
                     methods<MasterExperiment> {
-                        method("train", "doClust") { doClust() }
-                        method("query", "wee2") { wee() }
+                        method("train", "AscentMethods") { trainAscentMethods() }
+                        method("train", "Clusters") { trainClusters() }
+                        method("train", "SubClusters") { trainSubClusters() }
+                        method("train", "QueryEmbeddingMethods") { trainQueryEmbeddingMethods() }
+                        method("train", "ReductionMethods") { trainReductionMethods() }
+                        method("train", "Metrics") { trainMetrics() }
+
+                        method("query", "AscentMethods") {
+                            val weights = listOf(1.0, 1.0, 1.0, 1.0, 1.0)
+                            trainAscentMethods(weights)
+                        }
+                        method("query", "Clusters") {
+                            val weights = listOf(1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
+                            trainClusters(level = 0, weights = weights)
+                        }
+                        method("query", "SubClusters") {
+                            val weights = listOf(1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
+                            trainSubClusters(weights)
+                        }
+                        method("query", "QueryEmbeddingMethods") {
+                            val weights = listOf(1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
+                            trainQueryEmbeddingMethods(weights)
+                        }
+                        method("query", "ReductionMethods") {
+                            val weights = listOf(1.0, 1.0, 1.0, 1.0)
+                            trainReductionMethods(weights)
+                        }
+                        method("query", "Metrics") {
+                            val weights = listOf(1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
+                            trainMetrics(weights)
+                        }
+
                     }
 
                     resource("indexPath") {

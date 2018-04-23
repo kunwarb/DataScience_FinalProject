@@ -7,6 +7,7 @@ import java.lang.Math.*
 import kotlin.math.abs
 import kotlin.math.log2
 import kotlin.math.max
+import kotlin.math.pow
 
 
 class KotlinStochasticIntegrator(val perturbations: Pair<List<String>, List<List<Double>>>,

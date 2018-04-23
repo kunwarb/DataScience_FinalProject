@@ -12,33 +12,16 @@ data class MethodCaller<T> (val choice: String, val method: T.() -> Unit)
 
 data class MethodContainer<T>(val arg: String, val help: String,
                               val methodMap: Map<String, List<MethodCaller<T>>>) {
-//                              val queryMethods: List<MethodCaller<T>>,
-//                              val trainMethods: List<MethodCaller<T>>) {
 
-//    fun getMethod(methodType: String, methodName: String): (T.() -> Unit)? {
-//        val methods = if (methodType == "query") queryMethods else trainMethods
-//        return methods
-//            .find { methodCaller -> methodCaller.choice == methodName}
-//            ?.method
-//    }
 
-    fun getMethod(methodType: String, methodName: String): (T.() -> Unit)? {
-        return methodMap[methodType]!!
-            .find { methodCaller -> methodCaller.choice == methodName}
-            ?.method
+    fun getMethod(methodType: String, methodName: String): (T.() -> Unit)? =
+            methodMap[methodType]!!
+                .find { methodCaller -> methodCaller.choice == methodName}
+                ?.method
 
-//        val methods = if (methodType == "query") queryMethods else trainMethods
-//        return methods
-//            .find { methodCaller -> methodCaller.choice == methodName}
-//            ?.method
-    }
 
-    fun getMethodChoices(methodType: String): List<String> {
-        return methodMap[methodType]!!.map { method -> method.choice }
-
-//        val methods = if (methodType == "query") queryMethods else trainMethods
-//        return methods.map { method -> method.choice }
-    }
+    fun getMethodChoices(methodType: String): List<String> =
+        methodMap[methodType]!!.map { method -> method.choice }
 }
 
 
@@ -81,24 +64,12 @@ class KotlinResourceDispatcher(val resourceContainers: List<ResourceContainer>,
 class MethodContainerBuilder<T>(val arg: String) {
     var help: String = ""
     private val methods = HashMap<String, ArrayList<MethodCaller<T>>>()
-//    private val trainMethods = ArrayList<MethodCaller<T>>()
-//    private val queryMethods = ArrayList<MethodCaller<T>>()
-
-//    fun trainMethod(choice: String, method: T.() -> Unit) {
-//        trainMethods += MethodCaller(choice, method)
-//    }
-//
-//    fun queryMethod(choice: String, method: T.() -> Unit) {
-//        queryMethods += MethodCaller(choice, method)
-//    }
 
     fun method(category: String, choice: String, method: T.() -> Unit) {
         methods.computeIfAbsent(category, { arrayListOf() }).add(MethodCaller(choice, method))
-//        queryMethods += MethodCaller(choice, method)
     }
 
     fun build(): MethodContainer<T> {
-//        return MethodContainer(arg, help, queryMethods = queryMethods, trainMethods = trainMethods)
         return MethodContainer(arg, help, methodMap = methods)
     }
 

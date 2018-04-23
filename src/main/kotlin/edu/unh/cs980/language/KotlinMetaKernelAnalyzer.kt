@@ -3,39 +3,47 @@ package edu.unh.cs980.language
 import edu.unh.cs980.*
 import edu.unh.cs980.misc.AnalyzerFunctions
 import edu.unh.cs980.misc.GradientDescenter
-import edu.unh.cs980.misc.PartitionDescenter
 import edu.unh.cs980.paragraph.KotlinStochasticIntegrator
 import info.debatty.java.stringsimilarity.*
 import org.apache.commons.math3.distribution.NormalDistribution
-import org.apache.lucene.analysis.en.EnglishAnalyzer
 import java.io.*
-import java.lang.Integer.max
 import java.lang.Math.max
-import java.lang.Math.pow
-import kotlin.math.exp
-import kotlin.math.ln
-import kotlin.math.log10
 import kotlin.math.log2
-import kotlin.system.measureNanoTime
-import kotlin.system.measureTimeMillis
 
+// Method to use for integrating text from query/paragraphs against sheaves
 enum class ReductionMethod {
     REDUCTION_MAX_MAX, REDUCTION_AVERAGE, REDUCTION_SMOOTHED_THRESHOLD
 }
 
+
+enum class AscentType {
+    ASCENT_SUM, ASCENT_MAX, ASCENT_THRESHOLD_SUM, ASCENT_THRESHOLD_MAX
+}
+
+// Desribes method to partition sheaf and a defines a measure over partitions
 data class DescentData(val simFun: (String) -> Map<String, Double>,
                        val partitionFun: ((String) -> List<String>)? = null)
 
-//class Sheaf(val name: String, val text: String, val cover: Sheaf? = null, useLetterGram: Boolean = false) {
+
+/**
+ * Class: Sheaf
+ * Desc: Describes a space covering another space. In the context of these experiment, a sheaf is a topic, paragraph,
+ *       sentence, or word. We "descend" by describing how a sheaf can be approximated by its partitions. For example,
+ *       the best linear combination of paragraphs that describes the unigram frequencies in a topic, and then the
+ *       best linear combination of sentences in these paragraphs that describe k-mer frequencies, etc.
+ *
+ */
 class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.0, val cover: Sheaf? = null) : Serializable {
     val measure = HashMap<String, Pair<Sheaf, Double>>()
+
+
 
     fun descend(descentData: List<DescentData>)  {
         val (simFun, partitionFun) = descentData.firstOrNull() ?: return
         val leftovers = descentData.subList(1, descentData.size)
 
         if (partitions.isEmpty()) {
-            println("There's a hole in $name")
+            println("There's a hole in $name, skipping...")
             println(cover!!.partitions)
             return
         }
@@ -86,47 +94,38 @@ class Sheaf(val name: String, val partitions: List<String>, val kld: Double = 1.
         val identityFreq = integrals.find { it.first == name }!!.second
         val (featureNames, featureFreqs) = integrals.filter { it.first != name }.unzip()
 
-//        val stepper = PartitionDescenter(identityFreq, featureFreqs)
         val stepper = GradientDescenter(identityFreq, featureFreqs)
         val (weights, kld) = stepper.startDescent(800)
         return featureNames.zip(weights)
     }
 
-    fun transferMeasure(simFun: (String) -> Double): Pair<String, Double> {
-        val similarityMeasure =
-                partitions.map(simFun).average().defaultWhenNotFinite(0.0)
-        return cover!!.ascend(name, similarityMeasure)
-    }
-
-    fun ascend(datumName: String, simMeasure: Double): Pair<String, Double> {
-        val adjustedMeasure = measure[datumName]!!.second * simMeasure
-        return cover?.ascend(name, adjustedMeasure) ?: name to adjustedMeasure
-    }
 
     fun measurePartitions(simFun: (String) -> Double): Double  =
             partitions.map { partition -> simFun(partition) }.average()!!.defaultWhenNotFinite(0.00) *
                     (1 / log2(cover!!.partitions.size.toDouble())).defaultWhenNotFinite(0.0)
 
-    fun transferDown(depthToGo: Int, simFun: (String) -> Double): Double {
+    fun transferDown(depthToGo: Int, simFun: (String) -> Double,
+                     ascentType: AscentType = AscentType.ASCENT_SUM): Double {
         if (depthToGo == 0) return measurePartitions(simFun)
 
 
         val results = measure.values.map { (sheaf, freq) ->
-//                sheaf.transferDown(depthToGo - 1, simFun) * freq * (sheaf.partitions.size.toDouble() ).defaultWhenNotFinite(1.0) }
-            if (freq < 0.2) 0.0
+            if (freq < 0.1) 0.0
             else sheaf.transferDown(depthToGo - 1, simFun) * freq.defaultWhenNotFinite(1.0)
         }
 
-//        val highest = results.max() ?: 0.0
         val total = results.sum()
-//        val total = (results.max() ?: 0.0) * (1.0 + results.count { it > 1 / max(1.0, partitions.size.toDouble()) })
+        val maximum = results.max() ?: 0.0
+        return when (ascentType) {
+            AscentType.ASCENT_SUM -> total
+            AscentType.ASCENT_MAX -> maximum
+            AscentType.ASCENT_THRESHOLD_MAX -> if (maximum < 1/(max(1.0, partitions.size.toDouble())))
+                                               return 0.00 else return maximum
+            AscentType.ASCENT_THRESHOLD_SUM -> if (total < 1/(max(1.0, partitions.size.toDouble())))
+                                               return 0.00 else return total
+        }
 
-        if (total < 1/(max(1.0, partitions.size.toDouble()))) return 0.00 else return total
-//        return total
-//        if (highest < minFreq) return 0.00 else return pow(total, 1.0)
-//        if (total < 1/(log2(partitions.size.toDouble())).defaultWhenNotFinite(0.0)) return 0.00 else return pow(total, 1.0)
-
-//        return total
+//        if (total < 1/(max(1.0, partitions.size.toDouble()))) return 0.00 else return total
     }
 
 
@@ -193,12 +192,13 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
     fun bindFreq(windowSize: Int, partial: Boolean = false) = { text: String -> letterFreq(windowSize, text, partial)}
 
 
-    fun evaluateMeasure(startingLayer: Int, measureLayer: Int, measure: (String) -> Double, filterList: List<String>) =
+    fun evaluateMeasure(startingLayer: Int, measureLayer: Int, measure: (String) -> Double, filterList: List<String>,
+                        ascentType: AscentType) =
             extractSheaves(startingLayer)
                 .filter { (topName, _) -> filterList.isEmpty() || topName in filterList }
                 .flatMap { (topName, sheafLayer) ->
                     sheafLayer.map { sheaf ->
-                        sheaf.name to sheaf.transferDown(measureLayer - startingLayer, measure) } }
+                        sheaf.name to sheaf.transferDown(measureLayer - startingLayer, measure, ascentType) } }
 
 
 
@@ -211,17 +211,9 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
 
         val sheaf = Sheaf(topic, paragraphs)
         val descentData = listOf(
-//                DescentData(this::unigramFreq, this::splitSentence),
                 DescentData(bindFreq(2), this::splitSentence),
                 DescentData(bindFreq(2), this::splitWord),
                 DescentData(bindFreq(2), ::listOf)
-//                DescentData(this::unigramFreq, ::listOf)
-//                DescentData(bindFreq(4), this::splitSentence),
-//                DescentData(bindFreq(4), this::splitWord),
-//                DescentData(bindFreq(4), ::listOf)
-//                        DescentData(bindFreq(3), this::splitSentence),
-//        DescentData(bindFreq(2), this::splitWord),
-//        DescentData(bindFreq(1), ::listOf)
         )
         sheaf.descend(descentData)
         File("descent_data/").let { file -> if (!file.exists()) file.mkdir() }
@@ -287,10 +279,11 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
     fun inferMetric(text: String, startingLayer: Int, measureLayer: Int,
                     doNormalize: Boolean = true,
                     reductionMethod: ReductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
+                    ascentType: AscentType = AscentType.ASCENT_SUM,
                     filterList: List<String> = emptyList()): TopicMixtureResult {
 
         val mySentence = bindSims(text, reductionMethod = reductionMethod)
-        val res = evaluateMeasure(startingLayer, measureLayer, mySentence, filterList)
+        val res = evaluateMeasure(startingLayer, measureLayer, mySentence, filterList, ascentType = ascentType)
             .toMap()
             .run { if (doNormalize) normalize() else this }
 
@@ -305,22 +298,11 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
     fun productMaxMax(w1: List<String>, w2: List<String>): Double =
             w1.map { word1 -> w2.map { word2 -> averageSim(word1, word2) }.max()!! }.max()!!
 
-//    fun productSmoothThreshold(w1: List<String>, w2: List<String>): Double {
-//        val results = w1.flatMap { word1 -> w2.map { word2 -> averageSim(word1, word2) } }
-//        val misses = results.count { it == 0.0 }
-//        val hits = results.sum()
-////        val highest = results.max()!!
-////        val sizeSmooth = 1.0 + 200 / (1.0 + misses.toDouble())
-//        val sizeSmooth = 1.0 + 200 / (1.0 + misses.toDouble())
-//        return hits * sizeSmooth
-//    }
 
     fun productSmoothThreshold(w1: List<String>, w2: String): Double {
         val results = w1.map { word1 -> averageSim(word1, w2) }
         val misses = results.count { it == 0.0 }
         val hits = results.sum()
-//        val highest = results.max()!!
-//        val sizeSmooth = 1.0 + 200 / (1.0 + misses.toDouble())
         val sizeSmooth = 1.0 + 200 / (1.0 + misses.toDouble())
 
         return hits * sizeSmooth
@@ -353,7 +335,7 @@ fun filterWords(text: String) =
 
 
 fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
-    val sheaves = metaAnalyzer.loadSheaves("descent_data2/")
+    val sheaves = metaAnalyzer.loadSheaves("descent_data/")
 //    val sheaves = metaAnalyzer.loadSheaves("descent_data/")
     val text = """
         Instead of table service, there are food-serving counters/stalls, either in a line or allowing arbitrary walking paths. Customers take the food that they desire as they walk along, placing it on a tray. In addition, there are often stations where customers order food and wait while it is prepared, particularly for items such as hamburgers or tacos which must be served hot and can be immediately prepared. Alternatively, the patron is given a number and the item is brought to their table. For some food items and drinks, such as sodas, water, or the like, customers collect an empty container, pay at the check-out, and fill the container after the check-out. Free unlimited second servings are often allowed under this system. For legal purposes (and the consumption patterns of customers), this system is rarely, if at all, used for alcoholic beverages in the US.
@@ -363,22 +345,22 @@ fun testStuff2(metaAnalyzer: KotlinMetaKernelAnalyzer) {
         food
     """
     val red = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD
-//    val red = ReductionMethod.REDUCTION_MAX_MAX
+    val ascentType = AscentType.ASCENT_THRESHOLD_SUM
     val (time, result) = withTime {
-        metaAnalyzer.inferMetric(text, 0, 3, doNormalize = false, reductionMethod = red) }
-    val result2 = metaAnalyzer.inferMetric(bb, 0, 3, doNormalize = false, reductionMethod = red)
+        metaAnalyzer.inferMetric(text, 0, 3, doNormalize = true, reductionMethod = red,
+                ascentType = ascentType) }
+    val result2 = metaAnalyzer.inferMetric(bb, 0, 3, doNormalize = true, reductionMethod = red,
+            ascentType = ascentType)
+
     result.reportResults()
     result2.reportResults()
-//    println(result.results.values.sum())
-//    println(result2.results.values.sum())
-//    result2.reportResults()
     println(result.manhattenDistance(result2))
     println("TIME: $time")
 }
 
 
 fun showSheaves(metaAnalyzer: KotlinMetaKernelAnalyzer) {
-    val sheaves = metaAnalyzer.loadSheaves("descent_data2/")
+    val sheaves = metaAnalyzer.loadSheaves("descent_data/")
     val res = sheaves
         .filter { sheaf -> sheaf.name == "Cuisine" }
         .map { sheaf ->
@@ -397,11 +379,6 @@ fun showSheaves(metaAnalyzer: KotlinMetaKernelAnalyzer) {
 
 fun main(args: Array<String>) {
     val metaAnalyzer = KotlinMetaKernelAnalyzer("paragraphs/")
-    metaAnalyzer.trainParagraphs()
-//    metaAnalyzer.trainParagraphs(listOf("Cooking"))
-//    metaAnalyzer.combinedTraining(listOf("Medicine", "Cooking", "Warfare"))
-//    testStuff2(metaAnalyzer)
-//    metaAnalyzer.combinedTraining(listOf("Medicine", "Cooking", "Games", "Society"))
-//    showSheaves(metaAnalyzer)
-//    println(metaAnalyzer.extractSheaves(1))
+//    metaAnalyzer.trainParagraphs()
+    testStuff2(metaAnalyzer)
 }
