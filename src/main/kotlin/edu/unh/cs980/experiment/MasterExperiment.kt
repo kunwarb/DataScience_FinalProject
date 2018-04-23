@@ -82,17 +82,18 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
         val boundSheafDistFunction = bindSheafDist(
                 startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
                 normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
-                queryEmbeddingMethod = SheafQueryEmbeddingMethod.MEAN, filterList = myFilter)
+                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION, filterList = myFilter)
 
         val boundSheafDistFunction2 = bindSheafDist(
                 startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
                 normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
-                queryEmbeddingMethod = SheafQueryEmbeddingMethod.MEAN, filterList = myFilter)
+                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION, filterList = myFilter)
+
+        val boundSheafDistFunction3 = bindSheafDist(
+                startLayer = 2, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
+                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
+                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION, filterList = myFilter)
 //
-//        val boundSheafDistFunction2 = bindSheafDist(
-//                startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_AVERAGE,
-//                normalize = false, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN,
-//                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION)
 //
 //        val boundSheafDistFunction3 = bindSheafDist(
 //                startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_MAX_MAX,
@@ -103,7 +104,7 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 //        formatter.addFeature(bindEmbed, normType = NormType.ZSCORE)
         formatter.addFeature(boundSheafDistFunction, normType = NormType.ZSCORE)
         formatter.addFeature(boundSheafDistFunction2, normType = NormType.ZSCORE)
-//        formatter.addFeature(boundSheafDistFunction3, normType = NormType.ZSCORE)
+        formatter.addFeature(boundSheafDistFunction3, normType = NormType.ZSCORE)
     }
 
 
