@@ -8,6 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import edu.unh.cs980.experiment.LaunchSparqlDownloader;
+import edu.unh.cs980.experiment.LaunchTopicDecomposer;
+import edu.unh.cs980.experiment.MasterExperiment;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -56,7 +59,7 @@ public class Main {
 
 	// Used as a wrapper around a static method: will call method and pass
 	// argument parser's parameters to it
-	private static class Exec {
+	public static class Exec {
 		private Consumer<Namespace> func;
 
 		Exec(Consumer<Namespace> funcArg) {
@@ -67,6 +70,11 @@ public class Main {
 			func.accept(params);
 		}
 	}
+
+	public static Exec buildExec(Consumer<Namespace> consumer) {
+		return new Exec(consumer);
+	}
+
 
 	/****
 	 * @Function:getAllPageFromPath
@@ -286,10 +294,10 @@ public class Main {
 				.setDefault("func", new Exec(Main::runHyperlinkIndexer))
 				.help("Builds an entity likelihood model given entity mentions in page corpus.");
 		hyperlinkIndexerParser.addArgument("corpus").help("Location of all alllButBenchmark corpus.");
-		
-		
+
+
 		// -----------------------------------Added on 22nd April By Bindu -----------------------------------------
-		
+
 		// Argument parser for Contextual Similarity with Query Expansion
             Subparser ContextSimilarityQueryExpanParser = subparsers.addParser("context_queryeexpansion")
 						.setDefault("func", new Exec(Main::runConQuerExpansion)).help("Use Contextual Similarity with Query expansion");
@@ -303,9 +311,9 @@ public class Main {
             ContextSimilarityQueryExpanParser.addArgument("query_file").help("Location of the query file (.cbor)");
             ContextSimilarityQueryExpanParser.addArgument("--out").setDefault("ContextQuerySimilarity.run")
 						.help("The name of the trec_eval compatible run file to write. (default: ContextQuerySimilarity.run)");
-		
-		    
-            
+
+
+
              // Argument parser for top_k_treecontextualsimilarity (Added By Bindu)
 
     		Subparser TopktreeConSimParser = subparsers.addParser("top_k_treecontextualsimilarity")
@@ -313,11 +321,11 @@ public class Main {
 
     		TopktreeConSimParser.addArgument("index").help("Location of Lucene index directory.");
     		TopktreeConSimParser.addArgument("query_file").help("Location of the query file (.cbor)");
-    		TopktreeConSimParser.addArgument("--out") 
+    		TopktreeConSimParser.addArgument("--out")
     				.setDefault("topk_treeConSimParser.run")
     				.help("The name of the trec_eval compatible run file to write. (default: topk_treeConSimParser.run)");
-   
-    		
+
+
     		// Argument parser for ParaRank With DependencyParser
 
     		Subparser ParaRankWithDepParser = subparsers.addParser("pararank_with_depparser")
@@ -325,10 +333,16 @@ public class Main {
 
     		ParaRankWithDepParser.addArgument("index").help("Location of Lucene index directory.");
     		ParaRankWithDepParser.addArgument("query_file").help("Location of the query file (.cbor)");
-    		ParaRankWithDepParser.addArgument("--out") 
+    		ParaRankWithDepParser.addArgument("--out")
     				.setDefault("pararankdepparser.run")
     				.help("The name of the trec_eval compatible run file to write. (default: pararankdepparser.run)");
-               //******************  Bindu Parser completed ******************************************
+
+
+        MasterExperiment.Companion.addExperiments(subparsers);
+        LaunchSparqlDownloader.Companion.addExperiments(subparsers);
+        LaunchTopicDecomposer.Companion.addExperiments(subparsers);
+
+        //******************  Bindu Parser completed ******************************************
 			return parser;
 	}
 
@@ -675,10 +689,10 @@ public class Main {
 		KotlinRankLibTrainer kotTrainer = new KotlinRankLibTrainer(indexLocation, queryLocation, "", hyperLoc,
 				abstractLoc, gramLoc);
 		kotTrainer.runRanklibQuery(method, out);
-	}  
-	
+	}
+
 	// ******************************* Adding calling method which is mentioned in Parser call ( By Bindu ) ***********************
-	
+
 	// Run  Contextual Query Expansion
 
 		private static void runConQuerExpansion(Namespace params) {
@@ -712,12 +726,12 @@ public class Main {
 				System.out.println(e.getMessage());
 			}
 		}
-  
+
 		// Added on 22nd April By Bindu
 		  public static void runtopktreeContSim(Namespace params) {
 			try {
 				String indexLocation = params.getString("index");
-				String queryLocation = params.getString("query_file"); 
+				String queryLocation = params.getString("query_file");
 				String rankingOutputLocation = params.getString("out");
 
 				ArrayList<Data.Page> pagelist = getAllPageFromPath(indexLocation, queryLocation, rankingOutputLocation);
@@ -730,12 +744,12 @@ public class Main {
 			}
 
 		}
-		  
+
 		    // for Paragraph Ranking with Dependency parser with full tree with BM25 Similarity
 		  public static void runParaGraphRankWithDepParser(Namespace params) {
 			try {
 				String indexLocation = params.getString("index");
-				String queryLocation = params.getString("query_file"); 
+				String queryLocation = params.getString("query_file");
 				String rankingOutputLocation = params.getString("out");
 
 				ArrayList<Data.Page> pagelist = getAllPageFromPath(indexLocation, queryLocation, rankingOutputLocation);
@@ -748,7 +762,7 @@ public class Main {
 			}
 
 		}
-	
+
 	  //******************************** Completed on 22nd April  ( By Bindu )****************************************
 
 	// This is an example of a method that is compatible with
