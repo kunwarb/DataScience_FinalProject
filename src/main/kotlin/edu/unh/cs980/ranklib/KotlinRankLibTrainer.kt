@@ -235,16 +235,16 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
      *       and verbs extracted from the query and document text and do SDM on these models.
      *       Hopefully in the next prototype we can do something a little advantage with this structure.
      */
-    private fun queryNatSDM() {
-        System.err.close() // Stanford NLP needs to shut the hell up
-        val weights = listOf(0.62146543079, 0.37853)
-        formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
-        val gramSearcher = getIndexSearcher(gramPath)
-        val hGram = KotlinGramAnalyzer(gramSearcher)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            featNatSDM(query, tops, indexSearcher, hGram, 4.0)
-        }, normType = NormType.ZSCORE, weight = weights[1])
-    }
+//    private fun queryNatSDM() {
+//        System.err.close() // Stanford NLP needs to shut the hell up
+//        val weights = listOf(0.62146543079, 0.37853)
+//        formatter.addBM25(normType = NormType.ZSCORE, weight = weights[0])
+//        val gramSearcher = getIndexSearcher(gramPath)
+//        val hGram = KotlinGramAnalyzer(gramSearcher)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featNatSDM(query, tops, indexSearcher, hGram, 4.0)
+//        }, normType = NormType.ZSCORE, weight = weights[1])
+//    }
 
     /**
      * Func: queryStringSimilaritySection
@@ -283,7 +283,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
             HYPERLINK                           -> queryHyperlinkLikelihood()
             ABSTRACT_SDM                        -> queryAbstractSDM()
             SDM                                 -> querySDM()
-            NAT_SDM                             -> queryNatSDM()
+//            NAT_SDM                             -> queryNatSDM()
             QueryEnum.SDM_SECTION               -> querySDMSection()
             SDM_EXPANSION                       -> querySDMExpansion()
             QueryEnum.TFIDF_SECTION             -> queryTFIDFSection()
@@ -402,15 +402,15 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
      * Desc: Combining Nat SDM and BM25 to determine weights for method.
      * @see queryNatSDM
      */
-    private fun trainNatSDMQuery() {
-        System.err.close() // Stanford NLP needs to shut the hell up
-        formatter.addBM25(normType = NormType.ZSCORE)
-        val gramSearcher = getIndexSearcher(gramPath)
-        val hGram = KotlinGramAnalyzer(gramSearcher)
-        formatter.addFeature({ query, tops, indexSearcher ->
-            featNatSDM(query, tops, indexSearcher, hGram, 4.0)
-        }, normType = NormType.ZSCORE)
-    }
+//    private fun trainNatSDMQuery() {
+//        System.err.close() // Stanford NLP needs to shut the hell up
+//        formatter.addBM25(normType = NormType.ZSCORE)
+//        val gramSearcher = getIndexSearcher(gramPath)
+//        val hGram = KotlinGramAnalyzer(gramSearcher)
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featNatSDM(query, tops, indexSearcher, hGram, 4.0)
+//        }, normType = NormType.ZSCORE)
+//    }
 
 
     /**
@@ -722,10 +722,10 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
         }, normType = NormType.ZSCORE, weight = weights[0])
 
 
-        // Adding Nat SDM feature (nat_sdm) derived from Kevin's methods
-        formatter.addFeature({ query, tops, indexSearcher ->
-            featNatSDM(query, tops, indexSearcher, hGram, 4.0)
-        }, normType = NormType.ZSCORE, weight = weights[1])
+//        // Adding Nat SDM feature (nat_sdm) derived from Kevin's methods
+//        formatter.addFeature({ query, tops, indexSearcher ->
+//            featNatSDM(query, tops, indexSearcher, hGram, 4.0)
+//        }, normType = NormType.ZSCORE, weight = weights[1])
 
         // Adding TIFD feature derived from Bindu's feature
         val tifdSearcher = getIndexSearcher(indexPath)
@@ -760,7 +760,7 @@ class KotlinRankLibTrainer(val indexPath: String, val queryPath: String, val qre
             ABSTRACT_SDM_ALPHA -> trainAbstractSDMAlpha()                               // learn alpha param
             ABSTRACT_SDM_QUERY -> trainAbstractSDMQuery()                               // abstract_sdm + bm25
 
-            NAT_SDM_QUERY -> trainNatSDMQuery()                                         // nat_sdm + bm25
+//            NAT_SDM_QUERY -> trainNatSDMQuery()                                         // nat_sdm + bm25
 
             SDM_ALPHA -> trainDirichletAlpha()                                          // learn alpha param
             SDM_COMPONENTS -> trainSDMComponents()                                      // learn -gram score weights

@@ -8,6 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import edu.unh.cs980.experiment.LaunchSparqlDownloader;
+import edu.unh.cs980.experiment.LaunchTopicDecomposer;
+import edu.unh.cs980.experiment.MasterExperiment;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -24,6 +27,10 @@ import edu.unh.cs980.WordEmbedding.Lucene_Query_Creator;
 import edu.unh.cs980.WordEmbedding.ParagraphSimilarity;
 import edu.unh.cs980.WordEmbedding.ParagraphWithWordnet;
 import edu.unh.cs980.WordEmbedding.TfIdfSimilarity;
+
+import edu.unh.cs980.WordEmbedding.ParaRankWithDepParser;
+import edu.unh.cs980.WordEmbedding.TopktreeContextualSimilarity;
+import edu.unh.cs980.WordEmbedding.Contextual_QueryExpansion;
 import edu.unh.cs980.context.HyperlinkIndexer;
 import edu.unh.cs980.language.KotlinAbstractAnalyzer;
 import edu.unh.cs980.language.KotlinAbstractExtractor;
@@ -52,7 +59,7 @@ public class Main {
 
 	// Used as a wrapper around a static method: will call method and pass
 	// argument parser's parameters to it
-	private static class Exec {
+	public static class Exec {
 		private Consumer<Namespace> func;
 
 		Exec(Consumer<Namespace> funcArg) {
@@ -63,6 +70,11 @@ public class Main {
 			func.accept(params);
 		}
 	}
+
+	public static Exec buildExec(Consumer<Namespace> consumer) {
+		return new Exec(consumer);
+	}
+
 
 	/****
 	 * @Function:getAllPageFromPath
@@ -210,80 +222,75 @@ public class Main {
 				// query_results.txt
 				.help("The name of the trec_eval compatible run file to write. (default: doc_rm_qe_results.run)");
 
-		// Ranklib Query
-		Subparser ranklibQueryParser = subparsers.addParser("ranklib_query")
-				.setDefault("func", new Exec(Main::runRanklibQuery))
-				.help("Runs queries using weighted combinations of features trained by RankLib.");
 
-		ranklibQueryParser.addArgument("method").help("The type of method to use when querying (see readme).")
-				.choices(QueryEnum.Companion.getCommands());
 
-		ranklibQueryParser.addArgument("index").help("Location of Lucene index directory.");
-		ranklibQueryParser.addArgument("query").help("Location of query file (.cbor)");
-		ranklibQueryParser.addArgument("--out").setDefault("query_results.run")
-				.help("Specifies the output name of the run file.");
-		ranklibQueryParser.addArgument("--hyperlink_database").setDefault("/trec_data/team_1/entity_mentions.db")
-				.help("Location to MapDB indexed by Hyperlink Indexer (default: /trec_data/team_1/entity_mentions.db)");
-		ranklibQueryParser.addArgument("--abstract_index").setDefault("/trec_data/team_1/abstract")
-				.help("Location of Lucene index for entity abstracts (default: /trec_data/team_1/abstract/)");
-		ranklibQueryParser.addArgument("--gram_index").setDefault("/trec_data/team_1/gram")
-				.help("Location of Lucene index for -grams used in SDM (default: /trec_data/team_1/gram/");
+//		// Gram
+//		Subparser gramParser = subparsers.addParser("gram_indexer").setDefault("func", new Exec(Main::runGram))
+//				.help("Indexes -gram models for paragraphCorpus. See Readme for further details.");
+//
+//		gramParser.addArgument("corpus").help("Location of paragraph corpus to index.");
+//
+//		gramParser.addArgument("--database").setDefault("gram")
+//				.help("Name of the indexed Lucene database to creature (default is gram)");
+//
+//		// Abstract Indexer
+//		Subparser abstractParser = subparsers.addParser("abstract_indexer")
+//				.setDefault("func", new Exec(Main::runAbstract))
+//				.help("Creates a Lucene index of entities, where abstract are derived from first three paragraphs."
+//						+ "See Readme for further details.");
+//		abstractParser.addArgument("corpus").help("Location of paragraph corpus to index.");
 
-		// Ranklib Trainer
-		Subparser ranklibTrainerParser = subparsers.addParser("ranklib_trainer")
-				.setDefault("func", new Exec(Main::runRanklibTrainer))
-				.help("Scores using methods and writes features to a RankLib compatible file for use with training.");
 
-		ranklibTrainerParser.addArgument("method").help("The type of method to use when training (see readme).")
-				.choices(TrainEnum.Companion.getCommands());
-		ranklibTrainerParser.addArgument("index").help("Location of the Lucene index directory");
-		ranklibTrainerParser.addArgument("query").help("Location of query file (.cbor)");
-		ranklibTrainerParser.addArgument("qrel").help("Locations of matching qrel file.");
-		ranklibTrainerParser.addArgument("--out").setDefault("ranklib_features.txt")
-				.help("Output name for the RankLib compatible feature file.");
-		ranklibTrainerParser.addArgument("--hyperlink_database").setDefault("/trec_data/team_1/entity_mentions.db")
-				.help("Location to MapDB indexed by Hyperlink Indexer (default: /trec_data/team1/entit_mentions.db)");
-		ranklibTrainerParser.addArgument("--abstract_index").setDefault("/trec_data/team_1/abstract")
-				.help("Location of Lucene index for entity abstracts (default: /trec_data/team_1/abstract/)");
-		ranklibTrainerParser.addArgument("--gram_index").setDefault("/trec_data/team_1/gram")
-				.help("Location of Lucene index for -grams used in SDM (default: /trec_data/team_1/gram/");
 
-		// Gram
-		Subparser gramParser = subparsers.addParser("gram_indexer").setDefault("func", new Exec(Main::runGram))
-				.help("Indexes -gram models for paragraphCorpus. See Readme for further details.");
 
-		gramParser.addArgument("corpus").help("Location of paragraph corpus to index.");
+		// -----------------------------------Added on 22nd April By Bindu -----------------------------------------
 
-		gramParser.addArgument("--database").setDefault("gram")
-				.help("Name of the indexed Lucene database to creature (default is gram)");
+		// Argument parser for Contextual Similarity with Query Expansion
+            Subparser ContextSimilarityQueryExpanParser = subparsers.addParser("context_queryeexpansion")
+						.setDefault("func", new Exec(Main::runConQuerExpansion)).help("Use Contextual Similarity with Query expansion");
+            ContextSimilarityQueryExpanParser.addArgument("query_choice").choices("page")
+						.help("\tpage: Page of paragraph corpus\n");
+            ContextSimilarityQueryExpanParser.addArgument("multi_thread").choices("true", "false").setDefault("false")
+						.help("\ttrue: Run Multi Thread function. (Not Stable)\n" + "\tfalse: Use normal function\n");
 
-		// Abstract Indexer
-		Subparser abstractParser = subparsers.addParser("abstract_indexer")
-				.setDefault("func", new Exec(Main::runAbstract))
-				.help("Creates a Lucene index of entities, where abstract are derived from first three paragraphs."
-						+ "See Readme for further details.");
-		abstractParser.addArgument("corpus").help("Location of paragraph corpus to index.");
+            ContextSimilarityQueryExpanParser.addArgument("index").help("Location of Lucene index directory.");
+            ContextSimilarityQueryExpanParser.addArgument("abstract").help("Location of Lucene entity abstract index directory.");
+            ContextSimilarityQueryExpanParser.addArgument("query_file").help("Location of the query file (.cbor)");
+            ContextSimilarityQueryExpanParser.addArgument("--out").setDefault("ContextQuerySimilarity.run")
+						.help("The name of the trec_eval compatible run file to write. (default: ContextQuerySimilarity.run)");
 
-		// FeatureSelection
-		Subparser featureParser = subparsers.addParser("feature_selection")
-				.setDefault("func", new Exec(Main::runFeatureSelection))
-				.help("Performs best subset selection given a RankLib feature file. See ReadMe on Github.");
 
-		featureParser.addArgument("ranklib_jar").help("Location of RankLib jar file.");
 
-		featureParser.addArgument("method").choices("alpha_selection", "subset_selection")
-				.help("Method for feature selection / training");
+             // Argument parser for top_k_treecontextualsimilarity (Added By Bindu)
 
-		featureParser.addArgument("--features").setDefault("ranklib_features.txt")
-				.help("Location of ranklib features file (default: ranklib_features.txt");
+    		Subparser TopktreeConSimParser = subparsers.addParser("top_k_treecontextualsimilarity")
+    				.setDefault("func", new Exec(Main::runtopktreeContSim)).help("Run top k tree contextualSimilarity Passer");
 
-		// Hyperlink Indexer
-		Subparser hyperlinkIndexerParser = subparsers.addParser("hyperlink_indexer")
-				.setDefault("func", new Exec(Main::runHyperlinkIndexer))
-				.help("Builds an entity likelihood model given entity mentions in page corpus.");
-		hyperlinkIndexerParser.addArgument("corpus").help("Location of all alllButBenchmark corpus.");
+    		TopktreeConSimParser.addArgument("index").help("Location of Lucene index directory.");
+    		TopktreeConSimParser.addArgument("query_file").help("Location of the query file (.cbor)");
+    		TopktreeConSimParser.addArgument("--out")
+    				.setDefault("topk_treeConSimParser.run")
+    				.help("The name of the trec_eval compatible run file to write. (default: topk_treeConSimParser.run)");
 
-		return parser;
+
+    		// Argument parser for ParaRank With DependencyParser
+
+    		Subparser ParaRankWithDepParser = subparsers.addParser("pararank_with_depparser")
+    				.setDefault("func", new Exec(Main::runParaGraphRankWithDepParser)).help(" Paragraph Ranking with dependency Parser");
+
+    		ParaRankWithDepParser.addArgument("index").help("Location of Lucene index directory.");
+    		ParaRankWithDepParser.addArgument("query_file").help("Location of the query file (.cbor)");
+    		ParaRankWithDepParser.addArgument("--out")
+    				.setDefault("pararankdepparser.run")
+    				.help("The name of the trec_eval compatible run file to write. (default: pararankdepparser.run)");
+
+
+        MasterExperiment.Companion.addExperiments(subparsers);
+        LaunchSparqlDownloader.Companion.addExperiments(subparsers);
+        LaunchTopicDecomposer.Companion.addExperiments(subparsers);
+
+        //******************  Bindu Parser completed ******************************************
+			return parser;
 	}
 
 	private static void runIndexer(Namespace params) {
@@ -300,44 +307,9 @@ public class Main {
 		}
 	}
 
-	private static void runGram(Namespace params) {
-		String indexLocation = params.getString("database");
-		String corpusFile = params.getString("corpus");
-		KotlinGram kotlinGram = new KotlinGram(indexLocation);
-		kotlinGram.indexGrams(corpusFile);
-	}
 
-	private static void runGramAnalyzer(Namespace params) {
-		String indexLocation = params.getString("index");
-		KotlinGramAnalyzer gramAnalyzer = new KotlinGramAnalyzer(indexLocation);
-		gramAnalyzer.runTest();
-	}
 
-	private static void runHyperlinkIndexer(Namespace params) {
-		String corpus = params.getString("corpus");
-		HyperlinkIndexer hyperlinkIndexer = new HyperlinkIndexer("entity_mentions.db", false);
-		hyperlinkIndexer.indexHyperlinks(corpus);
-	}
 
-	private static void runAbstract(Namespace params) {
-		String corpusFile = params.getString("corpus");
-		KotlinAbstractExtractor extractor = new KotlinAbstractExtractor("abstract");
-		extractor.getAbstracts(corpusFile);
-	}
-
-	private static void runFeatureSelection(Namespace params) {
-		String ranklibLoc = params.getString("ranklib_jar");
-		String method = params.getString("method");
-		String featureLoc = params.getString("features");
-		KotlinFeatureSelector featureSelector = new KotlinFeatureSelector(ranklibLoc, featureLoc);
-		featureSelector.runMethod(method);
-	}
-
-	private static void runAbstractAnalyzer(Namespace params) {
-		String index = params.getString("index");
-		KotlinAbstractAnalyzer analyzer = new KotlinAbstractAnalyzer(index);
-		analyzer.runTest();
-	}
 
 	// Runs Bindu's Query Heading Weights Variation
 	private static void runQueryHeadingWeights(Namespace params) {
@@ -601,35 +573,80 @@ public class Main {
 		}
 	}
 
-	// Runs Jordan's Ranklib Trainer
-	private static void runRanklibTrainer(Namespace namespace) {
-		String indexLocation = namespace.getString("index");
-		String qrelLocation = namespace.getString("qrel");
-		String queryLocation = namespace.getString("query");
-		String hyperLoc = namespace.getString("hyperlink_database");
-		String gramLoc = namespace.getString("gram_index");
-		String abstractLoc = namespace.getString("abstract_index");
-		String out = namespace.getString("out");
-		String method = namespace.getString("method");
-		KotlinRankLibTrainer kotTrainer = new KotlinRankLibTrainer(indexLocation, queryLocation, qrelLocation, hyperLoc,
-				abstractLoc, gramLoc);
-		kotTrainer.train(method, out);
-	}
 
-	// Runs Jordan's Ranklib Query
-	private static void runRanklibQuery(Namespace namespace) {
-		String indexLocation = namespace.getString("index");
-		String queryLocation = namespace.getString("query");
-		String hyperLoc = namespace.getString("hyperlink_database");
-		String gramLoc = namespace.getString("gram_index");
-		String abstractLoc = namespace.getString("abstract_index");
-		String out = namespace.getString("out");
-		String method = namespace.getString("method");
+	// ******************************* Adding calling method which is mentioned in Parser call ( By Bindu ) ***********************
 
-		KotlinRankLibTrainer kotTrainer = new KotlinRankLibTrainer(indexLocation, queryLocation, "", hyperLoc,
-				abstractLoc, gramLoc);
-		kotTrainer.runRanklibQuery(method, out);
-	}
+	// Run  Contextual Query Expansion
+
+		private static void runConQuerExpansion(Namespace params) {
+			try {
+				String indexLocation = params.getString("index");
+				String abstract_indexLocation = params.getString("abstract");
+				String queryFile = params.getString("query_file");
+				String queryChoice = params.getString("query_choice");
+				String multi = params.getString("multi_thread");
+				Boolean runMultiThread = Boolean.valueOf(multi.toLowerCase());
+				String out = params.getString("out");
+				QueryBuilder queryBuilder = new QueryBuilder(queryFile);
+				if (queryChoice.equalsIgnoreCase("page")) {
+					ArrayList<String> pages_queries = queryBuilder.getAllpageQueries();
+
+					if (runMultiThread) {
+						ArrayList<String> page_run = Contextual_QueryExpansion.TrueWithMultiThread(pages_queries,
+								indexLocation, abstract_indexLocation);
+						ProjectUtils.writeToFile(out, page_run);
+					} else {
+						ArrayList<String> page_run = Contextual_QueryExpansion.getContextualResults(pages_queries, indexLocation,
+								abstract_indexLocation);
+						ProjectUtils.writeToFile(out, page_run);
+					}
+
+				}  else {
+					System.out.println("Error: QueryType was not recognized");
+				}
+
+			} catch (Throwable e) {
+				System.out.println(e.getMessage());
+			}
+		}
+
+		// Added on 22nd April By Bindu
+		  public static void runtopktreeContSim(Namespace params) {
+			try {
+				String indexLocation = params.getString("index");
+				String queryLocation = params.getString("query_file");
+				String rankingOutputLocation = params.getString("out");
+
+				ArrayList<Data.Page> pagelist = getAllPageFromPath(indexLocation, queryLocation, rankingOutputLocation);
+
+				TopktreeContextualSimilarity ts = new TopktreeContextualSimilarity(pagelist, 100, indexLocation);
+				ts.writeContextualParagraphScore(rankingOutputLocation);
+
+			} catch (Exception e) {
+				logger.error(e.getMessage());
+			}
+
+		}
+
+		    // for Paragraph Ranking with Dependency parser with full tree with BM25 Similarity
+		  public static void runParaGraphRankWithDepParser(Namespace params) {
+			try {
+				String indexLocation = params.getString("index");
+				String queryLocation = params.getString("query_file");
+				String rankingOutputLocation = params.getString("out");
+
+				ArrayList<Data.Page> pagelist = getAllPageFromPath(indexLocation, queryLocation, rankingOutputLocation);
+
+				ParaRankWithDepParser ps = new ParaRankWithDepParser(pagelist, 100, indexLocation);
+				ps.writeParaRankWithDepParser(rankingOutputLocation);
+
+			} catch (Exception e) {
+				logger.error(e.getMessage());
+			}
+
+		}
+
+	  //******************************** Completed on 22nd April  ( By Bindu )****************************************
 
 	// This is an example of a method that is compatible with
 	// KotlinRanklibFormatter's addFeature

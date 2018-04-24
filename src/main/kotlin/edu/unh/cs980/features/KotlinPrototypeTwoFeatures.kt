@@ -283,41 +283,41 @@ fun featAverageAbstractScoreByQueryRelevance(query: String, tops: TopDocs, index
     }
 }
 
-/**
- * Func: featNatSDM
- * Desc: My best attempt at an SDM model (using Dirichlet smoothing). The individual components have
- *       already been weighted (see training examples) and the final score is a weighted combination
- *       of unigram, bigram, and windowed bigram.
- */
-fun featNatSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
-            gramAnalyzer: KotlinGramAnalyzer, alpha: Double,
-            gramType: GramStatType? = null): List<Double> {
-    val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
-    val cleanQuery = tokens.toList().joinToString(" ")
-    val (nounCorpus, verbCorpus) = gramAnalyzer.getNatCorpusStatContainers(cleanQuery)
-
-    return tops.scoreDocs.map { scoreDoc ->
-        val doc = indexSearcher.doc(scoreDoc.doc)
-        val text = doc.get(CONTENT)
-
-        // Generate a language model for the given document's text
-        val (nounDoc, verbDoc) = gramAnalyzer.getNatLanguageStatContainers(text)
-
-        val (uniNoun, biNoun, windNoun) = gramAnalyzer.getQueryLikelihood(nounDoc, nounCorpus, alpha)
-        val (uniVerb, biVerb, windVerb) = gramAnalyzer.getQueryLikelihood(verbDoc, verbCorpus, alpha)
-
-
-        // If gram type is given, only return the score of a particular -gram method.
-        // Otherwise, used the weights that were learned and combine all three types into a score.
-        val weights = listOf(0.9285990421606605, 0.070308081629, -0.0010928762)
-        when (gramType) {
-            GramStatType.TYPE_UNIGRAM -> uniNoun + uniVerb
-            GramStatType.TYPE_BIGRAM -> biNoun + biVerb
-            GramStatType.TYPE_BIGRAM_WINDOW -> windNoun + windVerb
-            else -> (uniNoun + uniVerb) * weights[0] +
-                    (biNoun + biVerb) * weights[1] +
-                    (windNoun + windVerb) * weights[2]
-        }
-    }
-}
+///**
+// * Func: featNatSDM
+// * Desc: My best attempt at an SDM model (using Dirichlet smoothing). The individual components have
+// *       already been weighted (see training examples) and the final score is a weighted combination
+// *       of unigram, bigram, and windowed bigram.
+// */
+//fun featNatSDM(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
+//            gramAnalyzer: KotlinGramAnalyzer, alpha: Double,
+//            gramType: GramStatType? = null): List<Double> {
+//    val tokens = AnalyzerFunctions.createTokenList(query, useFiltering = true)
+//    val cleanQuery = tokens.toList().joinToString(" ")
+//    val (nounCorpus, verbCorpus) = gramAnalyzer.getNatCorpusStatContainers(cleanQuery)
+//
+//    return tops.scoreDocs.map { scoreDoc ->
+//        val doc = indexSearcher.doc(scoreDoc.doc)
+//        val text = doc.get(CONTENT)
+//
+//        // Generate a language model for the given document's text
+//        val (nounDoc, verbDoc) = gramAnalyzer.getNatLanguageStatContainers(text)
+//
+//        val (uniNoun, biNoun, windNoun) = gramAnalyzer.getQueryLikelihood(nounDoc, nounCorpus, alpha)
+//        val (uniVerb, biVerb, windVerb) = gramAnalyzer.getQueryLikelihood(verbDoc, verbCorpus, alpha)
+//
+//
+//        // If gram type is given, only return the score of a particular -gram method.
+//        // Otherwise, used the weights that were learned and combine all three types into a score.
+//        val weights = listOf(0.9285990421606605, 0.070308081629, -0.0010928762)
+//        when (gramType) {
+//            GramStatType.TYPE_UNIGRAM -> uniNoun + uniVerb
+//            GramStatType.TYPE_BIGRAM -> biNoun + biVerb
+//            GramStatType.TYPE_BIGRAM_WINDOW -> windNoun + windVerb
+//            else -> (uniNoun + uniVerb) * weights[0] +
+//                    (biNoun + biVerb) * weights[1] +
+//                    (windNoun + windVerb) * weights[2]
+//        }
+//    }
+//}
 
