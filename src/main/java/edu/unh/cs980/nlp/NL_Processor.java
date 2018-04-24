@@ -95,10 +95,7 @@ public class NL_Processor {
 
 	public NL_Document.Paragraph convertToNL_Document(String para_text, Boolean openie) {
 
-		// Initialize pipeline.
-		// initPipeline(openie);
-
-		logger.info("Processing text with stanford NLP... ");
+		// logger.debug("Processing text with stanford NLP... ");
 
 		NL_Document.Paragraph para = new NL_Document.Paragraph();
 		CoreDocument document = new CoreDocument(para_text);
