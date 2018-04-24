@@ -18,7 +18,6 @@ import kotlin.system.measureTimeMillis
 
 
 class KotlinEmbedding(indexLoc: String) {
-//    private val gramAnalyzer = KotlinGramAnalyzer(gramLoc)
     private val totalFreqs = HashMap<String, Double>()
     val searcher = getIndexSearcher(indexLoc)
     private val memoizedFreqs = ConcurrentHashMap<String, Double>()

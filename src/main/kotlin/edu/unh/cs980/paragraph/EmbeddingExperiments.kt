@@ -32,10 +32,7 @@ fun testBasisParagraphs(embedder: KotlinEmbedding): TopicMixtureResult  {
 
 
 fun testText(embedder: KotlinEmbedding): TopicMixtureResult {
-    val testText2 = """
-        A party is a gathering of people who have been invited by a host for the purposes of socializing, conversation, recreation, or as part of a festival or other commemoration of a special occasion. A party will typically feature food and beverages, and often music and dancing or other forms of entertainment. In many Western countries, parties for teens and adults are associated with drinking alcohol such as beer, wine or distilled spirits.
-        """
-    val testText = """
+    val text = """
         William Henry Gates III (born October 28, 1955) is an American business magnate, investor, author, philanthropist, humanitarian, and principal founder of Microsoft Corporation.[2][3] During his career at Microsoft, Gates held the positions of chairman, CEO and chief software architect, while also being the largest individual shareholder until May 2014.
 
 In 1975, Gates and Paul Allen launched Microsoft, which became the world's largest PC software company.[4][a] Gates led the company as chief executive officer until stepping down in January 2000, but he remained as chairman and created the position of chief software architect for himself.[7] In June 2006, Gates announced that he would be transitioning from full-time work at Microsoft to part-time work and full-time work at the Bill & Melinda Gates Foundation, which was established in 2000.[8] He gradually transferred his duties to Ray Ozzie and Craig Mundie.[9] He stepped down as chairman of Microsoft in February 2014 and assumed a new post as technology adviser to support the newly appointed CEO Satya Nadella.[10]
@@ -48,68 +45,14 @@ Later in his career and since leaving Microsoft, Gates pursued a number of phila
         """
 
 
-    return embedder.embed(testText, nSamples = 1000, nIterations = 1000, smooth = false)
+    return embedder.embed(text, nSamples = 1000, nIterations = 1000, smooth = false)
 }
 
-var good = 0
-var bad = 0
-var distTotal = 0.0
-var lows = 0
-var lows2 = 0
-var terribles = 0
 
-//fun doTests(embedder: KotlinEmbedding, queryStuff: Pair<String, List<String>>) {
-//    val filteredQuery = AnalyzerFunctions.createTokenList(queryStuff.first, useFiltering = true)
-//        .joinToString(" ")
-//
-//    val queryEmbedding = embedder.embed(filteredQuery, nSamples = 500, nIterations = 800, smooth = false)
-////    queryEmbedding.reportResults()
-//    queryStuff.second.forEach { candidate ->
-//        val boolQuery = AnalyzerFunctions.createQuery(candidate, PID, false)
-//        val docId = embedder.searcher.search(boolQuery, 1).scoreDocs.first().doc
-//        val paagraphText = embedder.searcher.doc(docId).get(CONTENT)
-//
-//        val embedded = embedder.embed(paagraphText, 500, 800, false)
-//        val dist = queryEmbedding.manhattenDistance(embedded)
-//        distTotal += dist
-//        if (dist < 0.5) lows++ else if (dist < 1.0) lows2++
-//        if (dist > 1.5) terribles++
-//
-//        if (dist > 1.9) {
-//            bad++
-//            println("$good / $bad _ $terribles / $lows _ $lows2 / ${distTotal / (good + bad.toDouble())}")
-//            println("BASE")
-//            queryEmbedding.reportResults()
-//            println("BAD")
-//            embedded.reportResults()
-//
-//
-//        } else (good++)
-//
-//    }
-
-//    replaceNumbers.replace(queryStuff.first, " ")
-
-//}
-
-//fun unpack(embedder: KotlinEmbedding) {
-//    File("train.pages.cbor-hierarchical.qrels")
-//        .bufferedReader()
-//        .readLines()
-//        .map { it.split(" ").let { it[0] to it[2] } }
-//        .groupBy { it.first }
-//        .onEach { doTests(embedder, it.key to it.value.map { it.second }) }
-//}
 
 
 fun main(args: Array<String>) {
     val indexLoc = "/home/hcgs/data_science/index"
-
-//    val validTopics = File("paragraphs/")
-//        .listFiles()
-//        .map { file -> file.name }
-//        .filter { name -> name !in listOf("Medicine", "Tools", "Society", "Warfare") }
-
     val embedder = KotlinEmbedding(indexLoc)
     embedder.loadTopics("paragraphs/")
 

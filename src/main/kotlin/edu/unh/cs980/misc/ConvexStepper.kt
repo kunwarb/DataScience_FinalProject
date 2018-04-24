@@ -109,16 +109,6 @@ class PartitionDescenter(origin: List<Double>, topics: List<List<Double>>, parti
         }
     }
 
-    fun getVariance(curWeights: List<Double>) =
-            weightHistory.map { w ->
-                val lastWeights = w.takeLast(20)
-                val mean = lastWeights.sum() / 20.0
-                val variance = lastWeights.sumByDouble { pow(it - mean, 2.0) }
-                variance / 20 }
-                .normalize()
-                .mapIndexed { index, d -> if (curWeights[index] == 0.0) 0.0 else (1 - d) * curWeights[index]  }
-                .normalize()
-
 
     fun startDescent(nTimes: Int): Pair<List<Double>, Double> {
         val nTopics = weightMatrices.size
@@ -141,7 +131,7 @@ class PartitionDescenter(origin: List<Double>, topics: List<List<Double>>, parti
 
 
 
-fun smoothy(values: List<Double>): DoubleArray {
+fun uniformSmoothing(values: List<Double>): DoubleArray {
     val total = values.sum()
     val normal = total / values.size.toDouble()
     return (0 until values.size).map { normal }.toDoubleArray()
@@ -153,7 +143,7 @@ class GradientDescenter(val origin: List<Double>, val topics: List<List<Double>>
         (0 until topics.size).map { Matrix.newInstance(1, origin.size, 1.0) }
 
     val topicMatrices = topics.map { Matrix.newInstance(it.toDoubleArray())}
-    val originArray = smoothy(origin)
+    val originArray = uniformSmoothing(origin)
 
     fun changeWeight(index: Int, weight: Double) =
         weightMatrices[index].mul(0.0).add(weight)

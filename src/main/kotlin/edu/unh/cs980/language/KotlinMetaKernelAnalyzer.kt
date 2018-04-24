@@ -292,7 +292,6 @@ class KotlinMetaKernelAnalyzer(val paragraphIndex: String) {
 
     fun averageSim(w1: String, w2: String): Double =
                 (1.0 - sim.distance(w1, w2)).run { if (this < 0.8) 0.0 else this }
-//                    .apply { if (this > 0.9) println("$w1: $w2: $this") }
 
 
     fun productMaxMax(w1: List<String>, w2: List<String>): Double =
