@@ -14,7 +14,7 @@ enum class TrainEnum(val value: String) : CharSequence by value {
     ABSTRACT_SDM_ALPHA("abstract_sdm_alpha"),
     ABSTRACT_SDM_QUERY("abstract_sdm_query"),
 
-    NAT_SDM_QUERY("nat_sdm_query"),
+//    NAT_SDM_QUERY("nat_sdm_query"),
 
     SDM_ALPHA("sdm_alpha"),
     SDM_COMPONENTS("sdm_components"),

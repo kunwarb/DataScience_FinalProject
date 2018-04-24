@@ -148,30 +148,30 @@ class KotlinGramAnalyzer(val indexSearcher: IndexSearcher) {
      * Func: extractNounsVerbs
      * Desc: Using Kevin's NLP, extract nouns and verbs
      */
-    private fun extractNounsVerbs(text: String): Pair<String, String> {
-        val nlDoc = NL_Processor.convertToNL_Document(text)
-        val nouns = nlDoc.allNounsInPara.joinToString(" ")
-        val verbs = nlDoc.allVerbsInPara.joinToString(" ")
-        return nouns to verbs
-    }
+//    private fun extractNounsVerbs(text: String): Pair<String, String> {
+//        val nlDoc = NL_Processor.convertToNL_Document(text)
+//        val nouns = nlDoc.allNounsInPara.joinToString(" ")
+//        val verbs = nlDoc.allVerbsInPara.joinToString(" ")
+//        return nouns to verbs
+//    }
 
-    /**
-     * Func: getNatCorpusStatContainers
-     * Desc: Using Kevin's NLP, extract nouns and verbs and build corpus language models from them.
-     */
-    fun getNatCorpusStatContainers(text: String): Pair<CorpusStatContainer, CorpusStatContainer> {
-        val (nouns, verbs) = extractNounsVerbs(text)
-        return getCorpusStatContainer(nouns) to getCorpusStatContainer(verbs)
-    }
-
-    /**
-     * Func: getNatLanguageStatContainers
-     * Desc: Using Kevin's NLP, extract nouns and verbs and build document language models from them.
-     */
-    fun getNatLanguageStatContainers(text: String): Pair<LanguageStatContainer, LanguageStatContainer> {
-        val (nouns, verbs) = extractNounsVerbs(text)
-        return getLanguageStatContainer(nouns) to getLanguageStatContainer(verbs)
-    }
+//    /**
+//     * Func: getNatCorpusStatContainers
+//     * Desc: Using Kevin's NLP, extract nouns and verbs and build corpus language models from them.
+//     */
+//    fun getNatCorpusStatContainers(text: String): Pair<CorpusStatContainer, CorpusStatContainer> {
+//        val (nouns, verbs) = extractNounsVerbs(text)
+//        return getCorpusStatContainer(nouns) to getCorpusStatContainer(verbs)
+//    }
+//
+//    /**
+//     * Func: getNatLanguageStatContainers
+//     * Desc: Using Kevin's NLP, extract nouns and verbs and build document language models from them.
+//     */
+//    fun getNatLanguageStatContainers(text: String): Pair<LanguageStatContainer, LanguageStatContainer> {
+//        val (nouns, verbs) = extractNounsVerbs(text)
+//        return getLanguageStatContainer(nouns) to getLanguageStatContainer(verbs)
+//    }
 
     /**
      * Func: getCorpusStatContainer
