@@ -76,21 +76,27 @@ Where:
 **paragraphs/**: Is the location to the paragraphs directory (retrieved by sparql_downloader). Defaults to /trec_data/team_1/paragraphs
   ___
  ### Embedding (embedding)
-
+This command explores the embedding methods using topics describes previously. The command is divided into two subcommands: train and query. Train generates a file that can be run in RankLib (used for training weights). Query is used to run the actual queries and generate runfiles.
 
 ```bash
 program.jar embedding query --indexPath INDEXPATH --queryPath QUERYPATH --out OUT --paragraphs PARAGRAPHS --descent_data DESCENT_DATA --method METHOD }
 ```
 
 Where:
-**INDEXPATH**: 
-**QUERYPATH**: 
-**INDEXPATH**: 
-**OUT**: 
-**PARAGRAPHS**: 
-**DESCENT_DATA**: 
+**INDEXPATH**: Location of the Lucene index (default: /trec_data/team_1/myindex)
+**QUERYPATH**: Location of the query .cbor file
+**OUT**: Location of the runfile to generate (default: query_results.run)
+**PARAGRAPHS**: Location of the folder containing topic paragraphs (obtained by sparql_downloader) (default: /trec_data/team_1/paragraphs)
+**DESCENT_DATA**: Location of the folder containing decomposed topics (obtained by topic_decomposer) (default: /trec_data/team_1/descent_data)
 
-**METHOD**: is one of:
+**METHOD**: is one of the follow (these methods are described at the top of the readme)
+ - hier_ascent
+ - hier_clusters
+ - hier_subclusters
+ - hier_query_variations
+ - hier_reduction_variations
+ - hier_metrics
+ - perturbation_embedding
  
  
 
