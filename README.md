@@ -144,7 +144,7 @@ Using Page Queries: Using Lucene to retrieve abstract text of entities in query,
 In this method, I propose a method for measuring contextual similarity, an important type of semantic relationship, between entities. we can locate the page relevant to an entity. Using their tree, the semantic similarity between entities can be measured in different dimensions.Currently I am using on the Page Queries , However My belief is it should work well on section level .  
 
 ```bash
-program.jar context_queryeexpansion query_type mulit_thread index abstract query_file [--out query_results.run]
+program.jar context_queryeexpansion query_type mulit_thread index abstract query_file [--out ContextQuerySimilarity.run]
 ```
 
 Where:
