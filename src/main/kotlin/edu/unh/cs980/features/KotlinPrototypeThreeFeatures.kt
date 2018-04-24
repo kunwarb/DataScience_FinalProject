@@ -37,7 +37,10 @@ fun featUseEmbeddedQuery(query: String, tops: TopDocs, indexSearcher: IndexSearc
         .map { paragraph ->  embedder.embed(paragraph, 100)}
 
     val queryEmbedding = embedder.embed(query, 100)
-    return embeddings.map { projection -> projection.manhattenDistance(queryEmbedding)}
+    return embeddings.map { projection ->
+        val result = projection.manhattenDistance(queryEmbedding)
+        if (result < 0.5) 3.0 else if (result < 1.0) 1.0 else 0.0
+    }
 }
 
 private fun expandQuery(query: String, indexSearcher: IndexSearcher): String =
@@ -91,8 +94,7 @@ fun featSheafDist(query: String, tops: TopDocs, indexSearcher: IndexSearcher, an
 
     return embeddedParagraphs
         .map { embeddedParagraph ->
-            val result = queryEmbedding.distance(embeddedParagraph, mixtureDistanceMeasure)
-            if (result < 0.5) 3.0 else if (result < 1.0) 1.0 else 0.0
+            queryEmbedding.distance(embeddedParagraph, mixtureDistanceMeasure)
         }
 
 }
