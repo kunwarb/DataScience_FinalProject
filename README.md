@@ -77,55 +77,6 @@ Where:
 
 **--spotlight_folder**: Is the directory where a runnable DBPedia Spotlight Jar and model are located. If the folder does not contain the required files, the contents are automatically downloaded and unpacked to the folder. If no folder is specified, then entity-linking with Spotlight is skipped during indexing. **A copy of the spotlight_folder is available at: /trec_data/team_1/spotlight_server**
 
-
-
-___ 
-### Ranklib Trainer (ranklib_trainer)
- 
- The trainer creates a RankLib compatible file by taking the top100 BM25 results and scoring the documents according to the methods below. 
- 
- ```bash
-program.jar ranklib_trainer [--out OUT] [--hyperlink_database HYPERLINK_DATABASE] [--abstract_index ABSTRACT_INDEX] [--gram_index GRAM_INDEX] method index query qrel
-```
- 
- Where:
-
-**method**: Is one of the following methods:
- - **hyperlink_query**: Weighted combination of BM25 + hyperlink method.
- - **average_abstract_query**: Weighted combination of BM25 + average_abstract method.
- - **sdm_alpha**: Creates an instance of the sdm method for a range of alpha values. These features are used in RankLib (see KotlinFeatureSelector) to determine what the best alpha parameter is.
- - **sdm_components**: Adds the individual scoring components of the SDM (unigram, bigram, and windowed bigram) as features. Used with RankLib to determine the best combination of scoring components in SDM.
- - **sdm_query**: Weighted combination of BM25 + sdm method
- - **sdm_section**: Applies sdm method to each section individually and learns best weighted combination.
- - **abstract_sdm**: As sdm_alpha, except for the abstract_sdm method.
- - **abstract_sdm_components**: as sdm_components, except for the abstract_sdm method.
- - **abstract_sdm_query**: Weights combination of BM25 + abstract_sdm method
- - **bm25_section**: Applies BM25 to each section and learns weighted combination of sections
- - **sdm_expansion_components**: As sdm_components, except for sdm_expansion method.
- - **sdm_expansion_query**: Weighted combination of BM25 + sdm_expansion method.
- - **nat_sdm_query**: Weighted combination of BM25 + nat_sdm method.
- - **string_similarity_components**: Learns best weighted combination of Jaccard, Jaro Winkler, Normalized Levenshtein, and Sorensen Dice string similarities.
- - **string_similarity_section**: Using best combination of string similarity functions, learns best weighted combination of feature when scoring each section independently.
- - **string_similarity_query**: Weighted combination of BM25 + string_similarity_section method.
- - **tfidf_section**: Learns best linear combination of sections scored by TFIDF feature derived from Bindu's method.
- - **tfidf_section_query**: Weighted combination of BM25 + tfidf_section method.
- - **super_awesome_teamwork_query**: Finds best weighted combination of teamwork methods: sdm_expansion, tfidf_section, and nat_sdm (note that BM25 isn't added as an additional feature!).
- - **combined_query**: Adds many of the aforementioned features, where the best combination is determined with RankLib and KotlinFeatureSelector.
- 
- 
- **index**: Is the location of the Lucene index directory. Should be /trec_data/team_1/myindex if you do not want to generate a new Lucene index from scratch.
- 
- **query**: Is the query file (.cbor) to query the Lucene index with.
- 
- **qrel**: Is the relevancy file (.qrel) used to determine whether or not documents are revant.
- 
- **--out**: Is the name of the runfile to create after querying. Default: ranklib_features.txt
- 
- **--hyperlink_database**: Points to location of hyperlink database (see hyperlink method). This defaults to the database located on the server at: /trec_data/team_1/entity_mentions.db
- 
- **--abstract_index**: Location of the Lucene index for the entity abstracts. This defaults to the following location on the server: /trec_data/team_1/abstract/
- 
- **--gram_index**: Location of gram index (stores -gram models for SDM). This defaults to the following location on the server: /trec_data/team_1/gram
  ___
 ### Document Entities Relevance Model + Query Expansion Variation:
 Predict relevant entities  through entity linking paragraphs of the feedback run
@@ -204,49 +155,9 @@ ___
 
 
  
- ## Description ofRanklibQuery Methods
+ ## Description of embedding methods
  Each of these methods score the Top 100 documents obtained by running BM25 on the concatenated section path against the index.
  For all individual methods, the score from BM25 is added as an additional feature (in addition to those created by the methods) unless otherwise noted, and the weights are trained using RankLib. **The features (including BM25) were normalized by Z-score.**
  
-#### sdm
-This represents my (hopefully decent) attempt at implementing the SDM model for the paragraphCorpus. Stemmed unigrams, bigrams, and windowed bigrams were indexed for 33% of the corpus (could not do more due to space limitations). Dirichlet smoothing was used for the language models (to do this, I ran RankLib a bunch of times with different versions of alpha (see KotlinFeatureSelector and the **sdm_alpha** method in ranklib_train) to determine what values of alpha work best). The three -gram scores were also waited according to training with RankLib (this is the **sdm_components** method in ranklib_train).
-
-#### abstract_sdm
-This SDM model was trained on the abstract index and represents an SDM for entities. The way in which this is used is as follows: using the given query string, the abstract database is queried (BM25) and the top 20 results are considered the "entities relevant to the query". For each of these, the abstracts are used to create -gram models and the entities are scored according to their likelihood given the query. The final score for each document is expressed as the average likelihood score given the relevant entities it was annotated with (using Spotlight).
-
-The -gram weights were trained using the **abstract_sdm_components** method in ranklib_train, and the alpha components were estimated using the **abstract_alpha** method in RanklibTrain.
-
-#### average_abstract
-For each query, the "relevant" entities of the query are determined by querying the entity abstract database. The top 20 results are considered "relevant". Each document is scored based on average (BM25) score of the relevant entities it contains. 
-
-#### hyperlink
-The likelihood of an entity given a query is approximated using the allButBenchmark page corpus, in which the anchor text and entity links are used to generate a probability of entity given anchor text. This is used to determine relevant entities (given the query) and scores the documents (linked using Spotlight) according to the log likelihood of these entity mentions. (It's basically the hyperlink popularity method)
-
-#### sdm_expansion
-The initial query is first tokenized, and for each token, Kevin's entity query expansion method is used to retrieve the top k entities in the abstract Lucene index. The abstracts of these entities (the first three paragraphs of a page from allButBenchmark page corpus) are then annotated using Spotlight, and the resulting annotated entities are appended to the query token.
-
-On each of these expanded query tokens, the SDM method is run (using the expanded query token as the query). The results of running SDM on each of these tokens is then averaged, giving the final score for each document.
-
-#### sdm_section
-This is a variant of the SDM method in which SDM was used to score each of the sections of a query. RankLib is used to learn the best weights on each of these section scores, and a document's score is expressed as the weighted sum of these section scores.
-
-#### nat_sdm
-This variant makes use of Kevin's natural language methods. For both the query and document text, the nouns are extracted (using Stanford NLP) and concatenated together. The SDM method is then used to evaluate this new (noun-only) query against the (noun-only) contents of each document. This process is repeated once more with verbs that are extracted. The resulting two scores are averaged together and this is the score that is used to score documents.
-
-#### string_similarity_section
-A document's score is first expressed as the average similarity of each query term to that of the document's annotated entities (using Spotlight). This is done for the Jaccard, Jaro Winkler, Normalized Levenshtein, and Sorensen Dice string similarity functions. The best linear combination of these scoring methods is learned (using RankLib) creating a combined feature. This combinated feature is then used to score each of the query's sections indepdently, and a new feature is created by learning the best linear combination of these sections scores (this is the final string_similarity_section feature).
-
-#### tfidf_section
-Using Bindu's TFIDF similarity, a document's score is expressed as the average similarity of the query's terms to that of the document's contents. This feature is then used to score each of the query's sections independently, and a new feature is created by learning the best linear combination of these section scores (this is the final tfidf_section feature).
-
-
-#### combined
-Many of the aforementioned features (except sdm_section) were explored using RankLib, in which they were all lumped together and the features that seemed to contribute the most to MAP were selected (this was also evaluated with the KotlinFeatureSelector class). The selected features were the sdm method, string_similarity_section method, bm25_section method (this is just a weighted combination of sections scored with bm25), and the LMDirichletSimilarity function from Lucene (note that it seems this introduces some randomness). The best linear combination of these features was learned using RankLib.
-
-#### super_awesome_teamwork
-This method seeks to combine all of the teamwork methods (tfidf_section, nat_sdm, and sdm_expansion) and evaluate their effectiveness when not used in conjunction with BM25. A weighted combination of these features was learned using RankLib.
-
-
-
 
 
