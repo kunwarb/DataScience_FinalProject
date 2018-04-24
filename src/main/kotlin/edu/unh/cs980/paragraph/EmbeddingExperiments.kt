@@ -1,6 +1,10 @@
 package edu.unh.cs980.paragraph
 
+import edu.unh.cs980.CONTENT
+import edu.unh.cs980.PID
 import edu.unh.cs980.language.TopicMixtureResult
+import edu.unh.cs980.misc.AnalyzerFunctions
+import org.apache.lucene.search.TermQuery
 import java.io.File
 
 fun testQuery() {
@@ -44,12 +48,71 @@ Later in his career and since leaving Microsoft, Gates pursued a number of phila
     return embedder.embed(testText, nSamples = 1000, nIterations = 1000, smooth = false)
 }
 
+var good = 0
+var bad = 0
+var distTotal = 0.0
+var lows = 0
+var lows2 = 0
+var terribles = 0
+
+//fun doTests(embedder: KotlinEmbedding, queryStuff: Pair<String, List<String>>) {
+//    val filteredQuery = AnalyzerFunctions.createTokenList(queryStuff.first, useFiltering = true)
+//        .joinToString(" ")
+//
+//    val queryEmbedding = embedder.embed(filteredQuery, nSamples = 500, nIterations = 800, smooth = false)
+////    queryEmbedding.reportResults()
+//    queryStuff.second.forEach { candidate ->
+//        val boolQuery = AnalyzerFunctions.createQuery(candidate, PID, false)
+//        val docId = embedder.searcher.search(boolQuery, 1).scoreDocs.first().doc
+//        val paagraphText = embedder.searcher.doc(docId).get(CONTENT)
+//
+//        val embedded = embedder.embed(paagraphText, 500, 800, false)
+//        val dist = queryEmbedding.manhattenDistance(embedded)
+//        distTotal += dist
+//        if (dist < 0.5) lows++ else if (dist < 1.0) lows2++
+//        if (dist > 1.5) terribles++
+//
+//        if (dist > 1.9) {
+//            bad++
+//            println("$good / $bad _ $terribles / $lows _ $lows2 / ${distTotal / (good + bad.toDouble())}")
+//            println("BASE")
+//            queryEmbedding.reportResults()
+//            println("BAD")
+//            embedded.reportResults()
+//
+//
+//        } else (good++)
+//
+//    }
+
+//    replaceNumbers.replace(queryStuff.first, " ")
+
+}
+
+//fun unpack(embedder: KotlinEmbedding) {
+//    File("train.pages.cbor-hierarchical.qrels")
+//        .bufferedReader()
+//        .readLines()
+//        .map { it.split(" ").let { it[0] to it[2] } }
+//        .groupBy { it.first }
+//        .onEach { doTests(embedder, it.key to it.value.map { it.second }) }
+//}
+
+
 fun main(args: Array<String>) {
     val indexLoc = "/home/hcgs/data_science/index"
 
+//    val validTopics = File("paragraphs/")
+//        .listFiles()
+//        .map { file -> file.name }
+//        .filter { name -> name !in listOf("Medicine", "Tools", "Society", "Warfare") }
+
     val embedder = KotlinEmbedding(indexLoc)
-    embedder.loadTopics("paragraphs/",
-            filterList = listOf())
+    embedder.loadTopics("paragraphs/")
+
+
+//    unpack(embedder)
+
 //    testBasisParagraphs(embedder).reportResults()
 //    testText(embedder).reportResults()
 

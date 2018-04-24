@@ -91,6 +91,8 @@ fun featSheafDist(query: String, tops: TopDocs, indexSearcher: IndexSearcher, an
 
     return embeddedParagraphs
         .map { embeddedParagraph ->
-            queryEmbedding.distance(embeddedParagraph, mixtureDistanceMeasure) }
+            val result = queryEmbedding.distance(embeddedParagraph, mixtureDistanceMeasure)
+            if (result < 0.5) 3.0 else if (result < 1.0) 1.0 else 0.0
+        }
 
 }
