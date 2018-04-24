@@ -297,7 +297,7 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 
     companion object {
         fun addExperiments(mainSubparser: Subparsers) {
-            val mainParser = mainSubparser.addParser("sheaf_embedding")
+            val mainParser = mainSubparser.addParser("embedding")
                 .help("Collection of features involving the embedding of queries/paragraphs in structures" +
                         " representing topic models.")
 //            dispatcher.generateArguments("", mainParser)
