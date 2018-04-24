@@ -89,7 +89,7 @@ Where:
 **PARAGRAPHS**: Location of the folder containing topic paragraphs (obtained by sparql_downloader) (default: /trec_data/team_1/paragraphs)
 **DESCENT_DATA**: Location of the folder containing decomposed topics (obtained by topic_decomposer) (default: /trec_data/team_1/descent_data)
 
-**METHOD**: is one of the follow (these methods are described at the top of the readme)
+**METHOD**: is one of the follow (these methods are described in the report)
  - hier_ascent
  - hier_clusters
  - hier_subclusters
@@ -193,9 +193,7 @@ ___
 
 
  
- ## Description of embedding methods
- Each of these methods score the Top 100 documents obtained by running BM25 on the concatenated section path against the index.
- For all individual methods, the score from BM25 is added as an additional feature (in addition to those created by the methods) unless otherwise noted, and the weights are trained using RankLib. **The features (including BM25) were normalized by Z-score.**
+
  
 
 
