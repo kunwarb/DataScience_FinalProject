@@ -74,6 +74,24 @@ program.jar topic_decomposer --method run --paragraphs paragraphs/}
 
 Where:
 **paragraphs/**: Is the location to the paragraphs directory (retrieved by sparql_downloader). Defaults to /trec_data/team_1/paragraphs
+  ___
+ ### Embedding (embedding)
+
+
+```bash
+program.jar embedding query --indexPath INDEXPATH --queryPath QUERYPATH --out OUT --paragraphs PARAGRAPHS --descent_data DESCENT_DATA --method METHOD }
+```
+
+Where:
+**INDEXPATH**: 
+**QUERYPATH**: 
+**INDEXPATH**: 
+**OUT**: 
+**PARAGRAPHS**: 
+**DESCENT_DATA**: 
+
+**METHOD**: is one of:
+ 
  
 
 ___
