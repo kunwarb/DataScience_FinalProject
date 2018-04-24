@@ -92,7 +92,6 @@ class PartitionDescenter(origin: List<Double>, topics: List<List<Double>>, parti
         changeWeight(index, curWeight)
 
         return if (lowerDiff < upperDiff) -1.0 to abs(lowerDiff) else 1.0 to abs(upperDiff)
-//        return if (lowerDiff > upperDiff) -1.0 to abs(lowerDiff) else 1.0 to abs(upperDiff)
     }
 
     fun updateWeightAgainstGradient(weights: List<Double>): List<Double> {
@@ -131,37 +130,16 @@ class PartitionDescenter(origin: List<Double>, topics: List<List<Double>>, parti
 
             weights = updateWeightAgainstGradient(weights)
             partitionContainer.step()
-//            if (iter >= nTimes - 20) {
-//                weights.normalize().forEachIndexed { index, d -> weightHistory[index] += d }
-//            }
 
         }
         val weightSum = weights.sum()
         val finalWeights = weights.map { value -> value / weightSum }
         return finalWeights to doKld()
-//        return getVariance(weights) to doKld()
     }
 
 }
 
 
-//Cuisine : 0.46342523173175193
-//Society : 0.35582802094748484
-//Events : 0.07352630558796323
-//Tools : 0.039026821558988595
-//Cooking : 0.038046182559837646
-//Medicine : 0.025856834486240668
-//Games : 0.004290603127733126
-
-
-//Events : 0.2902926886421388
-//Cuisine : 0.2342279175155482
-//Society : 0.2067111286895792
-//Engineering : 0.14372728419858546
-//Cooking : 0.07633944509928592
-//Games : 0.044695414313683596
-//Fashion : 0.004006121541178894
-//KLD: 1.7574797474398356E-9
 
 fun smoothy(values: List<Double>): DoubleArray {
     val total = values.sum()
@@ -175,10 +153,7 @@ class GradientDescenter(val origin: List<Double>, val topics: List<List<Double>>
         (0 until topics.size).map { Matrix.newInstance(1, origin.size, 1.0) }
 
     val topicMatrices = topics.map { Matrix.newInstance(it.toDoubleArray())}
-//    val topicMatrices = topics.map { Matrix.newInstance(smoothy(it))}
-//    val originArray = origin.toDoubleArray()
     val originArray = smoothy(origin)
-//    val originArray = origin.toDoubleArray()
 
     fun changeWeight(index: Int, weight: Double) =
         weightMatrices[index].mul(0.0).add(weight)
@@ -193,9 +168,7 @@ class GradientDescenter(val origin: List<Double>, val topics: List<List<Double>>
             .reduce { acc, denseMatrix -> acc.add(denseMatrix)  }
             .run { div(sum()) }
             .transpose().array()
-//            .run { KullbackLeiblerDivergence(originArray, this.first())}
             .run { KullbackLeiblerDivergence(originArray, this.first())}
-//            .run { euclid(originArray, this.first())}
 
 
     fun kld(weights: List<Double>): Double =
@@ -216,7 +189,6 @@ class GradientDescenter(val origin: List<Double>, val topics: List<List<Double>>
         val lowerDiff = (kld(lower) - baseline)
         val upperDiff = (kld(upper) - baseline)
 
-//        return if (lowerDiff < upperDiff) -1.0 to pow(lowerDiff, 2.0) else 1.0 to pow(upperDiff, 2.0)
         return if (lowerDiff < upperDiff) -1.0 to abs(lowerDiff) else 1.0 to abs(upperDiff)
     }
 
@@ -239,9 +211,7 @@ class GradientDescenter(val origin: List<Double>, val topics: List<List<Double>>
 
         (0 until nTimes).forEach {
             weights.mapIndexed { index, weight -> changeWeight(index, weight) }
-//            val baseline = kld(weights)
             val baseline = doKld()
-//            val gradient = (0 until topics.size).map { index -> getDerivative(baseline, index, weights)}
             val gradient = (0 until topics.size).map { index -> getDerivative2(baseline, index, weights[index])}
             val total = gradient.sumByDouble { (_, delta) -> delta }
 

@@ -23,15 +23,11 @@ class KotlinEmbedding(indexLoc: String) {
     val searcher = getIndexSearcher(indexLoc)
     private val memoizedFreqs = ConcurrentHashMap<String, Double>()
     private val kernelAnalyzer =
-//            KotlinKernelAnalyzer(0.0, 1.0, corpus = {s -> totalFreqs[s]}, partitioned = true)
                 KotlinKernelAnalyzer(0.0, 1.0, corpus = {null}, partitioned = true)
 
 
     var topicTime: Long = 0
 
-//    private val totalCorpusFreq = gramAnalyzer.indexSearcher.indexReader
-//        .getSumTotalTermFreq("unigram")
-//        .toDouble()
 
     fun query(query: String, nQueries: Int = 10): List<String> {
         val boolQuery = AnalyzerFunctions.createQuery(query)
@@ -147,18 +143,6 @@ class KotlinEmbedding(indexLoc: String) {
 
         val results = names.zip(weights).toMap()
         return TopicMixtureResult(results.toSortedMap(), kld)
-
-//        val identityFreqs = "identity" to kernelDist.getKernelFreqs()
-
-//        if (smooth) { kernelDist.equilibriumCovariance() }
-//
-//        val samples = kernelDist.perturb(nSamples)
-//
-//        val topicStats = kernelAnalyzer.retrieveTopicFrequencies() + identityFreqs
-//        val stochasticIntegrator = KotlinStochasticIntegrator(samples, topicStats, corpus = {_ -> null})
-//        val integrals = stochasticIntegrator.integrate()
-//
-//        return kernelAnalyzer.classifyByDomainSimplex2(integrals, nIterations = nIterations,smooth = false)
     }
 }
 
