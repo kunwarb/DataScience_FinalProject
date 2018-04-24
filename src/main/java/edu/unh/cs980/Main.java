@@ -34,6 +34,7 @@ import edu.unh.cs980.utils.ProjectUtils;
 import edu.unh.cs980.utils.QueryBuilder;
 import edu.unh.cs980.variations.Doc_RM_QE_variation;
 import edu.unh.cs980.variations.FreqBigram_variation;
+import edu.unh.cs980.variations.NLP_query_variation;
 import edu.unh.cs980.variations.QueryExpansion_variation;
 import edu.unh.cs980.variations.Query_RM_QE_variation;
 import net.sourceforge.argparse4j.ArgumentParsers;
@@ -208,6 +209,25 @@ public class Main {
 				// defaults to
 				// query_results.txt
 				.help("The name of the trec_eval compatible run file to write. (default: doc_rm_qe_results.run)");
+
+		// Argument parser for NLP query variation
+		Subparser nlp_query_Parser = subparsers.addParser("nlp_query_variation")
+				.setDefault("func", new Exec(Main::runNLP_query_variation))
+				.help("Use NLP + entities relations relevance method.");
+		nlp_query_Parser.addArgument("query_type").choices("page", "section")
+				.help("\tpage: Page of paragraph corpus\n" + "\tsection: Section of paragraph corpus\n");
+		nlp_query_Parser.addArgument("multi_thread").choices("true", "false").setDefault("false")
+				.help("\ttrue: Run Multi Thread function. \n" + "\tfalse: Use normal function\n");
+
+		nlp_query_Parser.addArgument("index").help("Location of Lucene index directory.");
+		nlp_query_Parser.addArgument("query_file").help("Location of the query file (.cbor)");
+		nlp_query_Parser.addArgument("--out") // -- means it's not
+												// positional
+				.setDefault("nlp_query_results.run") // If no --out is
+														// supplied,
+				// defaults to
+				// query_results.txt
+				.help("The name of the trec_eval compatible run file to write. (default: nlp_query_results.run)");
 
 		// // Gram
 		// Subparser gramParser =
@@ -558,9 +578,41 @@ public class Main {
 		}
 	}
 
+	// Run Kevin's NLP entities relations variation methods
 	private static void runNLP_query_variation(Namespace params) {
 		try {
+			String index = params.getString("index");
+			String queryFile = params.getString("query_file");
+			String queryType = params.getString("query_type");
+			String multi = params.getString("multi_thread");
+			Boolean runMultiThread = Boolean.valueOf(multi.toLowerCase());
+			String out = params.getString("out");
+			QueryBuilder queryBuilder = new QueryBuilder(queryFile);
 
+			if (queryType.equalsIgnoreCase("page")) {
+				ArrayList<String> pages_queries = queryBuilder.getAllpageQueries();
+				logger.info("Page queries: " + pages_queries.size());
+				if (runMultiThread) {
+					ArrayList<String> page_run = NLP_query_variation.getResultsWithMultiThread(pages_queries, index);
+					ProjectUtils.writeToFile(out, page_run);
+				} else {
+					ArrayList<String> page_run = NLP_query_variation.getResults(pages_queries, index);
+					ProjectUtils.writeToFile(out, page_run);
+				}
+			} else if (queryType.equalsIgnoreCase("section")) {
+				ArrayList<String> section_queries = queryBuilder.getAllSectionQueries();
+				logger.info("Section queries: " + section_queries.size());
+				if (runMultiThread) {
+					ArrayList<String> section_run = NLP_query_variation.getResultsWithMultiThread(section_queries,
+							index);
+					ProjectUtils.writeToFile(out, section_run);
+				} else {
+					ArrayList<String> section_run = NLP_query_variation.getResults(section_queries, index);
+					ProjectUtils.writeToFile(out, section_run);
+				}
+			} else {
+				logger.error("Error: QueryType not recognized. Got: " + queryType);
+			}
 		} catch (Throwable e) {
 			logger.error(e.getMessage());
 		}

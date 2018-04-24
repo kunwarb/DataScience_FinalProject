@@ -297,7 +297,7 @@ public class NLP_query_variation {
 		return runfileStr;
 	}
 
-	public static ArrayList<String> getResultsForSingleQuery(String queryStr, String index_dir)
+	private static ArrayList<String> getResultsForSingleQuery(String queryStr, String index_dir)
 			throws IOException, ParseException {
 
 		ArrayList<String> runFileStr = new ArrayList<String>();
