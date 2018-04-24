@@ -35,6 +35,12 @@ HYPERLINK=/trec_data/team_1/entity_mentions.db
 # Pathway to -gram Lucene index (made using jar command: gram_indexer)
 GRAM=/trec_data/team_1/gram
 
+# Pathway to topic paragraphs
+PARAGRAPHS=/trec_data/team_1/paragraphs/
+
+#Pathway to descent data
+DESCENT=/trec_data/team_1/descent_data/
+
 # Pathway to trec_eval program
 TREC_EVAL=/trec_data/trec_eval
 
@@ -58,12 +64,13 @@ run_ranklib_query_method () {
 
     # Run method and write to corresponding method_results dir
     echo "=== Running Method: $1 ==="
-    java -jar $JAR ranklib_query\
-        --hyperlink_database $HYPERLINK\
-        --abstract_index $ABSTRACT\
-        --gram_index $GRAM\
+    java -jar $JAR embedding query\
+        --descent_data $DESCENT\
+        --paragraphs $PARAGRAPHS\
         --out $METHOD_RESULT\
-        $METHOD $INDEX $TRAIN_OUTLINE_CBOR
+        --indexPath $INDEX\
+        --method $METHOD\
+        --queryPath $TRAIN_OUTLINE_CBOR
     echo -e Runfile Stored in $METHOD_RESULT \\n
 
     # Write trec eval stats of method to corresponding method_results dir
@@ -75,39 +82,18 @@ run_ranklib_query_method () {
 # Create directory to store results if it doesn't exist
 mkdir -p method_results
 
-# Jordan's SDM method 
-run_ranklib_query_method sdm
+# Jordan's Methods
+run_ranklib_query_method hier_ascent
+run_ranklib_query_method hier_clusters
+run_ranklib_query_method hier_subclusters
+run_ranklib_query_method hier_query_variations
+run_ranklib_query_method hier_reduction_methods
+run_ranklib_query_method hier_metrics
+run_ranklib_query_method perturbation_embedding
 
-# Jordan's Abstract SDM method 
-run_ranklib_query_method abstract_sdm
 
-# Jordan's SDM Section Method
-run_ranklib_query_method sdm_section
 
-# Jordan's Hyperlink method 
-run_ranklib_query_method hyperlink
-
-# Jordan's Average Abstract method 
-run_ranklib_query_method average_abstract
-
-# Jordan's String Similarity Section Method
-run_ranklib_query_method string_similarity_section
-
-# Jordan's Combined Method
-run_ranklib_query_method combined
-
-# Jordan's TFIDF Section Method
-run_ranklib_query_method tfidf_section
-
-# Jordan's SDM Expanson Method
-run_ranklib_query_method sdm_expansion
-
-# Jordan's NAT SDM Method
-run_ranklib_query_method nat_sdm
-
-# Jordan's Super Awesome Teamwork Method
-run_ranklib_query_method super_awesome_teamwork
-
+exit
 
 # Adding Kevin's doc_rm_qe (switch page to section for section variant)
 echo "=== Running doc_rm_qe (this will take a while) ==="
