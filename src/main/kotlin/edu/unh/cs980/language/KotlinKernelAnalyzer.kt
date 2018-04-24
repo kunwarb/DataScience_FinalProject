@@ -9,11 +9,13 @@ import edu.unh.cs980.misc.PartitionDescenter
 import org.apache.commons.math3.distribution.NormalDistribution
 import smile.math.matrix.Matrix
 import smile.math.matrix.PageRank
+import smile.math.special.Erf.erf
 import java.io.File
 import java.lang.Double.sum
 import java.lang.Math.*
 import java.util.*
 import kotlin.math.log2
+import kotlin.math.roundToInt
 
 enum class MixtureDistanceMeasure {
     EUCLIDEAN, DELTA_SIM, MINKOWSKI, COSINE, DELTA_DENSITY, MANHATTAN, EUCLIDEAN_SIM, KLD
@@ -152,7 +154,7 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
         val filteredText = filterPattern.replace(text, "")
         val terms = AnalyzerFunctions.createTokenList(filteredText, analyzerType = ANALYZER_ENGLISH_STOPPED)
 
-        if (true) {
+        if (letterGram) {
             terms.forEach { term ->
                 term.windowed(4, partialWindows = false)
                     .forEach { lGram -> kernels.computeIfAbsent(lGram, { WordKernel(term) }).frequency += 1.0 }
@@ -187,13 +189,17 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
 
     fun perturb(nSamples: Int = 50): Pair<List<String>, List<List<Double>>> {
         val norm = NormalDistribution(sharedRand, 1.0, 0.001)
+//        val norm = NormalDistribution(sharedRand, 0.0, 0.5)
         val (kernelNames, kernelFreqs) = kernels.toList().unzip()
 
-        val perturbations = (0 until nSamples).map {
+        val perturbations = (0 until nSamples).map { index ->
             norm.sample(kernelFreqs.size)
                 .toList()
                 .zip(kernelFreqs)
                 .map { (gaussian, kernelFreq) -> gaussian + kernelFreq.frequency  }.normalize() }
+//                    .map { (gaussian, kernelFreq) -> gaussian  * 0.0001 +  kernelFreq.frequency  } }
+//                    .map { (gaussian, kernelFreq) -> erf( (index - nSamples/2.0)/20.0 ) *  kernelFreq.frequency  } }
+//            .map { (gaussian, kernelFreq) -> gaussian * 0.0001 +  kernelFreq.frequency  } }
 
         return kernelNames to perturbations
     }

@@ -123,9 +123,10 @@ class KotlinEmbedding(indexLoc: String) {
         return kernelAnalyzer.classifyByDomainSimplex2(integrals, nIterations = nIterations,smooth = false)
     }
 
-    fun embed(text: String, nSamples: Int = 300, nIterations: Int = 500, smooth: Boolean = false): TopicMixtureResult {
+    fun embed(text: String, nSamples: Int = 300, nIterations: Int = 500, smooth: Boolean = false,
+              letterGram: Boolean = false): TopicMixtureResult {
         val kernelDist = KernelDist(0.0, 20.0)
-            .apply { analyzePartitionedDocument(text) }
+            .apply { analyzePartitionedDocument(text, letterGram = letterGram) }
             .apply { normalizeKernels() }
         if (smooth) {
             kernelDist.equilibriumCovariance()

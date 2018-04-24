@@ -3,6 +3,8 @@ package edu.unh.cs980.paragraph
 import edu.unh.cs980.defaultWhenNotFinite
 import edu.unh.cs980.normalize
 import edu.unh.cs980.smooth
+import org.apache.commons.math3.distribution.NormalDistribution
+import smile.math.special.Erf.erf
 import java.lang.Math.*
 import kotlin.math.abs
 import kotlin.math.log2
@@ -39,10 +41,14 @@ class KotlinStochasticIntegrator(val perturbations: Pair<List<String>, List<List
                 .map { perturbs ->
                     perturbs.zip(topic).sumByDouble { (k1, k2) -> pow(k1 - k2, 2.0) }.run { sqrt(this) } }
 //                        perturbs.zip(topic).sumByDouble { (k1, k2) -> abs(k1 - k2) } }
-//                            perturbs.zip(topic).sumByDouble { (k1, k2) -> k1 - k2 } }
                 .normalize()
                 .let {if (smooth) it.smooth() else it }
 
     fun integrate() =
             topicNames.zip(restrictions.map(this::kldToTopic))
+}
+
+fun main(args: Array<String>) {
+    val norm = NormalDistribution(0.0, 0.5)
+    println(norm.sample(10000).sum())
 }

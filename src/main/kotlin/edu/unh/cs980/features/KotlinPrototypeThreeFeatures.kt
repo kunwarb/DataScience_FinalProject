@@ -38,8 +38,7 @@ fun featUseEmbeddedQuery(query: String, tops: TopDocs, indexSearcher: IndexSearc
 
     val queryEmbedding = embedder.embed(query, 100)
     return embeddings.map { projection ->
-        val result = projection.manhattenDistance(queryEmbedding)
-        if (result < 0.5) 3.0 else if (result < 1.0) 1.0 else 0.0
+        projection.manhattenDistance(queryEmbedding)
     }
 }
 

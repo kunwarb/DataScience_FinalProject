@@ -345,12 +345,12 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                 buildResourceDispatcher {
 
                     methods<MasterExperiment> {
-                        method("train", "ascent_methods") { trainAscentMethods() }
-                        method("train", "clusters") { trainClusters() }
-                        method("train", "subclusters") { trainSubClusters() }
-                        method("train", "query_embedding_methods") { trainQueryEmbeddingMethods() }
-                        method("train", "reduction_methods") { trainReductionMethods() }
-                        method("train", "metrics") { trainMetrics() }
+                        method("train", "hier_ascent") { trainAscentMethods() }
+                        method("train", "hier_clusters") { trainClusters() }
+                        method("train", "hier_subclusters") { trainSubClusters() }
+                        method("train", "hier_query_variations") { trainQueryEmbeddingMethods() }
+                        method("train", "hier_reduction_variations") { trainReductionMethods() }
+                        method("train", "hier_metrics") { trainMetrics() }
                         method("train", "perturbation_embedding") { trainPerturbationEmbedding() }
 
                         method("query", "perturbation_embedding") {
@@ -358,32 +358,32 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                             trainPerturbationEmbedding(weights)
                         }
 
-                        method("query", "ascent_methods") {
+                        method("query", "hier_ascent") {
                             val weights = listOf(0.7979897527484472, 0.12058376153063591, -0.011997198702279513,
                                     0.05744986750822133, -0.011979419510416237)
                             trainAscentMethods(weights)
                         }
-                        method("query", "clusters") {
+                        method("query", "hier_clusters") {
                             val weights = listOf(0.640247646419486, 0.02381076594399517, 0.15843688614499696,
                                     0.0927719044645985, 0.0769519821421867, 0.007780814884736802)
                             trainClusters(level = 0, weights = weights)
                         }
-                        method("query", "subclusters") {
+                        method("query", "hier_subclusters") {
                             val weights = listOf(0.6201414935405611, 0.32760472415596503, 0.003470668087484926,
                                     0.021169221571162626, 0.020374281242115634, 0.0072396114027104665 )
                             trainSubClusters(weights)
                         }
-                        method("query", "query_embedding_methods") {
+                        method("query", "hier_query_variations") {
                             val weights = listOf(0.7873001566878297, 0.15905487942543212, 0.002995974162120879,
                                     -0.050648989724617476 )
                             trainQueryEmbeddingMethods(weights)
                         }
-                        method("query", "reduction_methods") {
+                        method("query", "hier_reduction_methods") {
                             val weights = listOf(0.8344726387779878, 0.04094915290742655, 0.066957117430156,
                                     0.05762109088442964)
                             trainReductionMethods(weights)
                         }
-                        method("query", "metrics") {
+                        method("query", "hier_metrics") {
                             val weights = listOf(0.5107086526395298, -0.06153874876279956, 0.027977509749829342,
                                     0.11095425188056572, 0.2800721248356613, 0.008748712131614461)
                             trainMetrics(weights)

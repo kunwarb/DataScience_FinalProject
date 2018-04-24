@@ -20,9 +20,9 @@ fun testQuery() {
 
 fun testBasisParagraphs(embedder: KotlinEmbedding): TopicMixtureResult  {
     val testText =
-            File("paragraphs/Biology/doc_1.txt").readText()
-//                    File("paragraphs/Travel/doc_3.txt").readText()
-//                    File("paragraphs/Games/doc_3.txt").readText()
+            File("paragraphs/Computers/doc_1.txt").readText() +
+                    File("paragraphs/Travel/doc_3.txt").readText() +
+                    File("paragraphs/Games/doc_3.txt").readText()
 
 //    val testText =
 //            File("paragraphs/Biology/doc_0.txt").readText() +
@@ -32,6 +32,9 @@ fun testBasisParagraphs(embedder: KotlinEmbedding): TopicMixtureResult  {
 
 
 fun testText(embedder: KotlinEmbedding): TopicMixtureResult {
+    val testText2 = """
+        A party is a gathering of people who have been invited by a host for the purposes of socializing, conversation, recreation, or as part of a festival or other commemoration of a special occasion. A party will typically feature food and beverages, and often music and dancing or other forms of entertainment. In many Western countries, parties for teens and adults are associated with drinking alcohol such as beer, wine or distilled spirits.
+        """
     val testText = """
         William Henry Gates III (born October 28, 1955) is an American business magnate, investor, author, philanthropist, humanitarian, and principal founder of Microsoft Corporation.[2][3] During his career at Microsoft, Gates held the positions of chairman, CEO and chief software architect, while also being the largest individual shareholder until May 2014.
 
@@ -113,7 +116,7 @@ fun main(args: Array<String>) {
 
 //    unpack(embedder)
 
-//    testBasisParagraphs(embedder).reportResults()
+    testBasisParagraphs(embedder).reportResults()
 //    testText(embedder).reportResults()
 
     val myquery = "Arachnophobia signs and symptoms"
