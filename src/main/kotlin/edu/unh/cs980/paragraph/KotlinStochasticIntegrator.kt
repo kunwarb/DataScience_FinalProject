@@ -27,7 +27,7 @@ class KotlinStochasticIntegrator(val perturbations: Pair<List<String>, List<List
             word to (topicHash[word] ?: corpus(word)?.run { (1/this) / topicHash.size.toDouble() } ?: 1/perturbations.first.size.toDouble())
         }
             .toMap()
-//            .normalize()
+//            .normalize() : Wait, why don't I normalize this anymore?...
 
         val restrictedDist = perturbations.first
             .map { word -> focusedHash[word]  ?: (0.0000001).defaultWhenNotFinite(0.0000001) }

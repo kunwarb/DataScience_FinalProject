@@ -114,8 +114,6 @@ data class TopicMixtureResult(val results: SortedMap<String, Double>, val kld: D
 class WordKernel(val word: String) {
     val distribution = HashMap<String, Double>()
     var frequency = 0.0
-    var condFrequency = 0.0
-    var normFreq = 0.0
 
     fun normalize() {
         val total = distribution.values.sum()
@@ -216,21 +214,6 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
     }
 
 
-//    fun normalizeByCond2() {
-//        kernels.values.forEach{ wordKernel -> wordKernel.normalize()}
-//        kernels.values.forEach { kernel -> kernel.frequency = 1.0 }
-//
-//        (0 until 20).forEach {
-//            kernels.values.flatMap { kernel -> kernel.distribution.map { (k,v) -> k to v * kernel.frequency } }
-//                .groupingBy { (word, _) -> word }
-//                .fold(0.0) { acc, (_, conditionalFreq) -> acc + conditionalFreq }
-//                .forEach { (k,v) -> kernels[k]!!.frequency = v}
-//        }
-//
-//        val total = kernels.values.sumByDouble { kernel -> kernel.frequency }
-//        kernels.values.forEach { kernel -> kernel.frequency /= total }
-//    }
-
     fun equilibriumCovariance() {
         kernels.values.forEach { worKernel -> worKernel.normalize() }
         val wordIndices = kernels.keys.mapIndexed { index, key -> key to index  }.toMap()
@@ -297,11 +280,7 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double, val corpus: (Strin
         val (featureNames, featureFreqs) = integrals.filter { it.first != "identity" }.unzip()
 
         val stepper = GradientDescenter(identityFreq, featureFreqs)
-//        val stepper = PartitionDescenter(identityFreq, featureFreqs)
         val (weights, kld) = stepper.startDescent(nIterations)
-//        val results = featureNames.zip(weights).toMap()
-
-//        return TopicMixtureResult(results.toSortedMap(), kld)
         return Triple(featureNames, weights, kld)
     }
 
