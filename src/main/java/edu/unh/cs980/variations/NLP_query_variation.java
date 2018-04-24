@@ -39,6 +39,8 @@ import org.apache.lucene.store.FSDirectory;
 import com.google.common.collect.Lists;
 
 import edu.stanford.nlp.ie.util.RelationTriple;
+import edu.unh.cs980.entityLinking.EntityMethods;
+import edu.unh.cs980.entityLinking.EntityWord;
 import edu.unh.cs980.nlp.NL_Document.Paragraph;
 import edu.unh.cs980.nlp.NL_Processor;
 
@@ -72,7 +74,7 @@ public class NLP_query_variation {
 		int duplicate = 0;
 		int queryCount = 1;
 		for (String queryStr : queriesStr) {
-			logger.info("Processing query " + queryCount + " / " + queriesStr.size() + " ...");
+			logger.debug("Processing query " + queryCount + " / " + queriesStr.size() + " ...");
 			queryCount++;
 			Query q = parser.parse(QueryParser.escape(queryStr));
 			HashMap<Document, Float> scoredDocs = new HashMap<>();
@@ -88,34 +90,32 @@ public class NLP_query_variation {
 				// Arrays.asList(doc.getValues("spotlight"));
 
 				Paragraph paraObj = NLPpipeline.convertToNL_DocumentWithOpenIE(paraContent);
-				// ArrayList<EntityWord> spotLight_entities =
-				// EntityMethods.getAnnotatedEntites(queryStr);
+				ArrayList<EntityWord> spotLight_entities = EntityMethods.getAnnotatedEntites(queryStr);
 				List<String> entities = new ArrayList<String>();
 				// Reduce the boots factor, when spotlight can't find any
 				// entities.
 				// Else, keep the origin boots.
 				float reduce_factor = (float) 1;
-				// if (spotLight_entities == null ||
-				// spotLight_entities.isEmpty()) {
-				// reduce_factor = (float) 0.5;
-				// // Check if it's section path query
+				if (spotLight_entities == null || spotLight_entities.isEmpty()) {
+					reduce_factor = (float) 0.5;
+					// // Check if it's section path query
+					if (queryStr.contains("/")) {
+
+						entities = Arrays.asList(queryStr.split("/"));
+					} else {
+						entities.add(queryStr);
+					}
+				} else {
+					for (EntityWord e : spotLight_entities) {
+						entities.add(e.getSurfaceForm().toLowerCase());
+					}
+				}
+
 				// if (queryStr.contains("/")) {
-				//
 				// entities = Arrays.asList(queryStr.split("/"));
 				// } else {
 				// entities.add(queryStr);
 				// }
-				// } else {
-				// for (EntityWord e : spotLight_entities) {
-				// entities.add(e.getSurfaceForm().toLowerCase());
-				// }
-				// }
-
-				if (queryStr.contains("/")) {
-					entities = Arrays.asList(queryStr.split("/"));
-				} else {
-					entities.add(queryStr);
-				}
 
 				// Caculate score
 				float final_score = getRerankedScore(init_score, reduce_factor, entities, paraObj);
@@ -147,6 +147,7 @@ public class NLP_query_variation {
 				"NLP query variation ====> Got " + runFileStr.size() + " results. Found " + duplicate + " duplicates.");
 
 		return runFileStr;
+
 	}
 
 	private static float getRerankedScore(Float init_score, Float reduce_factor, List<String> entities,
@@ -225,15 +226,17 @@ public class NLP_query_variation {
 		return sortedMap;
 	}
 
+	// Create thread for a sublist of queries.
 	public static ArrayList<String> getResultsWithMultiThread(ArrayList<String> queriesStr, String index_dir)
 			throws InterruptedException, ExecutionException {
 		ArrayList<String> runfileStr = new ArrayList<>();
 		workers = Executors.newFixedThreadPool(pool_size);
+		logger.info("Create excuter for threads. Size: " + pool_size);
 		// workers = Executors.newCachedThreadPool();
 		Collection<Callable<ArrayList<String>>> tasks = new ArrayList<Callable<ArrayList<String>>>();
 		for (List<String> partialQuery : Lists.partition(queriesStr, 50)) {
 			if (!partialQuery.isEmpty()) {
-				logger.info("Create thread for partial queryString.");
+				logger.debug("Create thread for partial queryString.");
 				tasks.add(new Callable<ArrayList<String>>() {
 
 					public ArrayList<String> call() throws Exception {
@@ -254,10 +257,13 @@ public class NLP_query_variation {
 				runfileStr.addAll(partial_result);
 			}
 		}
+		logger.info("Found total " + runfileStr.size() + " results by multi-thread methods.");
+
 		workers.shutdown();
 		return runfileStr;
 	}
 
+	// Create thread for each single query string.
 	public static ArrayList<String> getResultsWithMultiThread2(ArrayList<String> queriesStr, String index_dir)
 			throws InterruptedException, ExecutionException {
 		ArrayList<String> runfileStr = new ArrayList<>();
@@ -265,7 +271,7 @@ public class NLP_query_variation {
 		// workers = Executors.newCachedThreadPool();
 		Collection<Callable<ArrayList<String>>> tasks = new ArrayList<Callable<ArrayList<String>>>();
 		for (String query : queriesStr) {
-			logger.info("Create thread for query: " + query);
+			logger.debug("Create thread for query: " + query);
 			tasks.add(new Callable<ArrayList<String>>() {
 
 				public ArrayList<String> call() throws Exception {
