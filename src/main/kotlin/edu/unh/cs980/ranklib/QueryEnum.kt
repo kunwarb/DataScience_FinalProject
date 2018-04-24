@@ -10,7 +10,7 @@ enum class QueryEnum(val value: String) : CharSequence by value {
     HYPERLINK("hyperlink"),
     ABSTRACT_SDM("abstract_sdm"),
     SDM("sdm"),
-    NAT_SDM("nat_sdm"),
+//    NAT_SDM("nat_sdm"),
     SDM_SECTION("sdm_section"),
     SDM_EXPANSION("sdm_expansion"),
     TFIDF_SECTION("tfidf_section"),
