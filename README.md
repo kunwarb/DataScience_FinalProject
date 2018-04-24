@@ -136,22 +136,24 @@ Where:
  
  **--out**: Is the name of the trec_car compatible run file to create. Default: query_results.run
   ___
-### Query Abstract Entiteis Relevance Model + Query Expansion Variation:
+### Similarity with Query Expansion along with dep parser:
+
 Predict relevant entities by annotated abstract of the entities from query
-Build expanded query = query + words from entity's page (like RM3/Relevance Model); run this query against paragraph index  
+Build expanded query = query + words from entity's page (like RM3/Relevance Model); run this query against paragraph index 
+Using Page Queries: Using Lucene to retrieve abstract text of entities in query, and use Spotlight API to annotate the abstract to get entities relevant to query. Then rank the entities to expand the query, finally run expanded query against index using BM25. Using Dependency parser to get the parsed tree of the paragraph and for ranking traverse the paragraph from root to top five tree level  and find out the query word or query expansion word and ranked the paragraph based on the BM25 similarity.
+In this method, I propose a method for measuring contextual similarity, an important type of semantic relationship, between entities. we can locate the page relevant to an entity. Using their tree, the semantic similarity between entities can be measured in different dimensions.Currently I am using on the Page Queries , However My belief is it should work well on section level .  
 
 ```bash
-program.jar query_rm_qe query_type mulit_thread index abstract query_file [--out query_results.run]
+program.jar context_queryeexpansion query_type mulit_thread index abstract query_file [--out query_results.run]
 ```
 
 Where:
 
 **query_type** is one of:
  - **page**: Page query
- - **section**: Section path query
  
  **multi_thread** is one of:
- - **true**: Use multi-thread function to generate expanded query. (**Notice**: Due to virtual memory issue, this method is throwing error on Windows/Linus OS. Need to extend memory limits. More info: http://blog.thetaphi.de/2012/07/use-lucenes-mmapdirectory-on-64bit.html)
+ - **true**: Use multi-thread function to generate expanded query. 
  - **false**: Use normal function. (Recommended)
  
  **index**: Is the location of the Lucene index directory.
@@ -160,40 +162,22 @@ Where:
  
  **query_file**: Is the query (.cbor) file to be used in querying the Lucene index. (benchmarkY1-train/train.pages.cbor)
  
- **--out**: Is the name of the trec_car compatible run file to create. Default: query_results.run
+ **--out**: Is the name of the trec_car compatible run file to create. Default: ContextQuerySimilarity.run
  ___
- ### Query Ranking by Entity linking using DBPedia Spotlight:
-In this method I am trying to rank the Query based on annotated Entity of paragraph content and then paragraph’s score is being calculated as the average score of the annotated entities using spotlight where the score is derived from the query against the abstract index. Here we can use page query.
+ ### Similarity using Top level dependency parser tree:
+
+In this method, Using Dependency parser to get the parsed tree of the paragraph of section path and for ranking traverse the paragraph from root to top three tree level  and find out the root query word and rank the paragraph based on  root query word with the BM25 similarity.I propose a method for measuring contextual similarity, an important type of semantic relationship, between entities. we can locate the page relevant to an entity. Using their tree, the semantic similarity between entities can be measured in different dimensions.
 
 ```bash
-program.jar entitySimilarity query_type(page) mulit_thread index abstract query_file [--out entity_Similarity.run]
+program.jar top_k_treecontextualsimilarity index cborfile outputlocationfile
 ```
 ___
-### 	Paragraph text with TF-IDF similarity: 
-Paragraph text with TF-IDF similarity: In order to rank the Query based on Paragraph score, using TF_IDF lnc.ltc variant. adding log is to dampen the importance of term that has a high frequency. I add 1 to the log(tf) because when tf is equal to 1, the log 1 is zero. by adding one, I can distinguish between tf=0 and tf=1 also for normalization using Cosine normalization and Ranked the query based on paragraph score.
+### 	Similarity using Top words dependency Parser 
+In this we are choosing some words from dependency parser . Dependency parser gives a nice tree  and it also tells about the semantic structure of the tree.. Which shows a hierarchical structure of the sentence. Instead of considering all the word of the paragraph, consider only, nsubj,cc,compound,root,nummod. Instead of taking all the paragraph in this method only focusing on the above word and based on the word doing ranking with BM25 Similarity.
+
 
 ```bash
-program.jar tfidf_similarity index cborfile outputlocationfile
+program.jar pararank_with_depparser index cborfile outputlocationfile
 ```
 ___
-### 	Paragraph text with Wordnet: To rank the paragraph text using Wordnet API.
-Which gives similarity score. For Wordnet implementation I am using extjwnl Extended Java WordNet Library is a Java API for creating, reading and updating dictionaries in WordNet format. 
-
-```bash
-program.jar paragraph_wordnet index cborfile outputlocationfile
-```
-___
-### Paragraph with entity: 
-In this method I am trying to rank the paragraph based on entity present in paragraph only. Then counting the total number of entities present in the paragraph and scoring accordingly. The difference between first one and this is that It does not check the entity content.
-
-```bash
-program.jar paragraph_similarity index cborfile outputlocationfile
-```
-___
-
-
- 
-
- 
-
 
