@@ -14,7 +14,7 @@ The newest results for prototype 3 can be found in the results_prototype3 direct
 
 ___
 ## Installation Instructions
-Because of the balloiining size of the precompiled jar, it is no longer being tracked on GitHub. You can find a precompiled version of prototype 3's program on the server at: **/trec_data/team_1/program.jar**
+Because of the balooning size of the precompiled jar, it is no longer being tracked on GitHub. You can find a precompiled version of prototype 3's program on the server at: **/trec_data/team_1/program.jar**
 
 You may also compile the jar directly from the source code in this repository by entering the following command, or by running ./compile.sh while in the project directory:
 
@@ -46,20 +46,34 @@ ___
 The program is divided into the following subcommands:
 
  ___
- ### RSparql Downloader (sparql_downloader)
+ ### Sparql Downloader (sparql_downloader)
 
-This command is used to query SPARQL and download abstracts (or links that are then uses to download Wikipedia pages). These are used to build topical models (from the first 50 abstracts). The topics are:  Biology, Computers, Cooking, Cuisine, Engineering, Environments, Events, Fashion, Games, Mathematics, Medicine, Organizations, People, Politics, Science, Society, Statistics, Technology, Tools, Travel, Warfare
-
+This command is used to query SPARQL and download abstracts (or links that are then uses to download Wikipedia pages). These are used to build topical models (from the first 50 abstracts). The topics are:  Biology, Computers, Cooking, Cuisine, Engineering, Environments, Events, Fashion, Games, Mathematics, Medicine, Organizations, People, Politics, Science, Society, Statistics, Technology, Tools, Travel, Warfare. 
 
 
 ```bash
-program.jar sparql_downloader --method {abstract, page}
+program.jar sparql_downloader --method {abstracts, page}
 ```
 
 Where:
 average_abstract,combined,abstract_sdm,sdm_components,hyperlink,sdm,section_component
 
-**method**: Is the type of method to use when querying. The choices are:
+**method**: Is one of:
+ - **abstracts**: Downloads topic abstracts and stores them them in an output directory named paragraphs/
+ - **page**: Downloads Wikipedia pages and stores them in an output directory named pages/
+ 
+  ___
+ ### Topic Decomposer (topic_decomposer)
+
+Decomposes each topic (a collection of paragraphs) into the most important paragraphs. Then decomposes the most important paragraphs into the most important sentences, and finally words. Decomposed topics are stored in the descent_data/ directory.
+
+
+```bash
+program.jar topic_decomposer --method run --paragraphs paragraphs/}
+```
+
+Where:
+**paragraphs/**: Is the location to the paragraphs directory (retrieved by sparql_downloader). Defaults to /trec_data/team_1/paragraphs
  
 
 ___
