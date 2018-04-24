@@ -51,9 +51,9 @@ fun main(args: Array<String>) {
     embedder.loadTopics("paragraphs/",
             filterList = listOf())
 //    testBasisParagraphs(embedder).reportResults()
-    testText(embedder).reportResults()
+//    testText(embedder).reportResults()
 
-//    val myquery = "Arachnophobia signs and symptoms"
+    val myquery = "Arachnophobia signs and symptoms"
 //    val queryResults = embedder.query(myquery, 100).mapIndexed { index, s -> index.toString() to s  }.toMap()
 //
 //    embedder.loadQueries(myquery, nQueries = 100)

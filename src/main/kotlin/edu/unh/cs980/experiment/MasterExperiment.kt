@@ -353,7 +353,7 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                         method("train", "metrics") { trainMetrics() }
                         method("train", "perturbation_embedding") { trainPerturbationEmbedding() }
 
-                        method("train", "perturbation_embedding") {
+                        method("query", "perturbation_embedding") {
                             val weights = listOf(0.9185739320834739, -0.08142606791652596)
                             trainPerturbationEmbedding(weights)
                         }
