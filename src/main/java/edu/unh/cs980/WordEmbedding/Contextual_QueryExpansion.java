@@ -184,7 +184,7 @@ public class Contextual_QueryExpansion{
 				int rank = i + 1;
                  
 				String runStr = "enwiki:" + queryStr.replace(" ", "%20") + " Q0 " + paraId + " " + rank + " "
-						+ rankScore + "Contextual_QueryExpansion";
+						+ rankScore + " Contextual_QueryExpansion";
 				if (runFileStr.contains(runStr)) {
 					duplicate++;
 				
