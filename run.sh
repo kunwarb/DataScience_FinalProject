@@ -93,6 +93,24 @@ run_ranklib_query_method hier_metrics
 run_ranklib_query_method perturbation_embedding
 
 
+# Kevin's method
+METHOD_NAME=nlp_query_variation
+echo "=== Running $METHOD_NAME  ==="
+mkdir -p method_results/$METHOD_NAME
+java -jar $JAR $METHOD_NAME\
+    page\
+    false\
+    $INDEX\
+    $TRAIN_OUTLINE_CBOR\
+    --out method_results/$METHOD_NAME/query_results.run
+
+echo "=== Evaluating Method: $METHOD_NAME (only on article qrels) ==="
+ERESULT=method_results/$METHOD_NAME/trec_eval_stats.txt
+$TREC_EVAL -c $TRAIN_ARTICLE_QRELS method_results/$METHOD_NAME/query_results.run > $ERESULT
+echo -e Trec eval results stored in $ERESULT \\n\\n
+
+
+# Kevin + Bindu's method
 METHOD_NAME=context_queryeexpansion
 echo "=== Running $METHOD_NAME  ==="
 mkdir -p method_results/$METHOD_NAME
