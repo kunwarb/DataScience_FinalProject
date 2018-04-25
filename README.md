@@ -129,12 +129,15 @@ Where:
 **--spotlight_folder**: Is the directory where a runnable DBPedia Spotlight Jar and model are located. If the folder does not contain the required files, the contents are automatically downloaded and unpacked to the folder. If no folder is specified, then entity-linking with Spotlight is skipped during indexing. **A copy of the spotlight_folder is available at: /trec_data/team_1/spotlight_server**
 
  ___
-### Document Entities Relevance Model + Query Expansion Variation:
-Predict relevant entities  through entity linking paragraphs of the feedback run
-Expand query with top 5 entities, run against paragraph index using BM25.
+### Natural Language Processor with entities relations relevance model:
+Recognize entities from query using DBpedia spotlight API.
+Initial run with BM25, then use NLP to process the contents from feedback run to get all existing entities relationships.  
+If the entities from query also participate in the relationships, then increase the score of current document.
+Finally produce a re-ranked documents.  
+*Notice*: Since using NLP and DBpedia Spotligth API, the time cost for this method is increased. It will take approximately 40-50 minutes for all sections path queries.
 
 ```bash
-program.jar doc_rm_qe query_type index query_file [--out query_results.run]
+program.jar nlp_query_variation query_type multi_thread index query_file [--out query_results.run]
 ```
 
 Where:
@@ -142,6 +145,10 @@ Where:
 **query_type** is one of:
  - **page**: Page query using BM25
  - **section**: Section path query using BM25
+
+  **multi_thread** is one of:
+ - **true**: Use multi-thread function to generate expanded query. 
+ - **false**: Use normal function. (Recommended)
  
  **index**: Is the location of the Lucene index directory.
  
