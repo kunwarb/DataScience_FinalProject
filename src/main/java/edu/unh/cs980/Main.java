@@ -285,12 +285,26 @@ public class Main {
     				.help("The name of the trec_eval compatible run file to write. (default: pararankdepparser.run)");
 
 
+		// Abstract Indexer
+		Subparser abstractParser = subparsers.addParser("abstract_indexer")
+				.setDefault("func", new Exec(Main::runAbstract))
+				.help("Creates a Lucene index of entities, where abstract are derived from first three paragraphs."
+						+ "See Readme for further details.");
+		abstractParser.addArgument("corpus").help("Location of paragraph corpus to index.");
+
         MasterExperiment.Companion.addExperiments(subparsers);
         LaunchSparqlDownloader.Companion.addExperiments(subparsers);
         LaunchTopicDecomposer.Companion.addExperiments(subparsers);
 
+
         //******************  Bindu Parser completed ******************************************
 			return parser;
+	}
+
+	private static void runAbstract(Namespace params) {
+		String corpusFile = params.getString("corpus");
+		KotlinAbstractExtractor extractor = new KotlinAbstractExtractor("abstract");
+		extractor.getAbstracts(corpusFile);
 	}
 
 	private static void runIndexer(Namespace params) {
