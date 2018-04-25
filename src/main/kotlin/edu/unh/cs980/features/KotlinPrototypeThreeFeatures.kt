@@ -8,25 +8,24 @@ import org.apache.lucene.search.IndexSearcher
 import org.apache.lucene.search.TopDocs
 
 
+/**
+ * Enum: SheafQueryEmbeddingMethod
+ * Desc: Used to specify how we should embed a query. OPtions are:
+ *      MEAN: Stick the top 100 BM25 results together and embed that (then take distance of the results to the mean)
+ *      QUERY: Just embed the text of the query
+ *      QUERY_EXPANSION: For each term in query, retrieve top page using BM25. Stick these together and embed the result.
+ */
 enum class SheafQueryEmbeddingMethod {
     MEAN, QUERY, QUERY_EXPANSION
 }
 
-fun featUseEmbeddedMean(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
-                        embedder: KotlinEmbedding): List<Double> {
-    val paragraphs = tops.scoreDocs
-        .map { indexSearcher.doc(it.doc).get(CONTENT)}
 
-    val embeddings = paragraphs
-        .map { paragraph ->  embedder.embed(paragraph, 500)}
-
-    val centroid = paragraphs
-        .joinToString("\n")
-        .let { jointParagraph -> embedder.embed(jointParagraph) }
-
-    return embeddings.map { projection -> projection.deltaSim(centroid)}
-}
-
+/**
+ * Func: featUseEmbeddedQuery
+ * Desc: This makes use of the perturbation embedding method. It's REALLY slow so I can't afford to evaluate many
+ *       perturbations per paragraph (retrieved from top 100 BM25 search results). Because of this, it's highly
+ *       variable and not-so-good.
+ */
 fun featUseEmbeddedQuery(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                             embedder: KotlinEmbedding): List<Double> {
 
@@ -42,6 +41,10 @@ fun featUseEmbeddedQuery(query: String, tops: TopDocs, indexSearcher: IndexSearc
     }
 }
 
+/**
+ * Func: expandQuery
+ * Desc: Convenience function to retrieve top 1 result for every term in query and concatenate them together.
+ */
 private fun expandQuery(query: String, indexSearcher: IndexSearcher): String =
     AnalyzerFunctions.createQueryList(query, useFiltering = true)
         .map { booleanQuery ->
@@ -51,6 +54,11 @@ private fun expandQuery(query: String, indexSearcher: IndexSearcher): String =
         .joinToString("\n")
 
 
+/**
+ * Func: featUseExpandedEmbeeddedQuery
+ * Desc: as featUseEmbeddedQuery, except query expansion is used first
+ * @see expandQuery
+ */
 fun featUseExpandedEmbeddedQuery(query: String, tops: TopDocs, indexSearcher: IndexSearcher,
                          embedder: KotlinEmbedding): List<Double> {
 
@@ -67,6 +75,11 @@ fun featUseExpandedEmbeddedQuery(query: String, tops: TopDocs, indexSearcher: In
 }
 
 
+/**
+ * Func: featSheafDist
+ * Desc: This is the primary function for exploring variations of the hierarchical embedding that I describe in
+ *       the report. Why am I calling these sheaves in my program? There are mathy reason. :)
+ */
 fun featSheafDist(query: String, tops: TopDocs, indexSearcher: IndexSearcher, analyzer: KotlinMetaKernelAnalyzer,
                   startLayer: Int, measureLayer: Int, reductionMethod: ReductionMethod,
                   normalize: Boolean, mixtureDistanceMeasure: MixtureDistanceMeasure,

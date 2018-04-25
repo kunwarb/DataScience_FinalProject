@@ -7,6 +7,12 @@ import edu.unh.cs980.misc.AnalyzerFunctions
 import org.apache.lucene.search.TermQuery
 import java.io.File
 
+/**
+ * Fair warning: this is used to test my embedding methods and is not used to produce the runfiles.
+ * I left it in here because I still need to use it to test variations and to make sure nothing breaks.
+ * It's goind to be messy...
+ */
+
 fun testQuery() {
 //    embedder.reportQueryResults("Infinitesimal calculus", smoothDocs = false, smoothCombined = false)
 //    embedder.reportQueryResults("Variational calculus and bayes theorem", smoothDocs = false, smoothCombined = false)
@@ -18,6 +24,12 @@ fun testQuery() {
 
 }
 
+/**
+ * Func: testBasisParagraphs
+ * Desc: For the paragraphs used to create the topics, it should be the case that if you embedd the paragraphs, that
+ *       they are mostly in the topics they created. If I mix (concatenate) these paragraphs, it should be the case that
+ *       their embedded coordinates are inbetween the coordinates of the original paragraphs.
+ */
 fun testBasisParagraphs(embedder: KotlinEmbedding): TopicMixtureResult  {
     val testText =
             File("paragraphs/Computers/doc_1.txt").readText() +
@@ -31,6 +43,10 @@ fun testBasisParagraphs(embedder: KotlinEmbedding): TopicMixtureResult  {
 }
 
 
+/**
+ * Func: testText
+ * Desc: I just copy/paste sections from Wikipedia to see how they are embedded and if it makes sense.
+ */
 fun testText(embedder: KotlinEmbedding): TopicMixtureResult {
     val text = """
         William Henry Gates III (born October 28, 1955) is an American business magnate, investor, author, philanthropist, humanitarian, and principal founder of Microsoft Corporation.[2][3] During his career at Microsoft, Gates held the positions of chairman, CEO and chief software architect, while also being the largest individual shareholder until May 2014.
