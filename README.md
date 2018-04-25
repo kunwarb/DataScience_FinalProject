@@ -34,7 +34,7 @@ The compiled jar file contains subcommands for querying, indexing, and other rel
 
 or using the assembled jar:
 ```bash
-./run.sh target/DataSciene_FinalProject-0.2.0-SNAPSHOT-jar-with-dependencies.jar 
+./run.sh target/DataSciene_FinalProject-0.3.0-SNAPSHOT-jar-with-dependencies.jar 
 ```
 
 
