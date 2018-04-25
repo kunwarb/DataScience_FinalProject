@@ -25,16 +25,28 @@ public class NL_Processor {
 	private static final Logger logger = Logger.getLogger(NL_Processor.class);
 	private static StanfordCoreNLP pipeline;
 	private static Boolean initWithOpenIE;
+	private static NL_Processor instance;
 
-	// Retrieve relationships between entities in each sentence.
-	public static NL_Document.Paragraph convertToNL_DocumentWithOpenIE(String para_text) {
-		return convertToNL_Document(para_text, true);
+	public NL_Processor() {
+		initPipeline(true);
+	}
+
+	public static NL_Processor getInstance() {
+		if (instance == null) {
+			instance = new NL_Processor();
+		}
+		return instance;
 	}
 
 	// Won't retrieve relationships between entities in each sentence. Run
 	// faster.
-	public static NL_Document.Paragraph convertToNL_DocumentWithOutOpenIE(String para_text) {
+	public NL_Document.Paragraph convertToNL_DocumentWithOutOpenIE(String para_text) {
 		return convertToNL_Document(para_text, false);
+	}
+
+	// Retrieve relationships between entities in each sentence.
+	public NL_Document.Paragraph convertToNL_DocumentWithOpenIE(String para_text) {
+		return convertToNL_Document(para_text, true);
 	}
 
 	/**
@@ -61,6 +73,7 @@ public class NL_Processor {
 			Properties props = new Properties();
 			props.put("annotators", annotators);
 			pipeline = new StanfordCoreNLP(props);
+			logger.info("Pipeline initialized.");
 		} else {
 			if (openie != initWithOpenIE) {
 				if (openie) {
@@ -75,16 +88,14 @@ public class NL_Processor {
 				Properties props = new Properties();
 				props.put("annotators", annotators);
 				pipeline = new StanfordCoreNLP(props);
+				logger.info("Pipeline initialized.");
 			}
 		}
 	}
 
-	public static NL_Document.Paragraph convertToNL_Document(String para_text, Boolean openie) {
+	public NL_Document.Paragraph convertToNL_Document(String para_text, Boolean openie) {
 
-		// Initialize pipeline.
-		initPipeline(openie);
-
-		logger.info("Processing text with stanford NLP... ");
+		// logger.debug("Processing text with stanford NLP... ");
 
 		NL_Document.Paragraph para = new NL_Document.Paragraph();
 		CoreDocument document = new CoreDocument(para_text);
@@ -102,7 +113,7 @@ public class NL_Processor {
 			ArrayList<Word> allVerbs = new ArrayList<Word>();
 
 			String sentConent = entryLine.text();
-			logger.debug("Sentence: " + sentConent);
+			// logger.debug("Sentence: " + sentConent);
 			// Iterate through each word in a sentence
 			for (CoreLabel token : entryLine.tokens()) {
 				Word word = new Word();
@@ -143,13 +154,13 @@ public class NL_Processor {
 	}
 
 	// Check if the word is noun
-	private static Boolean isNoun(String pos) {
+	private Boolean isNoun(String pos) {
 		// POS: NN, NNS, NNP, NNPS
 		return pos.toUpperCase().contains("NN");
 	}
 
 	// Check if the word is verb
-	private static Boolean isVerb(String pos) {
+	private Boolean isVerb(String pos) {
 		// POS: VB, VBD, VBG, VBN, VBP, VBZ
 		return pos.toUpperCase().contains("VB");
 	}

@@ -34,7 +34,7 @@ public class NL_Document {
 		public ArrayList<Word> getAllNounsInPara() {
 			ArrayList<Word> wordList = new ArrayList<Word>();
 
-			if (sentences != null || !sentences.isEmpty()) {
+			if (sentences != null && !sentences.isEmpty()) {
 				for (Sentence sent : sentences) {
 					wordList.addAll(sent.getAllNouns());
 				}
@@ -46,7 +46,7 @@ public class NL_Document {
 		public ArrayList<Word> getAllVerbsInPara() {
 			ArrayList<Word> wordList = new ArrayList<Word>();
 
-			if (sentences != null || !sentences.isEmpty()) {
+			if (sentences != null && !sentences.isEmpty()) {
 				for (Sentence sent : sentences) {
 					wordList.addAll(sent.getAllVerbs());
 				}
@@ -54,6 +54,19 @@ public class NL_Document {
 
 			return wordList;
 		}
+
+		public ArrayList<RelationTriple> getAllRelationsTriple() {
+			ArrayList<RelationTriple> relations = new ArrayList<>();
+
+			if (sentences != null && !sentences.isEmpty()) {
+				for (Sentence sent : sentences) {
+					relations.addAll(sent.getTriples());
+				}
+			}
+
+			return relations;
+		}
+
 	}
 
 	public static class Sentence {
@@ -106,6 +119,11 @@ public class NL_Document {
 		public void setDependencyGraph(SemanticGraph dependencies) {
 			this.dependencies = dependencies;
 		}
+
+		@Override
+		public String toString() {
+			return "Sentence: " + sentContent;
+		}
 	}
 
 	public static class Word {
@@ -140,5 +158,11 @@ public class NL_Document {
 		public void setNerTag(String nerTag) {
 			this.nerTag = nerTag;
 		}
+
+		@Override
+		public String toString() {
+			return text + " (" + posTag + ")";
+		}
+
 	}
 }

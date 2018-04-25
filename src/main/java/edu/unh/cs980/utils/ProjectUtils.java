@@ -60,15 +60,15 @@ public class ProjectUtils {
 
 	public static void writeToFile(String filePath, ArrayList<String> runfileStrings) {
 		String fullpath = filePath;
-		System.out.println("Writting run file: " + filePath);
+		logger.info("Writting run file: " + filePath);
 		try (FileWriter runfile = new FileWriter(new File(fullpath))) {
 			for (String line : runfileStrings) {
 				runfile.write(line + "\n");
 			}
-			System.out.println("Done.");
+			logger.info("Done.");
 			runfile.close();
 		} catch (IOException e) {
-			System.out.println("Could not open " + fullpath);
+			logger.error("Could not open " + fullpath);
 		}
 	}
 
