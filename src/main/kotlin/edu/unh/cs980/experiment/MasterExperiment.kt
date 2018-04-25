@@ -230,80 +230,25 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
         }
     }
 
+
+    /**
+     * Func: trainPerturbationEmbedding
+     * Desc: Explores the perturbation embedding method (it takes a long time to run)
+     */
     fun trainPerturbationEmbedding(weights: List<Double>? = null) {
         embedder.loadTopics(paragraphs)
         formatter.addBM25(normType = NormType.ZSCORE, weight = weights?.get(0) ?: 1.0)
         formatter.addFeature(bindEmbedding(), normType = NormType.ZSCORE, weight = weights?.get(1) ?: 1.0)
-//        formatter.addFeature(bindEmbeddingExpansion(), normType = NormType.ZSCORE, weight = weights?.get(2) ?: 1.0)
-    }
-
-    fun doClust() {
-        metaAnalyzer.loadSheaves(descent_data)
-        formatter.addBM25(normType = NormType.ZSCORE)
-
-        // Medicine not so good, so is society
-        val myFilter = listOf("Medicine", "Cooking", "Games", "Society")
-        val myFilter2 = listOf("Warfare", "Biology")
-        val myFilter3 = listOf("Technology", "Travel")
-        val myFilter4 = listOf("Mathematics", "Fashion", "Engineering")
-        val myFilter5 = listOf("Events", "Organizations", "People")
-//        val myFilter = emptyList<String>()
-//        val bindEmbed = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
-//            featUseEmbeddedQuery(query, tops, indexSearcher, embedder) }
-
-        val distances = listOf(MixtureDistanceMeasure.DELTA_DENSITY, MixtureDistanceMeasure.EUCLIDEAN)
-
-        distances.forEach { curDist ->
-            val boundSheaf = bindSheafDist(
-                    startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
-                    normalize = true, mixtureDistanceMeasure = curDist,
-                    queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION, filterList = myFilter)
-            formatter.addFeature(boundSheaf, normType = NormType.ZSCORE)
-
-        }
-
-
-
-
-
-
-//        val boundSheafDistFunction = bindSheafDist(
-//                startLayer = 0, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
-//                normalize = false, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
-//                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION, filterList = myFilter)
-
-        val boundSheafDistFunction2 = bindSheafDist(
-                startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
-                normalize = false, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
-                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION, filterList = myFilter)
-
-//        val boundSheafDistFunction3 = bindSheafDist(
-//                startLayer = 2, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_SMOOTHED_THRESHOLD,
-//                normalize = true, mixtureDistanceMeasure = MixtureDistanceMeasure.MANHATTAN,
-//                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION, filterList = myFilter)
-//
-//
-//        val boundSheafDistFunction3 = bindSheafDist(
-//                startLayer = 1, measureLayer = 3, reductionMethod = ReductionMethod.REDUCTION_MAX_MAX,
-//                normalize = false, mixtureDistanceMeasure = MixtureDistanceMeasure.EUCLIDEAN,
-//                queryEmbeddingMethod = SheafQueryEmbeddingMethod.QUERY_EXPANSION)
-
-//        formatter.addFeature(bindEmbed, normType = NormType.ZSCORE)
-//        formatter.addFeature(boundSheafDistFunction, normType = NormType.ZSCORE)
-//        formatter.addFeature(boundSheafDistFunction2, normType = NormType.ZSCORE)
-//        formatter.addFeature(boundSheafDistFunction3, normType = NormType.ZSCORE)
     }
 
 
+
+    // This part is used to auto-generate required arguments / help for the arg parser.
     companion object {
         fun addExperiments(mainSubparser: Subparsers) {
             val mainParser = mainSubparser.addParser("embedding")
                 .help("Collection of features involving the embedding of queries/paragraphs in structures" +
                         " representing topic models.")
-//            dispatcher.generateArguments("", mainParser)
-
-//            val exec = Main.buildExec { namespace: Namespace -> MasterExperiment(namespace).run() }
-//            mainParser.setDefault("func", exec)
 
             val subparsers = mainParser.addSubparsers()
             val trainParser = subparsers.addParser("train")
@@ -342,8 +287,9 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
 
 
         val dispatcher =
-                buildResourceDispatcher {
 
+                // This is a DSL I created to specify resources / register methods to be run by the arg parser.
+                buildResourceDispatcher {
                     methods<MasterExperiment> {
                         method("train", "hier_ascent") { trainAscentMethods() }
                         method("train", "hier_clusters") { trainClusters() }
@@ -414,12 +360,6 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                         loader = ::identity
                     }
 
-
-//                    resource("gram") {
-//                        help = "Location to gram Lucene index (Default: /trec_data/team_1/gram)"
-//                        default = "/trec_data/team_1/gram/"
-//                        loader = { path -> KotlinGramAnalyzer(getIndexSearcher(path)) }
-//                    }
 
                     resource("paragraphs") {
                         help = "Location to paragraphs training directory (Default: /trec_data/team_1/paragraphs)"
