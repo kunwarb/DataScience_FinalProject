@@ -101,6 +101,19 @@ Where:
  
 
 ___
+#### Abstract Indexer (abstract_indexer)
+Given the location of unprocessAllButBenchmark page corpus, extracts page names (used to represent an entity) and the first three paragraphs (used to represent the abstract of the entity). Unigrams, bigrams, and windowed bigrams are also indexed for each of the entity abstracts.
+
+The resulting Lucene index will be named "abstract" and is created in the current working directory. **Note that an already indexed version of abstract can be found on the server at: /trec_data/team_1/abstract**
+
+```bash
+program.jar abstract_indexer corpus
+```
+
+Where **corpus** is the location of the allButBenchmark corpus. 
+ - A copy of the corpus is located on the server at: /trec_data/unprocessedAllButBenchmark/unprocessedAllButBenchmark.cbor
+___
+
 ### Indexer (index)
 Creates a Lucene index from a given paragraph corpus. Also annotates paragraphs with entities using Spotlight if relevant spotlight directory is given. **Note that an existing copy of this index is already on the server at: /trec_data/team_1/myindex**
 
