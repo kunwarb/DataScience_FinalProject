@@ -12,6 +12,11 @@ import kotlin.math.max
 import kotlin.math.pow
 
 
+/**
+ * Class: KotlinStochasticIntegrator
+ * Desc: Given perturbed versions of our target paragraph/query, measure distances to these with our topics.
+ *       The measure of distance is restricted to the support of target (unigrams with a non-zero frequency)
+ */
 class KotlinStochasticIntegrator(val perturbations: Pair<List<String>, List<List<Double>>>,
                                  topics: List<Pair<String, Map<String, Double>>>,
                                  val corpus: (String) -> Double?,
@@ -23,6 +28,7 @@ class KotlinStochasticIntegrator(val perturbations: Pair<List<String>, List<List
     private fun getRestrictedTopic(topic: Pair<String, Map<String, Double>>): List<Double> {
         val topicHash = topic.second
 
+        // When a topic doesn't share a support with the target, smooth it slightly (set freq to 1/target size)
         val focusedHash = perturbations.first.map { word ->
             word to (topicHash[word] ?: corpus(word)?.run { (1/this) / topicHash.size.toDouble() } ?: 1/perturbations.first.size.toDouble())
         }
@@ -36,6 +42,7 @@ class KotlinStochasticIntegrator(val perturbations: Pair<List<String>, List<List
         return restrictedDist
     }
 
+    // Actually not kld now... I use Euclidean distance (sometimes Manhattan)
     private fun kldToTopic(topic: List<Double>) =
             perturbations.second
                 .map { perturbs ->
@@ -48,7 +55,3 @@ class KotlinStochasticIntegrator(val perturbations: Pair<List<String>, List<List
             topicNames.zip(restrictions.map(this::kldToTopic))
 }
 
-fun main(args: Array<String>) {
-    val norm = NormalDistribution(0.0, 0.5)
-    println(norm.sample(10000).sum())
-}

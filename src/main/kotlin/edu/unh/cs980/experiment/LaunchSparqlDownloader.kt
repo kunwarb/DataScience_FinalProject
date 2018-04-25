@@ -9,6 +9,11 @@ import net.sourceforge.argparse4j.inf.Namespace
 import net.sourceforge.argparse4j.inf.Subparser
 import net.sourceforge.argparse4j.inf.Subparsers
 
+/**
+ * Class: LaunchSparqlDownloader
+ * Desc: This is just an app that retrieves stuff from SPARQL.
+ * @see KotlinSparql
+ */
 class LaunchSparqlDownloader(val resources: HashMap<String, Any>) {
 
 

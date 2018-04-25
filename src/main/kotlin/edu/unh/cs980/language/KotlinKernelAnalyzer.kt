@@ -17,10 +17,20 @@ import java.util.*
 import kotlin.math.log2
 import kotlin.math.roundToInt
 
+// Sorry... I couldn't find the energy to fully document this portion of my code. It's very messy...
+
+/**
+ * Enum: MixtureDistanceMeasure
+ * Desc: Describes what method to use when measuring distances between two mixtures.
+ */
 enum class MixtureDistanceMeasure {
     EUCLIDEAN, DELTA_SIM, MINKOWSKI, COSINE, DELTA_DENSITY, MANHATTAN, EUCLIDEAN_SIM, KLD
 }
 
+/**
+ * Class: TopicMixtureResult
+ * Desc: Stores the results of a mixture model of topics. Think of these like points on a simplex.
+ */
 data class TopicMixtureResult(val results: SortedMap<String, Double>, val kld: Double) {
 
     fun reportResults() {
@@ -111,6 +121,10 @@ data class TopicMixtureResult(val results: SortedMap<String, Double>, val kld: D
 
 }
 
+/**
+ * Class: WordKernel
+ * Desc: A distribution over words with respect to a word
+ */
 class WordKernel(val word: String) {
     val distribution = HashMap<String, Double>()
     var frequency = 0.0
@@ -123,6 +137,10 @@ class WordKernel(val word: String) {
 
 }
 
+/**
+ * Class KernelDist
+ * Desc: A distribution over distributions of words.
+ */
 class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = true,
                  val analyzer: AnalyzerFunctions.AnalyzerType = ANALYZER_ENGLISH) {
     val kernels = HashMap<String, WordKernel>()
@@ -184,7 +202,7 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
                 .forEach { splitText -> analyzeDocument(splitText, letterGram) }
 
 
-
+    // Used for embedding
     fun perturb(nSamples: Int = 50): Pair<List<String>, List<List<Double>>> {
         val norm = NormalDistribution(sharedRand, 1.0, 0.001)
 //        val norm = NormalDistribution(sharedRand, 0.0, 0.5)
@@ -238,6 +256,10 @@ class KernelDist(val mean: Double, val std: Double, val doCondition: Boolean = t
     }
 }
 
+/**
+ * Class: KotlinKernelAnalyzer
+ * Desc: Given a directory containing topics, creates distributions representing each topic (unigram freqs).
+ */
 class KotlinKernelAnalyzer(val mean: Double, val std: Double, val corpus: (String) -> Double?,
                            val partitioned: Boolean = false) {
     val topics = HashMap<String, KernelDist>()
@@ -264,6 +286,7 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double, val corpus: (Strin
         kernelDist.analyzePartitionedDocument(paragraph)
     }
 
+
     fun normalizeTopics() {
         topics.values.forEach { topic -> topic.normalizeKernels() }
     }
@@ -273,8 +296,7 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double, val corpus: (Strin
                 topic to kernel.getKernelFreqs()
             }
 
-
-
+    // Run gradient descent on perturbed versions of target distribution
     fun classifyByDomainSimplex2(integrals: List<Pair<String, List<Double>>>, nIterations: Int = 500, smooth: Boolean = false): Triple<List<String>, List<Double>, Double> {
         val identityFreq = integrals.find { it.first == "identity" }!!.second
         val (featureNames, featureFreqs) = integrals.filter { it.first != "identity" }.unzip()
@@ -283,13 +305,4 @@ class KotlinKernelAnalyzer(val mean: Double, val std: Double, val corpus: (Strin
         val (weights, kld) = stepper.startDescent(nIterations)
         return Triple(featureNames, weights, kld)
     }
-
-
-
-
-}
-
-
-fun main(args: Array<String>) {
-
 }

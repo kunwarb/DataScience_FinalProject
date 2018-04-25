@@ -4,6 +4,13 @@ import edu.unh.cs980.identity
 import net.sourceforge.argparse4j.inf.Namespace
 import net.sourceforge.argparse4j.inf.Subparser
 
+/**
+ * All of the following is used to construct a DSL that makes my life easier when it comes to adding stuff
+ * to the arg parser. It uses builder notation from Kotlin. It's very abstract so I'm not sure how to comment
+ * on how it works... but the point is that I can use this to specify the resources / arguments / methods to be
+ * added to the arg parser in a seamless way.
+ */
+
 @DslMarker annotation class DispatchDSL
 
 data class ResourceContainer(val arg: String, val help: String, val default: String = "", val loader: (String) -> Any)

@@ -11,6 +11,11 @@ import net.sourceforge.argparse4j.inf.Namespace
 import net.sourceforge.argparse4j.inf.Subparser
 import net.sourceforge.argparse4j.inf.Subparsers
 
+/**
+ * Class: LaunchTopicDecomposer
+ * Desc: This is just an app that is used to deconstruct topics.
+ * @see KotlinMetaKernelAnalyzer
+ */
 class LaunchTopicDecomposer(val resources: HashMap<String, Any>) {
     val paragraphs: String by resources
     val analyzer = KotlinMetaKernelAnalyzer(paragraphs)

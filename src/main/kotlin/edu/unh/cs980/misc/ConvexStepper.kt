@@ -22,9 +22,8 @@ import kotlin.system.exitProcess
 
 
 
+// Ignore this (I will revisit it later, but it's a partitioned version of my GradientDescender)
 data class Partition(val origin: DoubleArray, val topics: List<DenseMatrix>) {
-
-
     fun kld(weightMatrices: List<DenseMatrix>): Double =
         weightMatrices.zip(topics)
             .map { (w,t) -> w.transpose().mul(t) }
@@ -32,11 +31,9 @@ data class Partition(val origin: DoubleArray, val topics: List<DenseMatrix>) {
             .run { div(sum()) }
             .transpose().array()
             .run { KullbackLeiblerDivergence(origin, this.first())}
-
-
-
 }
 
+// Ignore this (I will revisit it later, but it's a partitioned version of my GradientDescender)
 class PartitionContainer(val partitions: List<Partition>)  {
     var curStep = 0
 
@@ -64,6 +61,7 @@ class PartitionContainer(val partitions: List<Partition>)  {
 }
 
 
+// Ignore this (I will revisit it later, but it's a partitioned version of my GradientDescender)
 class PartitionDescenter(origin: List<Double>, topics: List<List<Double>>, partitionSize: Int = 500) {
     val partitionContainer = PartitionContainer.createPartitionContainer(origin, topics, partitionSize)
     val weightMatrices =
@@ -130,7 +128,11 @@ class PartitionDescenter(origin: List<Double>, topics: List<List<Double>>, parti
 }
 
 
-
+/**
+ * Func: uniformSmoothing
+ * Desc: The values of the target function (our paragraph to be embedded) are averaged out.
+ *       It is almost always very close to the uniform distribution.
+ */
 fun uniformSmoothing(values: List<Double>): DoubleArray {
     val total = values.sum()
     val normal = total / values.size.toDouble()
@@ -138,7 +140,16 @@ fun uniformSmoothing(values: List<Double>): DoubleArray {
 }
 
 
+/**
+ * Class: GradientDescenter
+ * Desc: Performs gradients descent on KLD. Find the linear combination of distributions (topics) that
+ *       minimizes KLD to the uniform distribution.
+ */
 class GradientDescenter(val origin: List<Double>, val topics: List<List<Double>>) {
+
+    // Warning, lots of hacky shit below. I need to switch to using a real convex optimizer next time instead
+    // of my poor approximation of gradient descent.
+
     val weightMatrices =
         (0 until topics.size).map { Matrix.newInstance(1, origin.size, 1.0) }
 
@@ -228,7 +239,3 @@ class GradientDescenter(val origin: List<Double>, val topics: List<List<Double>>
     }
 
 }
-
-fun main(args: Array<String>) {
-}
-

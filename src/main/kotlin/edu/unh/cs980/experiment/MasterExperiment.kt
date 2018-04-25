@@ -17,11 +17,15 @@ import net.sourceforge.argparse4j.inf.Subparsers
 import org.apache.lucene.search.IndexSearcher
 import org.apache.lucene.search.TopDocs
 
+/**
+ * Class: MasterExperiment
+ * Desc: An app used to create ranklib files and run files for all of my methods.
+ *       See the train functions below for a description of my methods.
+ */
 class MasterExperiment(val resources: HashMap<String, Any>) {
     val indexPath: String by resources
     val qrelPath: String by resources
     val queryPath: String by resources
-//    val gram: KotlinGramAnalyzer by resources
     val descent_data: String by resources
     val paragraphs: String by resources
 
@@ -32,20 +36,6 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
     val metaAnalyzer = KotlinMetaKernelAnalyzer(paragraphs)
     val embedder = KotlinEmbedding(indexPath)
 
-
-//    fun wee() {
-//        val weights = listOf(0.08047025663846726, 0.030239885393043505, 0.15642380129849698, 0.45881012321282,
-//                0.1370279667285861, 0.1370279667285861
-//        )
-//
-//        val bindSDM = { query: String, tops: TopDocs, indexSearcher: IndexSearcher ->
-//            featSDM(query, tops, indexSearcher, gram, 4.0)
-//        }
-//
-//        formatter.addFeature({ query, tops, indexSearcher ->
-//            featSplitSim(query, tops, indexSearcher, bindSDM, weights)
-//        }, normType = NormType.ZSCORE)
-//    }
 
 
 
