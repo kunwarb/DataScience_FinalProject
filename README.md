@@ -9,7 +9,7 @@ The newest results for prototype 3 can be found in the results_prototype3 direct
 
 **results_prototype3/bindu/**: Trec eval stats and run files for Bindu's methods.
  
- **results_prototype3/public_test/** Compressed run files for runs on benchmark_kY1_public_query test data. Contains the following:
+ **results_prototype3/public_test/** Compressed run files for runs on benchmark_kY1_public_query test data. These are the ones we want evaluated.
  
 
 ___
