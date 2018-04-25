@@ -30,6 +30,7 @@ import edu.unh.cs980.WordEmbedding.TopktreeContextualSimilarity;
 import edu.unh.cs980.experiment.LaunchSparqlDownloader;
 import edu.unh.cs980.experiment.LaunchTopicDecomposer;
 import edu.unh.cs980.experiment.MasterExperiment;
+import edu.unh.cs980.language.KotlinAbstractExtractor;
 import edu.unh.cs980.utils.ProjectUtils;
 import edu.unh.cs980.utils.QueryBuilder;
 import edu.unh.cs980.variations.Doc_RM_QE_variation;
@@ -293,6 +294,13 @@ public class Main {
 		ParaRankWithDepParser.addArgument("--out").setDefault("pararankdepparser.run")
 				.help("The name of the trec_eval compatible run file to write. (default: pararankdepparser.run)");
 
+		// Abstract Indexer
+		Subparser abstractParser = subparsers.addParser("abstract_indexer")
+				.setDefault("func", new Exec(Main::runAbstract))
+				.help("Creates a Lucene index of entities, where abstract are derived from first three paragraphs."
+						+ "See Readme for further details.");
+		abstractParser.addArgument("corpus").help("Location of paragraph corpus to index.");
+
 		MasterExperiment.Companion.addExperiments(subparsers);
 		LaunchSparqlDownloader.Companion.addExperiments(subparsers);
 		LaunchTopicDecomposer.Companion.addExperiments(subparsers);
@@ -300,6 +308,12 @@ public class Main {
 		// ****************** Bindu Parser completed
 		// ******************************************
 		return parser;
+	}
+
+	private static void runAbstract(Namespace params) {
+		String corpusFile = params.getString("corpus");
+		KotlinAbstractExtractor extractor = new KotlinAbstractExtractor("abstract");
+		extractor.getAbstracts(corpusFile);
 	}
 
 	private static void runIndexer(Namespace params) {
