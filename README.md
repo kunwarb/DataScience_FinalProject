@@ -147,8 +147,8 @@ Where:
  - **section**: Section path query using BM25
 
   **multi_thread** is one of:
- - **true**: Use multi-thread function to generate expanded query. 
- - **false**: Use normal function. (Recommended)
+ - **true**: Use multi-thread function to create thread for each 50 queries. 
+ - **false**: Use normal function to go through each query. 
  
  **index**: Is the location of the Lucene index directory.
  
