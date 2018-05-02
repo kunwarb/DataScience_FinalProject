@@ -231,6 +231,10 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
         formatter.addFeature(bindEmbedding(), normType = NormType.ZSCORE, weight = weights?.get(1) ?: 1.0)
     }
 
+    fun doBM25() {
+        formatter.addBM25(normType = NormType.ZSCORE)
+    }
+
 
 
     // This part is used to auto-generate required arguments / help for the arg parser.
@@ -288,6 +292,9 @@ class MasterExperiment(val resources: HashMap<String, Any>) {
                         method("train", "hier_reduction_variations") { trainReductionMethods() }
                         method("train", "hier_metrics") { trainMetrics() }
                         method("train", "perturbation_embedding") { trainPerturbationEmbedding() }
+                        method("query", "do_bm25") {
+                            doBM25()
+                        }
 
                         method("query", "perturbation_embedding") {
                             val weights = listOf(0.9185739320834739, -0.08142606791652596)
