@@ -1,3 +1,6 @@
+/****
+author:Kaixin+bindu
+***/
 package edu.unh.cs980.WordEmbedding;
 
 import java.io.File;
